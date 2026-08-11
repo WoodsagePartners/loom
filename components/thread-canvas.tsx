@@ -342,6 +342,7 @@ function CanvasInner({
         onNodeDragStop={onNodeDragStop}
         onNodeClick={onNodeClick}
         fitView
+        fitViewOptions={{ padding: 0.25 }}
         proOptions={{ hideAttribution: true }}
         minZoom={0.3}
         maxZoom={1.5}

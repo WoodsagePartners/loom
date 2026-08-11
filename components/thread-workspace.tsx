@@ -133,7 +133,7 @@ export function ThreadWorkspace({
 
   return (
     <div className="flex h-screen">
-      <aside className="w-56 flex-none border-r border-white/10 px-2">
+      <aside className="glass-chrome w-56 flex-none border-r border-white/10 px-2">
         <ThreadRail threads={rail} activeId={activeId} onSelect={selectThread} />
       </aside>
 
@@ -166,7 +166,7 @@ export function ThreadWorkspace({
         </div>
       </main>
 
-      <aside className="w-80 flex-none border-l border-white/10 p-4 overflow-y-auto">
+      <aside className="glass-chrome w-80 flex-none border-l border-white/10 p-4 overflow-y-auto">
         {selectedNode ? (
           <div>
             <div className="font-mono text-[0.55rem] tracking-[0.17em] text-orange mb-3 flex items-center justify-between">

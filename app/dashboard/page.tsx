@@ -46,7 +46,7 @@ export default async function DashboardPage() {
 
   return (
     <div className="min-h-screen flex flex-col">
-      <div className="h-12 flex-none flex items-center gap-3 px-5 border-b border-white/10">
+      <div className="glass-chrome h-12 flex-none flex items-center gap-3 px-5 border-b border-white/10">
         <span className="font-semibold tracking-[0.16em] text-xs">
           THE <span className="text-orange">LOOM</span>
         </span>
