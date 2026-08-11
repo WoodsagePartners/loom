@@ -1,5 +1,7 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { ThreadWorkspace } from "@/components/thread-workspace";
+import type { NodeRow, ThreadRow } from "@/lib/types";
 
 export default async function DashboardPage() {
   const supabase = await createClient();
@@ -15,41 +17,51 @@ export default async function DashboardPage() {
 
   if (!memberships || memberships.length === 0) redirect("/onboarding");
 
-  const { data: threads } = await supabase
+  const orgId = memberships[0].org_id;
+  const orgName = (memberships[0] as any).orgs?.name ?? "Workspace";
+
+  const { data: threadRows } = await supabase
     .from("threads")
-    .select("id, name, state, questions")
-    .eq("org_id", memberships[0].org_id)
+    .select("id, name, state, step, context, questions, touched_at")
+    .eq("org_id", orgId)
     .order("touched_at", { ascending: false });
 
+  const threads = (threadRows ?? []) as unknown as ThreadRow[];
+  const threadIds = threads.map((t) => t.id);
+
+  const nodesByThread: Record<string, NodeRow[]> = {};
+  if (threadIds.length > 0) {
+    const { data: nodeRows } = await supabase
+      .from("nodes")
+      .select(
+        "id, thread_id, parent_id, tech, base, items, pulled, state, ready, cond, folded, by, by_label, created_at"
+      )
+      .in("thread_id", threadIds)
+      .order("created_at", { ascending: true });
+
+    for (const n of (nodeRows ?? []) as unknown as NodeRow[]) {
+      (nodesByThread[n.thread_id] ??= []).push(n);
+    }
+  }
+
   return (
-    <main className="min-h-screen p-8">
-      <div className="font-semibold tracking-[0.16em] text-xs mb-8">
-        THE <span className="text-orange">LOOM</span>
+    <div className="min-h-screen flex flex-col">
+      <div className="h-12 flex-none flex items-center gap-3 px-5 border-b border-white/10">
+        <span className="font-semibold tracking-[0.16em] text-xs">
+          THE <span className="text-orange">LOOM</span>
+        </span>
+        <span className="text-muted text-xs font-light ml-2">{orgName}</span>
       </div>
-      <h1 className="text-xl font-light mb-6">
-        {(memberships[0] as any).orgs?.name ?? "Workspace"}
-      </h1>
-      {threads && threads.length > 0 ? (
-        <div className="space-y-2">
-          {threads.map((t) => (
-            <div key={t.id} className="glass rounded-2xl p-4">
-              <div className="text-xs font-mono text-muted mb-1">
-                {t.state.toUpperCase()}
-              </div>
-              <div className="text-sm">
-                {Array.isArray(t.questions) && t.questions.length > 0
-                  ? t.questions[t.questions.length - 1]
-                  : t.name}
-              </div>
-            </div>
-          ))}
-        </div>
-      ) : (
-        <p className="text-muted text-sm font-light">
-          No threads yet. The canvas UI (nodes, wires, telemetry, walkthrough) from
-          the-loom.html gets ported here next — this page is the landing spot.
-        </p>
-      )}
-    </main>
+      <div className="flex-1 min-h-0">
+        {threads.length > 0 ? (
+          <ThreadWorkspace threads={threads} nodesByThread={nodesByThread} />
+        ) : (
+          <div className="p-8 text-muted text-sm font-light">
+            No threads yet in this workspace. The composer for starting a new thread is next on
+            the list — for now this is the live view once one exists.
+          </div>
+        )}
+      </div>
+    </div>
   );
 }
