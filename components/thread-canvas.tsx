@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ReactFlow,
   ReactFlowProvider,
@@ -10,6 +10,7 @@ import {
   Handle,
   Position,
   applyNodeChanges,
+  useReactFlow,
   type Node,
   type Edge,
   type NodeProps,
@@ -100,6 +101,48 @@ const PORT_STYLE = {
   height: 8,
 };
 
+const HOVER_ZOOM_DELAY_MS = 650;
+const HOVER_ZOOM_LEVEL = 1.15;
+
+/** Dwell on a knot long enough and the viewport eases in on it — canvas
+ * navigation on a large thread otherwise means constant manual pan/zoom.
+ * Cancels on early pointer-leave or on drag-start so it never fights a
+ * drag in progress. */
+function useHoverZoom(
+  x: number | undefined,
+  y: number | undefined,
+  w: number | undefined,
+  h: number | undefined,
+  dragging: boolean
+) {
+  const { setCenter, getZoom } = useReactFlow();
+  const timerRef = useRef<number | null>(null);
+
+  const clear = useCallback(() => {
+    if (timerRef.current != null) {
+      window.clearTimeout(timerRef.current);
+      timerRef.current = null;
+    }
+  }, []);
+
+  const onPointerEnter = useCallback(() => {
+    if (dragging || x == null || y == null) return;
+    const width = w ?? NODE_W;
+    const height = h ?? NODE_H;
+    const reduceMotion =
+      typeof window !== "undefined" &&
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    timerRef.current = window.setTimeout(() => {
+      setCenter(x + width / 2, y + height / 2, {
+        zoom: Math.max(getZoom(), HOVER_ZOOM_LEVEL),
+        duration: reduceMotion ? 0 : 450,
+      });
+    }, HOVER_ZOOM_DELAY_MS);
+  }, [dragging, x, y, w, h, setCenter, getZoom]);
+
+  return { onPointerEnter, onPointerLeave: clear, onPointerDown: clear };
+}
+
 type KnotData = {
   node: NodeRow;
   dim: boolean;
@@ -108,13 +151,17 @@ type KnotData = {
   onPull: (id: string) => void;
 };
 
-function KnotNode({ data }: NodeProps) {
+function KnotNode({ data, positionAbsoluteX, positionAbsoluteY, width, height, dragging }: NodeProps) {
   const { node: n, dim, selected, pulling, onPull } = data as unknown as KnotData;
   const open = n.items.length - n.pulled.length;
   const b = badge(n);
+  const hoverZoom = useHoverZoom(positionAbsoluteX, positionAbsoluteY, width, height, !!dragging);
 
   return (
     <div
+      onPointerEnter={hoverZoom.onPointerEnter}
+      onPointerLeave={hoverZoom.onPointerLeave}
+      onPointerDown={hoverZoom.onPointerDown}
       className={`relative text-left rounded-2xl p-3 cursor-grab active:cursor-grabbing transition-all duration-200 ${
         selected ? "ring-2 ring-cyan/60" : ""
       }`}
@@ -168,10 +215,14 @@ type QuestionData = {
   onPull: () => void;
 };
 
-function QuestionNode({ data }: NodeProps) {
+function QuestionNode({ data, positionAbsoluteX, positionAbsoluteY, width, height, dragging }: NodeProps) {
   const { question, questionVersion, pulling, onPull } = data as unknown as QuestionData;
+  const hoverZoom = useHoverZoom(positionAbsoluteX, positionAbsoluteY, width, height, !!dragging);
   return (
     <div
+      onPointerEnter={hoverZoom.onPointerEnter}
+      onPointerLeave={hoverZoom.onPointerLeave}
+      onPointerDown={hoverZoom.onPointerDown}
       className="relative rounded-[2.5rem] flex flex-col items-center justify-center gap-1 px-6 py-4 glass cursor-grab active:cursor-grabbing"
       style={{ width: NODE_W, minHeight: NODE_H }}
     >
