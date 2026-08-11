@@ -5,7 +5,7 @@ import type { NodeRow, ThreadRow } from "@/lib/types";
 import { ThreadRail, type ThreadSummary } from "@/components/thread-rail";
 import { ThreadCanvas } from "@/components/thread-canvas";
 import { createClient } from "@/lib/supabase/client";
-import { ROOT_ID } from "@/lib/layout";
+import { ROOT_ID, pathTo } from "@/lib/layout";
 
 function buildPullPrompt(thread: ThreadRow, source: NodeRow | null, question: string) {
   const ctx = thread.context ? `Context: ${thread.context}` : "No additional context was given.";
@@ -85,16 +85,22 @@ export function ThreadWorkspace({
     try {
       const source = sourceId ? activeNodes.find((n) => n.id === sourceId) ?? null : null;
       const prompt = buildPullPrompt(active, source, question);
+      const usedTechniques = sourceId
+        ? [...pathTo(activeNodes, sourceId)]
+            .map((id) => activeNodes.find((n) => n.id === id)?.tech)
+            .filter((t): t is string => !!t)
+        : [];
 
       const res = await fetch("/api/pull", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ orgId, prompt }),
+        body: JSON.stringify({ orgId, prompt, usedTechniques }),
       });
       const json = await res.json();
       if (!res.ok) throw new Error(json.error ?? "Pull failed.");
 
       const items = parsePullResponse(json.text as string);
+      const tech = json.technique?.key ?? "pull";
       const supabase = createClient();
       const {
         data: { user },
@@ -105,8 +111,8 @@ export function ThreadWorkspace({
         .insert({
           thread_id: active.id,
           parent_id: sourceId,
-          tech: "pull",
-          base: "pull",
+          tech,
+          base: tech,
           items,
           pulled: [],
           state: "prov",

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { pickTechnique, buildTechniqueGuidance, type Technique } from "@/lib/techniques";
 
 // Server-side proxy for provocation pulls. The Anthropic key lives only in
 // this route's environment — it never reaches the browser. Mirrors the
@@ -25,7 +26,7 @@ export async function POST(req: Request) {
   } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Not signed in." }, { status: 401 });
 
-  const { orgId, prompt, model = "claude-sonnet-5" } = await req.json();
+  const { orgId, prompt, usedTechniques = [], model = "claude-sonnet-5" } = await req.json();
   if (!orgId || !prompt) {
     return NextResponse.json({ error: "orgId and prompt are required." }, { status: 400 });
   }
@@ -44,6 +45,19 @@ export async function POST(req: Request) {
   const key = process.env.ANTHROPIC_API_KEY;
   if (!key) return NextResponse.json({ error: "Server is missing ANTHROPIC_API_KEY." }, { status: 500 });
 
+  // Pick a technique from the org's library, if one has been seeded. Falls
+  // back to the generic provocation prompt if the library is empty rather
+  // than failing the pull entirely.
+  const { data: libraryRows } = await supabase
+    .from("library_techniques")
+    .select("id, key, plain, exec, exemplars, antipatterns, stats")
+    .eq("org_id", orgId);
+
+  const techniques = (libraryRows ?? []) as unknown as Technique[];
+  const technique = pickTechnique(usedTechniques, techniques);
+
+  const system = technique ? `${SYS}\n\n${buildTechniqueGuidance(technique)}` : SYS;
+
   const r = await fetch("https://api.anthropic.com/v1/messages", {
     method: "POST",
     headers: {
@@ -54,7 +68,7 @@ export async function POST(req: Request) {
     body: JSON.stringify({
       model,
       max_tokens: 900,
-      system: SYS,
+      system,
       messages: [{ role: "user", content: prompt }],
     }),
   });
@@ -66,5 +80,19 @@ export async function POST(req: Request) {
 
   const json = await r.json();
   const text = json.content.map((b: any) => b.text || "").join("");
-  return NextResponse.json({ text });
+
+  // Track that this technique got pulled — the library learns its own
+  // effectiveness over time instead of sitting there as static reference
+  // data. Fire-and-forget: a failed stats bump shouldn't fail the pull.
+  if (technique) {
+    void supabase
+      .from("library_techniques")
+      .update({ stats: { ...technique.stats, pulls: technique.stats.pulls + 1 } })
+      .eq("id", technique.id);
+  }
+
+  return NextResponse.json({
+    text,
+    technique: technique ? { id: technique.id, key: technique.key } : null,
+  });
 }
