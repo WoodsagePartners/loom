@@ -124,8 +124,10 @@ function KnotNode({ data }: NodeProps) {
         opacity: dim ? 0.28 : 1,
         filter: dim ? "saturate(0.5)" : "none",
         background: selected
-          ? "linear-gradient(150deg, rgba(48,132,142,.46), rgba(28,84,104,.46))"
-          : "linear-gradient(150deg, rgba(50,92,144,.6), rgba(30,58,96,.58))",
+          ? "linear-gradient(150deg, rgba(48,132,142,.34), rgba(28,84,104,.34))"
+          : "linear-gradient(150deg, rgba(50,92,144,.42), rgba(30,58,96,.4))",
+        backdropFilter: "blur(20px) saturate(170%)",
+        WebkitBackdropFilter: "blur(20px) saturate(170%)",
         border: `1px solid ${selected ? "rgba(66,232,224,.5)" : "rgba(150,190,235,.3)"}`,
         boxShadow: "0 10px 26px rgba(0,0,0,.44), inset 0 1px 0 rgba(255,255,255,.16)",
       }}
