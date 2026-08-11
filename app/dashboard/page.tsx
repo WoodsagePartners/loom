@@ -54,7 +54,7 @@ export default async function DashboardPage() {
       </div>
       <div className="flex-1 min-h-0">
         {threads.length > 0 ? (
-          <ThreadWorkspace threads={threads} nodesByThread={nodesByThread} />
+          <ThreadWorkspace orgId={orgId} threads={threads} nodesByThread={nodesByThread} />
         ) : (
           <div className="p-8 text-muted text-sm font-light">
             No threads yet in this workspace. The composer for starting a new thread is next on

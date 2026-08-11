@@ -34,7 +34,24 @@ const GLYPH: Record<string, string> = {
   "found out": "▣",
   "night shift": "☾",
   fiber: "〜",
+  pull: "↯",
 };
+
+function PullButton({ onClick, pulling, label }: { onClick: () => void; pulling: boolean; label: string }) {
+  return (
+    <button
+      className="nodrag nopan mt-2 inline-flex items-center gap-1 font-mono text-[0.5rem] tracking-[0.12em] uppercase px-2 py-1 rounded-full border border-orange/40 text-orange bg-orange/[.08] hover:bg-orange/[.16] disabled:opacity-50 disabled:cursor-wait transition-colors"
+      onClick={(e) => {
+        e.stopPropagation();
+        onClick();
+      }}
+      disabled={pulling}
+    >
+      <span className={pulling ? "animate-spin" : ""}>↯</span>
+      {pulling ? "PULLING…" : label}
+    </button>
+  );
+}
 
 function badge(n: NodeRow) {
   if (n.state === "prov") return { label: "OPEN", cls: "border-port/45 text-port bg-port/10" };
@@ -83,10 +100,16 @@ const PORT_STYLE = {
   height: 8,
 };
 
-type KnotData = { node: NodeRow; dim: boolean; selected: boolean };
+type KnotData = {
+  node: NodeRow;
+  dim: boolean;
+  selected: boolean;
+  pulling: boolean;
+  onPull: (id: string) => void;
+};
 
 function KnotNode({ data }: NodeProps) {
-  const { node: n, dim, selected } = data as unknown as KnotData;
+  const { node: n, dim, selected, pulling, onPull } = data as unknown as KnotData;
   const open = n.items.length - n.pulled.length;
   const b = badge(n);
 
@@ -128,19 +151,27 @@ function KnotNode({ data }: NodeProps) {
           {b.label}
         </span>
       )}
+      <div>
+        <PullButton onClick={() => onPull(n.id)} pulling={pulling} label="PULL" />
+      </div>
       {open > 0 && <Fray count={open} />}
     </div>
   );
 }
 
-type QuestionData = { question: string; questionVersion: number };
+type QuestionData = {
+  question: string;
+  questionVersion: number;
+  pulling: boolean;
+  onPull: () => void;
+};
 
 function QuestionNode({ data }: NodeProps) {
-  const { question, questionVersion } = data as unknown as QuestionData;
+  const { question, questionVersion, pulling, onPull } = data as unknown as QuestionData;
   return (
     <div
-      className="relative rounded-full flex flex-col items-center justify-center gap-1 px-6 glass cursor-grab active:cursor-grabbing"
-      style={{ width: NODE_W, height: NODE_H }}
+      className="relative rounded-[2.5rem] flex flex-col items-center justify-center gap-1 px-6 py-4 glass cursor-grab active:cursor-grabbing"
+      style={{ width: NODE_W, minHeight: NODE_H }}
     >
       <Handle type="source" position={Position.Right} style={PORT_STYLE} />
       <span className="font-mono text-[0.5rem] tracking-[0.18em] text-orange">
@@ -149,6 +180,7 @@ function QuestionNode({ data }: NodeProps) {
       <span className="text-xs font-light text-text text-center leading-snug line-clamp-2">
         {question}
       </span>
+      <PullButton onClick={onPull} pulling={pulling} label="PULL" />
     </div>
   );
 }
@@ -161,12 +193,16 @@ function CanvasInner({
   questionVersion,
   selectedId,
   onSelect,
+  onPull,
+  pullingId,
 }: {
   nodes: NodeRow[];
   question: string;
   questionVersion: number;
   selectedId: string | null;
   onSelect: (id: string) => void;
+  onPull: (sourceId: string | null) => void;
+  pullingId: string | null;
 }) {
   const supabase = useMemo(() => createClient(), []);
   const nodesKey = nodes.map((n) => n.id).join(",");
@@ -181,8 +217,8 @@ function CanvasInner({
       type: "question",
       position: rootPos,
       selectable: false,
-      data: { question, questionVersion },
-      style: { width: NODE_W, height: NODE_H },
+      data: { question, questionVersion, pulling: pullingId === ROOT_ID, onPull: () => onPull(null) },
+      style: { width: NODE_W },
     };
 
     const knotNodes: Node[] = nodes.map((n) => {
@@ -195,7 +231,13 @@ function CanvasInner({
         id: n.id,
         type: "knot",
         position: saved,
-        data: { node: n, dim: !!focusPath && !onPath, selected: n.id === selectedId },
+        data: {
+          node: n,
+          dim: !!focusPath && !onPath,
+          selected: n.id === selectedId,
+          pulling: pullingId === n.id,
+          onPull: () => onPull(n.id),
+        },
         style: { width: NODE_W },
       };
     });
@@ -214,25 +256,36 @@ function CanvasInner({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [nodesKey]);
 
-  // Refresh dim/selected flags in place when focus changes, without
-  // touching position — this is what keeps a dragged knot exactly where
-  // you dropped it.
+  // Refresh dim/selected/pulling flags in place when focus or pull state
+  // changes, without touching position — this is what keeps a dragged knot
+  // exactly where you dropped it.
   useEffect(() => {
     const focusPath = selectedId ? pathTo(nodes, selectedId) : null;
     setFlowNodes((cur) =>
       cur.map((fn) => {
-        if (fn.id === ROOT_ID) return fn;
+        if (fn.id === ROOT_ID) {
+          return {
+            ...fn,
+            data: { ...fn.data, pulling: pullingId === ROOT_ID, onPull: () => onPull(null) },
+          };
+        }
         const n = nodes.find((x) => x.id === fn.id);
         if (!n) return fn;
         const onPath = focusPath ? focusPath.has(n.id) : true;
         return {
           ...fn,
-          data: { node: n, dim: !!focusPath && !onPath, selected: n.id === selectedId },
+          data: {
+            node: n,
+            dim: !!focusPath && !onPath,
+            selected: n.id === selectedId,
+            pulling: pullingId === n.id,
+            onPull: () => onPull(n.id),
+          },
         };
       })
     );
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedId, nodes]);
+  }, [selectedId, nodes, pullingId, onPull]);
 
   const edges: Edge[] = useMemo(() => {
     const focusPath = selectedId ? pathTo(nodes, selectedId) : null;
@@ -304,6 +357,8 @@ export function ThreadCanvas(props: {
   questionVersion: number;
   selectedId: string | null;
   onSelect: (id: string) => void;
+  onPull: (sourceId: string | null) => void;
+  pullingId: string | null;
 }) {
   return (
     <ReactFlowProvider>

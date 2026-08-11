@@ -4,19 +4,49 @@ import { useMemo, useState } from "react";
 import type { NodeRow, ThreadRow } from "@/lib/types";
 import { ThreadRail, type ThreadSummary } from "@/components/thread-rail";
 import { ThreadCanvas } from "@/components/thread-canvas";
+import { createClient } from "@/lib/supabase/client";
+import { ROOT_ID } from "@/lib/layout";
+
+function buildPullPrompt(thread: ThreadRow, source: NodeRow | null, question: string) {
+  const ctx = thread.context ? `Context: ${thread.context}` : "No additional context was given.";
+  if (!source) {
+    return `${ctx}\n\nWorking question: ${question}\n\nThis is a fresh pull directly from the working question, no prior line of inquiry to build on yet. Produce 2 to 3 provocations that open new lines of inquiry.`;
+  }
+  return `${ctx}\n\nWorking question: ${question}\n\nCurrent line of inquiry (technique: ${source.tech}): ${source.items.join(" ")}\n\nProduce 2 to 3 new provocations that push this specific line of inquiry further.`;
+}
+
+function parsePullResponse(text: string): string[] {
+  const cleaned = text
+    .trim()
+    .replace(/^```(?:json)?\s*/i, "")
+    .replace(/```$/, "")
+    .trim();
+  try {
+    const parsed = JSON.parse(cleaned);
+    if (Array.isArray(parsed) && parsed.every((x) => typeof x === "string")) return parsed;
+  } catch {
+    // fall through
+  }
+  return [cleaned];
+}
 
 export function ThreadWorkspace({
+  orgId,
   threads,
   nodesByThread,
 }: {
+  orgId: string;
   threads: ThreadRow[];
   nodesByThread: Record<string, NodeRow[]>;
 }) {
   const [activeId, setActiveId] = useState<string | null>(threads[0]?.id ?? null);
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
+  const [nodesState, setNodesState] = useState<Record<string, NodeRow[]>>(nodesByThread);
+  const [pullingId, setPullingId] = useState<string | null>(null);
+  const [pullError, setPullError] = useState<string | null>(null);
 
   const active = threads.find((t) => t.id === activeId) ?? null;
-  const activeNodes = activeId ? nodesByThread[activeId] ?? [] : [];
+  const activeNodes = activeId ? nodesState[activeId] ?? [] : [];
   const selectedNode = activeNodes.find((n) => n.id === selectedNodeId) ?? null;
 
   const rail: ThreadSummary[] = useMemo(
@@ -25,14 +55,15 @@ export function ThreadWorkspace({
         id: t.id,
         name: t.name,
         state: t.state,
-        nodeCount: (nodesByThread[t.id] ?? []).length,
+        nodeCount: (nodesState[t.id] ?? []).length,
       })),
-    [threads, nodesByThread]
+    [threads, nodesState]
   );
 
   function selectThread(id: string) {
     setActiveId(id);
     setSelectedNodeId(null);
+    setPullError(null);
   }
 
   if (!active) {
@@ -45,6 +76,60 @@ export function ThreadWorkspace({
 
   const question = active.questions[active.questions.length - 1] ?? active.name;
   const openLoose = selectedNode ? selectedNode.items.length - selectedNode.pulled.length : 0;
+
+  async function handlePull(sourceId: string | null) {
+    if (!active) return;
+    setPullError(null);
+    setPullingId(sourceId ?? ROOT_ID);
+
+    try {
+      const source = sourceId ? activeNodes.find((n) => n.id === sourceId) ?? null : null;
+      const prompt = buildPullPrompt(active, source, question);
+
+      const res = await fetch("/api/pull", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ orgId, prompt }),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error ?? "Pull failed.");
+
+      const items = parsePullResponse(json.text as string);
+      const supabase = createClient();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+
+      const { data: newNode, error } = await supabase
+        .from("nodes")
+        .insert({
+          thread_id: active.id,
+          parent_id: sourceId,
+          tech: "pull",
+          base: "pull",
+          items,
+          pulled: [],
+          state: "prov",
+          by: user?.id ?? null,
+        })
+        .select(
+          "id, thread_id, parent_id, tech, base, items, pulled, state, ready, cond, folded, by, by_label, position_x, position_y, created_at"
+        )
+        .single();
+
+      if (error || !newNode) throw new Error(error?.message ?? "Could not save the pull.");
+
+      setNodesState((cur) => ({
+        ...cur,
+        [active.id]: [...(cur[active.id] ?? []), newNode as unknown as NodeRow],
+      }));
+      setSelectedNodeId(newNode.id);
+    } catch (e) {
+      setPullError(e instanceof Error ? e.message : "Pull failed.");
+    } finally {
+      setPullingId(null);
+    }
+  }
 
   return (
     <div className="flex h-screen">
@@ -59,6 +144,14 @@ export function ThreadWorkspace({
             {active.state !== "live" ? ` · ${active.state.toUpperCase()}` : ""}
           </div>
           <div className="text-2xl font-light leading-snug max-w-3xl">{question}</div>
+          {pullError && (
+            <div className="mt-2 inline-flex items-center gap-2 text-[0.7rem] font-mono text-red-300 bg-red-500/10 border border-red-500/30 rounded-lg px-2.5 py-1">
+              {pullError}
+              <button onClick={() => setPullError(null)} className="text-red-200/70 hover:text-red-100">
+                ✕
+              </button>
+            </div>
+          )}
         </div>
         <div className="flex-1 min-h-0">
           <ThreadCanvas
@@ -67,6 +160,8 @@ export function ThreadWorkspace({
             questionVersion={active.questions.length}
             selectedId={selectedNodeId}
             onSelect={setSelectedNodeId}
+            onPull={handlePull}
+            pullingId={pullingId}
           />
         </div>
       </main>

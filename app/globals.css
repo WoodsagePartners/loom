@@ -33,10 +33,30 @@ body {
 }
 
 body {
+  position: relative;
   font-family: "Poppins", sans-serif;
   background: var(--ink);
   color: var(--text);
   line-height: 1.55;
+}
+
+/* Three fixed "light sources" bleeding through every glass panel in the
+   app — this is what sells glassmorphism as glass and not just blur. Sits
+   behind all real content since it's painted first and z-index'd low. */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background: radial-gradient(640px circle at 12% 18%, rgba(248, 153, 29, 0.18), transparent 62%),
+    radial-gradient(720px circle at 88% 12%, rgba(66, 232, 224, 0.14), transparent 60%),
+    radial-gradient(820px circle at 55% 95%, rgba(217, 183, 74, 0.13), transparent 65%);
+}
+
+body > * {
+  position: relative;
+  z-index: 1;
 }
 
 .glass {
