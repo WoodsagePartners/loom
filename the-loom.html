@@ -1,0 +1,1058 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>The Loom — Struinova</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@200;300;400;500;600&family=Caveat:wght@500;600&family=JetBrains+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root{--orange:#f8991d;--burnt:#c2571b;--ink:#0a1119;--text:#e6edf3;--muted:#93a5b6;
+--cyan:#42e8e0;--gold:#d9b74a;--night:#8fa6ff;--voice:#7fd88f;
+--glass:rgba(255,255,255,.05);--glass-hi:rgba(255,255,255,.095);--edge:rgba(255,255,255,.12);
+--node:rgba(30,58,96,.58);--node-hi:rgba(50,92,144,.6);--port:#ffd75e;--wire:#d9a63f;--mono:'JetBrains Mono',monospace}
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{height:100%;overflow:hidden}
+body{font-family:'Poppins',sans-serif;background:var(--ink);color:var(--text);line-height:1.55}
+.bg{position:fixed;inset:0;z-index:-3;background:linear-gradient(165deg,#0a1119,#0c1420 55%,#070d14)}
+.orb{position:fixed;border-radius:50%;filter:blur(110px);z-index:-2}
+.o1{width:640px;height:640px;background:#1c4f7a;top:-230px;left:-150px;opacity:.28}
+.o2{width:500px;height:500px;background:#c2571b;bottom:-200px;right:-90px;opacity:.18}
+.o3{width:420px;height:420px;background:#3d2a6b;top:32%;right:24%;opacity:.22}
+.glass{background:linear-gradient(145deg,var(--glass-hi),var(--glass));backdrop-filter:blur(24px) saturate(155%);-webkit-backdrop-filter:blur(24px) saturate(155%);border:1px solid var(--edge);box-shadow:0 18px 48px rgba(0,0,0,.44),inset 0 1px 0 rgba(255,255,255,.14)}
+
+/* top */
+.top{position:fixed;top:0;left:0;right:0;height:50px;display:flex;align-items:center;gap:13px;padding:0 18px;z-index:60;background:rgba(9,15,22,.74);backdrop-filter:blur(20px);border-bottom:1px solid var(--edge)}
+.brand{font-weight:600;letter-spacing:.16em;font-size:.74rem}.brand span{color:var(--orange)}
+.topr{margin-left:auto;display:flex;gap:5px;align-items:center;flex-wrap:wrap}
+.chip{font-family:var(--mono);font-size:.55rem;letter-spacing:.1em;padding:6px 11px;border-radius:16px;border:1px solid var(--edge);background:rgba(255,255,255,.045);color:var(--muted);cursor:pointer;transition:.15s;white-space:nowrap}
+.chip:hover{background:rgba(255,255,255,.1);color:var(--text)}
+.chip.warn{border-color:rgba(255,120,80,.45);color:#ffab8a;background:rgba(255,110,70,.1)}
+.chip.ok{border-color:rgba(248,153,29,.4);color:var(--orange)}
+.chip.on{border-color:rgba(66,232,224,.5);color:var(--cyan);background:rgba(66,232,224,.1)}
+
+/* rail */
+.rail{position:fixed;left:0;top:50px;bottom:0;width:58px;border-right:1px solid var(--edge);background:rgba(9,15,22,.5);backdrop-filter:blur(18px);z-index:50;padding:12px 0;display:flex;flex-direction:column;align-items:center;gap:9px;overflow-y:auto;scrollbar-width:none}
+.rail::-webkit-scrollbar{display:none}
+.tg{width:38px;height:38px;border-radius:12px;position:relative;cursor:pointer;flex:0 0 auto;display:grid;place-items:center;border:1px solid var(--edge);background:rgba(255,255,255,.04);transition:.18s}
+.tg:hover{background:rgba(255,255,255,.1)}
+.tg.on{border-color:rgba(248,153,29,.7);background:rgba(248,153,29,.15)}
+.tg.quiet{opacity:.6}.tg.cut{opacity:.3}
+.tg svg{width:24px;height:14px;overflow:visible}
+.tg .lbl{position:absolute;left:46px;white-space:nowrap;font-size:.72rem;font-weight:300;padding:5px 11px;border-radius:9px;opacity:0;pointer-events:none;transition:.16s;background:rgba(19,31,44,.97);border:1px solid var(--edge);z-index:80}
+.tg:hover .lbl{opacity:1}
+.radd{width:38px;height:38px;border-radius:12px;border:1px dashed var(--edge);background:transparent;color:var(--muted);font-size:1.1rem;font-weight:200;cursor:pointer;flex:0 0 auto}
+.radd:hover{color:var(--orange);border-color:rgba(248,153,29,.5)}
+
+/* main column */
+.main{position:fixed;left:58px;right:330px;top:50px;bottom:126px;display:flex;flex-direction:column;z-index:10}
+.qzone{padding:22px 30px 14px;flex:0 0 auto}
+.qver{font-family:var(--mono);font-size:.55rem;letter-spacing:.2em;color:var(--orange);margin-bottom:7px}
+.qghost{font-size:.76rem;color:var(--muted);opacity:.4;text-decoration:line-through;margin-bottom:3px;max-width:900px}
+.qmain{font-size:1.72rem;font-weight:300;line-height:1.3;max-width:900px;letter-spacing:-.012em}
+@media(max-height:760px){.qmain{font-size:1.42rem}.qzone{padding:16px 26px 10px}}
+.opine{font-family:'Caveat',cursive;font-size:1.05rem;color:var(--cyan);opacity:.82;margin-top:12px;max-width:820px}
+.jrow{display:flex;gap:2px;margin-top:14px;max-width:520px}
+.jd{flex:1;height:2px;background:rgba(255,255,255,.1);cursor:pointer}
+.jd.done{background:rgba(248,153,29,.45)}
+.jd.now{background:var(--orange);box-shadow:0 0 8px rgba(248,153,29,.6)}
+.jlab{font-family:var(--mono);font-size:.53rem;color:var(--muted);letter-spacing:.12em;margin-top:5px}
+.jlab b{color:var(--orange);font-weight:400}
+
+/* canvas sizes to content */
+#stage{flex:1 1 auto;min-height:0;position:relative;overflow:hidden;cursor:grab}
+#stage.pan{cursor:grabbing}
+#stage.none{flex:0 0 auto;height:0}
+#world{position:absolute;top:0;left:0;transform-origin:0 0}
+#wires{position:absolute;top:0;left:0;overflow:visible;pointer-events:none}
+.invite{flex:0 0 auto;margin:6px 30px 0;padding:22px 26px;border-radius:16px;border:1px dashed var(--edge);max-width:620px}
+.invite p{font-size:.86rem;font-weight:300;color:var(--muted);margin-bottom:14px}
+.invite b{color:var(--text);font-weight:400}
+
+/* nodes */
+.nd{position:absolute;width:210px;border-radius:14px;padding:11px 13px;cursor:pointer;transition:box-shadow .18s,border-color .18s,transform .18s;
+ background:linear-gradient(150deg,var(--node-hi),var(--node));border:1px solid rgba(150,190,235,.3);
+ backdrop-filter:blur(10px) saturate(140%);-webkit-backdrop-filter:blur(10px) saturate(140%);
+ box-shadow:0 10px 26px rgba(0,0,0,.44),inset 0 1px 0 rgba(255,255,255,.16)}
+.nd:hover{transform:translateY(-2px);border-color:rgba(160,200,240,.5)}
+.nd.sel{border-color:var(--cyan);box-shadow:0 0 0 2px rgba(66,232,224,.32),0 14px 34px rgba(0,0,0,.5);background:linear-gradient(150deg,rgba(48,132,142,.46),rgba(28,84,104,.46))}
+.nd.prov{border-style:dashed;opacity:.84}
+.nd.pin{background:linear-gradient(150deg,rgba(150,124,42,.5),rgba(110,90,30,.46));border-color:rgba(217,183,74,.5)}
+.nd.fib{background:linear-gradient(150deg,rgba(60,130,84,.42),rgba(36,86,56,.42));border-color:rgba(127,216,143,.4)}
+.nd.folded{box-shadow:0 10px 26px rgba(0,0,0,.4),4px 4px 0 -1px rgba(56,102,158,.38),8px 8px 0 -2px rgba(56,102,158,.22)}
+.nh{font-family:var(--mono);font-size:.55rem;letter-spacing:.12em;color:#a8d4ff;display:flex;justify-content:space-between;gap:6px;margin-bottom:5px;text-transform:uppercase}
+.nd.pin .nh{color:var(--gold)}.nd.sel .nh{color:var(--cyan)}.nd.fib .nh{color:var(--voice)}
+.nb{font-size:.73rem;font-weight:300;line-height:1.42;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;color:#dbe7f2}
+.dots{display:flex;gap:4px;margin-top:8px;align-items:center}
+.dot{width:15px;height:5px;border-radius:3px;background:rgba(255,255,255,.16);border:1px solid rgba(255,255,255,.22);flex:0 0 auto}
+.dot.loose{background:var(--port);border-color:var(--port);box-shadow:0 0 7px rgba(255,215,94,.55)}
+.cache{font-family:var(--mono);font-size:.48rem;letter-spacing:.1em;color:var(--port);margin-left:3px}
+.coll{position:absolute;right:-10px;top:50%;transform:translateY(-50%);width:21px;height:21px;border-radius:50%;border:1px solid rgba(160,200,240,.42);background:#132234;color:#a8d4ff;font-size:.6rem;cursor:pointer;z-index:5;display:grid;place-items:center;font-family:var(--mono);padding:0}
+.coll:hover{background:#1d3550;color:#fff}
+.lod-far .nb{display:none}
+.lod-far .nh{font-size:1.05rem;letter-spacing:0;text-transform:none}
+.lod-far .dot{width:19px;height:7px}.lod-far .cache{font-size:.72rem}
+.lod-mid .nb{-webkit-line-clamp:2;font-size:.82rem}.lod-mid .nh{font-size:.66rem}
+.lod-mid .dot{width:17px;height:6px}.lod-mid .cache{font-size:.58rem}
+
+/* reference-panel additions: icon boxes, badges, pill question, walkthrough, telemetry */
+.nico{width:20px;height:20px;border-radius:6px;border:1px solid rgba(255,255,255,.2);background:rgba(255,255,255,.07);display:grid;place-items:center;font-size:.64rem;color:#cfe2f6;flex:0 0 auto;font-family:var(--mono)}
+.nd.sel .nico{border-color:rgba(66,232,224,.5);color:var(--cyan)}
+.badge{margin-left:auto;font-family:var(--mono);font-size:.44rem;letter-spacing:.1em;padding:2px 7px;border-radius:8px;border:1px solid;flex:0 0 auto}
+.badge.amber{color:var(--port);border-color:rgba(255,215,94,.45);background:rgba(255,215,94,.1)}
+.badge.gold{color:var(--gold);border-color:rgba(217,183,74,.5);background:rgba(217,183,74,.12)}
+.badge.cyan{color:var(--cyan);border-color:rgba(66,232,224,.45);background:rgba(66,232,224,.1)}
+.badge.night{color:#c3d0ff;border-color:rgba(140,166,255,.4);background:rgba(140,166,255,.1)}
+.nd.pillq{height:84px;border-radius:42px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;padding:10px 24px;background:rgba(16,30,48,.55);border:1.5px solid rgba(180,210,240,.42)}
+.nd.pillq .pv{font-family:var(--mono);font-size:.5rem;letter-spacing:.18em;color:var(--orange)}
+.nd.pillq .pq{font-size:.66rem;font-weight:300;color:#dbe7f2;text-align:center;line-height:1.3;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+#world.walking .nd{opacity:.22;filter:saturate(.5)}
+#world.walking .nd.sel{opacity:1;filter:none}
+#world.glide{transition:transform .55s cubic-bezier(.3,.7,.3,1)}
+.walkbar{position:fixed;left:58px;right:330px;bottom:140px;display:none;justify-content:center;z-index:70;pointer-events:none}
+.wpill{pointer-events:auto;display:flex;gap:9px;align-items:center;padding:8px 13px;border-radius:20px}
+.wbtn{width:26px;height:26px;border-radius:50%;border:1px solid var(--edge);background:rgba(255,255,255,.06);color:var(--text);cursor:pointer;font-size:.6rem;display:grid;place-items:center}
+.wbtn:hover{background:rgba(248,153,29,.2);border-color:rgba(248,153,29,.5)}
+.wkt{font-family:var(--mono);font-size:.52rem;letter-spacing:.14em;color:var(--cyan)}
+.wkn{font-family:var(--mono);font-size:.52rem;color:var(--muted)}
+.tele{position:fixed;left:58px;right:330px;bottom:72px;height:54px;z-index:55;display:flex;align-items:center;gap:22px;padding:0 18px;background:rgba(9,15,22,.7);backdrop-filter:blur(20px);border-top:1px solid var(--edge);overflow-x:auto;scrollbar-width:none}
+.tele::-webkit-scrollbar{display:none}
+.tm{flex:0 0 auto;min-width:86px}
+.tm b{font-size:.92rem;font-weight:500;color:var(--text);line-height:1}
+.tm span{display:block;font-family:var(--mono);font-size:.44rem;letter-spacing:.12em;color:var(--muted);margin-top:2px}
+.tbar{margin-top:4px;height:3px;width:86px;border-radius:2px;background:rgba(255,255,255,.08);overflow:hidden}
+.tbar i{display:block;height:100%;border-radius:2px;background:linear-gradient(90deg,#3d6ea8,#9fc4e8)}
+.tm.det{min-width:130px}
+.tm.det .tdet{font-size:.68rem;font-weight:400;color:var(--text);font-family:'Poppins',sans-serif;letter-spacing:0;margin-top:0}
+.tm.spark{margin-left:auto;min-width:120px}
+.tm.spark svg{width:120px;height:26px;margin-top:3px;display:block}
+@media(max-height:700px){.tele{display:none}.main{bottom:72px}.walkbar{bottom:86px}}
+
+.peek{position:fixed;z-index:250;width:320px;padding:13px 15px;border-radius:13px;pointer-events:none;display:none;
+ background:rgba(14,24,36,.97);border:1px solid var(--edge);box-shadow:0 22px 54px rgba(0,0,0,.6)}
+.peek.show{display:block}
+.peek h5{font-family:var(--mono);font-size:.53rem;letter-spacing:.14em;color:var(--cyan);margin-bottom:8px;text-transform:uppercase;display:flex;justify-content:space-between}
+.peek .pk{font-size:.75rem;font-weight:300;line-height:1.42;padding:6px 0 6px 10px;border-left:2px solid rgba(66,232,224,.5);margin-bottom:6px;color:#dbe7f2}
+.peek .pk.done{border-left-color:rgba(255,255,255,.15);color:var(--muted);opacity:.6}
+
+/* dock */
+.dock{position:fixed;left:58px;right:330px;bottom:0;height:72px;display:flex;align-items:center;gap:7px;padding:0 16px;z-index:55;background:rgba(9,15,22,.76);backdrop-filter:blur(20px);border-top:1px solid var(--edge);overflow-x:auto;scrollbar-width:none}
+.dock::-webkit-scrollbar{display:none}
+.tok{flex:0 0 auto;padding:7px 13px;border-radius:15px;border:1px solid var(--edge);background:rgba(255,255,255,.05);color:var(--text);font-family:var(--mono);font-size:.6rem;cursor:pointer;transition:.15s;white-space:nowrap;position:relative;text-align:left;line-height:1.25}
+.tok small{display:block;font-family:'Poppins',sans-serif;font-size:.58rem;font-weight:300;color:var(--muted);letter-spacing:0;margin-top:1px;max-width:190px;white-space:normal}
+.tok:hover:not(:disabled){background:rgba(248,153,29,.16);border-color:rgba(248,153,29,.5);transform:translateY(-2px)}
+.tok:hover:not(:disabled) small{color:#d6e2ee}
+.tok:disabled{opacity:.28;cursor:not-allowed}
+.tok.nite{border-color:rgba(140,166,255,.34);background:rgba(140,166,255,.12);color:#c3d0ff}
+.dockend{margin-left:auto;display:flex;gap:6px;align-items:center;flex:0 0 auto;padding-left:12px}
+
+/* inspector */
+.insp{position:fixed;right:0;top:50px;bottom:0;width:330px;border-left:1px solid var(--edge);background:rgba(9,15,22,.62);backdrop-filter:blur(22px);z-index:50;padding:16px;overflow-y:auto;scrollbar-width:thin}
+.insp::-webkit-scrollbar{width:5px}.insp::-webkit-scrollbar-thumb{background:rgba(255,255,255,.12);border-radius:3px}
+.ih{font-family:var(--mono);font-size:.55rem;letter-spacing:.17em;color:var(--orange);margin:0 0 9px;display:flex;justify-content:space-between;gap:8px}
+.ih.sub{color:var(--muted);margin-top:20px}
+.prov{padding:11px 12px;border-radius:11px;background:rgba(255,255,255,.045);border:1px solid var(--edge);border-left:2px solid rgba(66,232,224,.45);font-size:.79rem;font-weight:300;margin-bottom:8px;position:relative;cursor:pointer;transition:.15s}
+.prov:hover{background:rgba(255,255,255,.075)}
+.prov.on{border-color:var(--cyan);border-left-color:var(--cyan);background:rgba(66,232,224,.1)}
+.prov.pulled{border-left-color:rgba(255,255,255,.14);opacity:.6}
+.ptag{display:block;font-family:var(--mono);font-size:.46rem;letter-spacing:.14em;color:var(--cyan);margin-bottom:4px}
+.prov.pulled .ptag{color:var(--muted)}
+.px{position:absolute;top:7px;right:8px;width:16px;height:16px;border-radius:50%;border:1px solid var(--edge);background:transparent;color:var(--muted);font-size:.58rem;line-height:1;cursor:pointer;display:none}
+.prov:hover .px{display:block}.px:hover{color:#ff9b7a;border-color:rgba(255,120,80,.5)}
+.acts{display:flex;flex-wrap:wrap;gap:6px;margin:12px 0 4px}
+.abtn{padding:6px 11px;border-radius:13px;border:1px solid var(--edge);background:transparent;color:var(--muted);font-family:var(--mono);font-size:.53rem;letter-spacing:.08em;cursor:pointer;transition:.15s}
+.abtn:hover{color:var(--text);background:rgba(255,255,255,.08)}
+.abtn.go{border-color:rgba(248,153,29,.5);color:var(--orange)}
+.abtn.go:hover{background:rgba(248,153,29,.16)}
+.abtn.warn:hover{color:#ff9b7a;border-color:rgba(255,120,80,.5)}
+.hint{font-size:.77rem;color:var(--muted);font-weight:300;font-style:italic;line-height:1.6}
+
+/* scoreboard */
+.score{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-bottom:8px}
+.sc{padding:9px 11px;border-radius:11px;background:rgba(255,255,255,.04);border:1px solid var(--edge)}
+.sc b{display:block;font-size:1.32rem;font-weight:400;line-height:1.1;color:var(--text)}
+.sc span{font-family:var(--mono);font-size:.47rem;letter-spacing:.1em;color:var(--muted);text-transform:uppercase;display:block;margin-top:3px}
+.sc.hero b{color:var(--orange)}
+.sc.zpd b{color:var(--cyan)}
+.sc.warn b{color:#ffab8a}
+.scq{font-family:'Caveat',cursive;font-size:1.02rem;color:var(--orange);opacity:.85;margin-top:2px}
+
+/* overlays */
+.ov{position:fixed;inset:0;background:rgba(5,9,14,.78);backdrop-filter:blur(7px);z-index:300;display:none;align-items:center;justify-content:center;padding:22px}
+.ov.open{display:flex}
+.box{width:min(660px,100%);padding:26px;border-radius:20px;max-height:88vh;overflow-y:auto}
+.box.wide{width:min(860px,100%)}
+.box h3{font-size:1.08rem;font-weight:500;margin-bottom:5px}
+.box p{font-size:.78rem;color:var(--muted);font-weight:300;margin-bottom:16px}
+.fld{margin-bottom:13px}
+.fld label{display:block;font-family:var(--mono);font-size:.53rem;letter-spacing:.14em;color:var(--muted);margin-bottom:5px}
+input,select,textarea{width:100%;background:rgba(0,0,0,.28);border:1px solid var(--edge);border-radius:10px;color:var(--text);font-family:'Poppins',sans-serif;font-size:.82rem;font-weight:300;padding:9px 12px}
+textarea{resize:vertical;min-height:88px;line-height:1.55}
+input:focus,select:focus,textarea:focus{outline:none;border-color:rgba(248,153,29,.5)}
+select option{background:#131f2c}
+.btn{padding:9px 17px;border-radius:17px;border:1px solid rgba(248,153,29,.5);background:linear-gradient(135deg,rgba(248,153,29,.9),rgba(194,87,27,.85));color:#fff;font-family:var(--mono);font-size:.58rem;letter-spacing:.11em;cursor:pointer}
+.btn.ghost{background:transparent;border-color:var(--edge);color:var(--muted)}
+.btn.ghost:hover{color:var(--text);background:rgba(255,255,255,.06)}
+.act{display:flex;gap:8px;justify-content:flex-end;margin-top:6px;flex-wrap:wrap}
+.led{display:flex;gap:11px;padding:11px 13px;border-radius:11px;border:1px solid var(--edge);background:rgba(255,255,255,.035);margin-bottom:8px;cursor:pointer;align-items:baseline}
+.led:hover{background:rgba(255,255,255,.08);border-color:rgba(248,153,29,.4)}
+.led .lda{font-family:var(--mono);font-size:.55rem;color:var(--muted);flex:0 0 66px}
+.led .ldn{flex:1;font-size:.84rem}
+.led .ldt{font-family:var(--mono);font-size:.46rem;letter-spacing:.11em;color:var(--orange);opacity:.8}
+.doc{font-size:.85rem;font-weight:300;line-height:1.7;color:#dbe7f2}
+.doc h1{font-size:1.1rem;font-weight:500;margin:0 0 11px}
+.doc h2{font-size:.92rem;font-weight:500;margin:18px 0 6px;color:var(--orange)}
+.doc ul{margin:5px 0 11px 17px}.doc li{margin-bottom:4px}
+.doc p{margin-bottom:10px}.doc strong{color:var(--text);font-weight:500}
+.brf{padding:12px 14px;border-radius:11px;border:1px solid rgba(140,166,255,.3);background:rgba(90,120,220,.08);margin-bottom:10px}
+.brf h4{font-family:var(--mono);font-size:.52rem;letter-spacing:.14em;color:var(--night);margin-bottom:6px}
+.brf ul{margin-left:15px;font-size:.81rem;font-weight:300}.brf li{margin-bottom:3px}
+.lib{padding:13px 15px;border-radius:12px;border:1px solid var(--edge);background:rgba(255,255,255,.035);margin-bottom:10px}
+.lib h4{font-size:.88rem;font-weight:500;display:flex;justify-content:space-between;align-items:baseline;gap:10px}
+.lib h4 em{font-family:var(--mono);font-size:.52rem;font-style:normal;letter-spacing:.1em;color:var(--muted)}
+.lib .pl{font-size:.77rem;color:var(--muted);font-weight:300;margin:3px 0 8px}
+.lib .ex{font-size:.74rem;font-weight:300;padding:5px 0 5px 9px;border-left:2px solid rgba(248,153,29,.4);color:#c8d6e3;margin-bottom:4px}
+.lib textarea{min-height:52px;font-size:.78rem;margin-top:6px}
+
+/* ceremony */
+.drama{position:fixed;inset:0;z-index:500;background:rgba(5,9,14,.95);backdrop-filter:blur(10px);display:none;flex-direction:column;align-items:center;justify-content:center;gap:26px}
+.drama.on{display:flex}
+.drama svg{width:min(540px,80vw);height:110px;overflow:visible}
+.dpath{stroke:var(--orange);stroke-width:3;fill:none;stroke-linecap:round;stroke-dasharray:900;stroke-dashoffset:900;animation:draw 1.5s cubic-bezier(.3,.7,.3,1) forwards}
+@keyframes draw{to{stroke-dashoffset:0}}
+.dknot{opacity:0;animation:kpop .5s ease forwards}
+@keyframes kpop{from{opacity:0;transform:scale(.2)}to{opacity:1;transform:scale(1)}}
+.dbeat{font-family:var(--mono);font-size:.7rem;letter-spacing:.24em;color:var(--muted);opacity:0;text-transform:uppercase;animation:bf .7s ease forwards}
+@keyframes bf{to{opacity:1}}
+.dq{font-family:'Caveat',cursive;font-size:1.4rem;color:var(--orange);opacity:0;animation:bf .9s ease forwards;text-align:center;max-width:500px}
+.dsub{font-family:var(--mono);font-size:.52rem;color:var(--muted);letter-spacing:.16em;opacity:0;animation:bf .9s ease forwards}
+.toast{position:fixed;bottom:142px;left:50%;transform:translateX(-50%);z-index:400;padding:11px 19px;border-radius:15px;font-size:.79rem;font-weight:300;display:none;max-width:min(540px,90vw)}
+.toast.show{display:block}
+.toast.err{border-color:rgba(255,120,80,.45);color:#ffb59a;background:rgba(255,90,60,.14)}
+.spin{display:inline-block;width:9px;height:9px;border:2px solid rgba(248,153,29,.3);border-top-color:var(--orange);border-radius:50%;animation:sp .7s linear infinite;margin-right:5px}
+@keyframes sp{to{transform:rotate(360deg)}}
+@media(max-width:1080px){.main,.dock,.tele,.walkbar{right:0}.insp{display:none}}
+</style>
+</head>
+<body>
+<div class="bg"></div><div class="orb o1"></div><div class="orb o2"></div><div class="orb o3"></div>
+
+<div class="top">
+  <span class="brand">THE <span>LOOM</span></span>
+  <span class="topr">
+    <button class="chip" id="keyChip">NO KEY</button>
+    <button class="chip" onclick="openCtx()">CONTEXT</button>
+    <button class="chip" onclick="openFib()">FIBERS</button>
+    <button class="chip" onclick="openLib()">LIBRARY</button>
+    <button class="chip" onclick="openLedger()">LEDGER</button>
+    <button class="chip" onclick="saveFile()">SAVE</button>
+    <button class="chip" onclick="loadIn.click()">LOAD</button>
+    <input type="file" id="loadIn" accept=".json" hidden>
+  </span>
+</div>
+
+<div class="rail" id="rail"></div>
+
+<div class="main">
+  <div class="qzone">
+    <div class="qver" id="qver"></div>
+    <div id="qghosts"></div>
+    <div class="qmain" id="qmain"></div>
+    <div class="opine" id="opine"></div>
+    <div class="jrow" id="jrow"></div>
+    <div class="jlab" id="jlab"></div>
+  </div>
+  <div class="invite" id="invite" style="display:none">
+    <p><b>Nothing pulled yet.</b> Choose a technique below and the engine will hand you provocations, never answers. Pull twice from the same node and the thread forks.</p>
+    <button class="abtn go" onclick="openCtx()">GIVE IT BACKGROUND FIRST</button>
+  </div>
+  <div id="stage"><div id="world" class="lod-near"><svg id="wires"></svg></div></div>
+</div>
+<div class="peek" id="peek"></div>
+
+<div class="tele" id="tele"></div>
+<div class="walkbar" id="walkbar">
+  <div class="wpill glass">
+    <button class="wbtn" onclick="walkStep(-1)" title="Previous pull">◀</button>
+    <span class="wkt" id="wkt"></span><span class="wkn" id="wkn"></span>
+    <button class="wbtn" onclick="walkStep(1)" title="Next pull">▶</button>
+    <button class="wbtn" onclick="endWalk()" title="Exit walkthrough">✕</button>
+  </div>
+</div>
+<div class="dock" id="dock"></div>
+<aside class="insp" id="insp"></aside>
+<div class="toast glass" id="toast"></div>
+
+<div class="drama" id="drama">
+  <svg viewBox="0 0 600 110"><path class="dpath" d="M20 55 C 160 18, 240 92, 360 55 S 520 28, 580 55"/><g id="dk"></g></svg>
+  <div class="dbeat" id="beat"></div><div class="dq" id="dqt"></div><div class="dsub" id="dsub"></div>
+</div>
+
+<div class="ov" id="ovKey"><div class="box glass">
+  <h3>Connection</h3><p>Your key stays in this browser and is sent only to Anthropic. It is never written into an exported file.</p>
+  <div class="fld"><label>ANTHROPIC API KEY</label><input type="password" id="keyIn" placeholder="sk-ant-..."></div>
+  <div class="fld"><label>MODEL</label><select id="modelIn">
+    <option value="claude-fable-5">claude-fable-5 · frontier</option>
+    <option value="claude-sonnet-5">claude-sonnet-5 · balanced</option>
+    <option value="claude-opus-5">claude-opus-5 · deepest</option>
+    <option value="claude-haiku-4-5-20251001">claude-haiku-4-5 · fastest</option></select></div>
+  <div class="fld"><label>YOUR NAME · recorded as the author of your pulls</label><input id="whoIn" placeholder="Ron"></div>
+  <div class="act"><button class="btn ghost" onclick="cl('ovKey')">CLOSE</button><button class="btn" onclick="saveKey()">SAVE</button></div>
+</div></div>
+
+<div class="ov" id="ovNew"><div class="box glass">
+  <h3>New thread</h3><p>One live line of inquiry. Thin context gets thin provocations.</p>
+  <div class="fld"><label>NAME</label><input id="nName" placeholder="Power continuity"></div>
+  <div class="fld"><label>WORKING QUESTION · as stated today, even if it is really a solution</label><input id="nQ" placeholder="How do we cut diesel use?"></div>
+  <div class="fld"><label>BACKGROUND · facts, constraints, history, what has been tried</label><textarea id="nCtx"></textarea></div>
+  <div class="act"><button class="btn ghost" onclick="cl('ovNew')">CANCEL</button><button class="btn" onclick="mkThread()">CREATE</button></div>
+</div></div>
+
+<div class="ov" id="ovCtx"><div class="box glass">
+  <h3>Thread context</h3><p>Read before every pull. Keep adding as you learn.</p>
+  <div class="fld"><label>NAME</label><input id="cName"></div>
+  <div class="fld"><label>BACKGROUND</label><textarea id="cCtx" style="min-height:190px"></textarea></div>
+  <div class="act">
+    <button class="btn ghost" onclick="setState('cut')" id="cutBtn">CUT THREAD</button>
+    <button class="btn ghost" onclick="setState('quiet')" id="qBtn">MARK WORKED AND QUIET</button>
+    <button class="btn ghost" onclick="cl('ovCtx')">CANCEL</button><button class="btn" onclick="saveCtx()">SAVE</button></div>
+</div></div>
+
+<div class="ov" id="ovFib"><div class="box glass">
+  <h3>Fibers</h3><p>Other people's words, entering the thread. An interview note, a message from the field, something said in a meeting. Marked as their voice, not yours, and read by every pull.</p>
+  <div class="fld"><label>WHOSE VOICE</label><input id="fWho" placeholder="Engine room, night crew"></div>
+  <div class="fld"><label>WHAT THEY SAID</label><textarea id="fTxt"></textarea></div>
+  <div class="act" style="margin-bottom:16px"><button class="btn" onclick="addFib()">ADD FIBER</button></div>
+  <div class="ih"><span>ON THIS THREAD</span><span id="fCount"></span></div>
+  <div id="fList"></div>
+  <div class="act"><button class="btn ghost" onclick="cl('ovFib')">CLOSE</button></div>
+</div></div>
+
+<div class="ov" id="ovLib"><div class="box glass wide">
+  <h3>Technique library</h3><p>This is the instrument. It learns from what you keep, and what you keep is craft. Learning is general by design, never client specific.</p>
+  <div id="libBody"></div>
+  <div class="act"><button class="btn ghost" onclick="exportLib()">EXPORT LIBRARY</button><button class="btn ghost" onclick="cl('ovLib')">CLOSE</button></div>
+</div></div>
+
+<div class="ov" id="ovLedger"><div class="box glass wide">
+  <h3 id="ledT">Ledger</h3><p id="ledS">Append only. Each entry is a snapshot of the thinking on the day it was made.</p>
+  <div id="ledB"></div>
+  <div class="act" style="margin-top:16px">
+    <button class="btn ghost" onclick="cl('ovLedger')">CLOSE</button>
+    <button class="btn ghost" id="ledBack" onclick="renderLed()" style="display:none">BACK</button>
+    <button class="btn ghost" id="ledCopy" onclick="copyEntry()" style="display:none">COPY MARKDOWN</button>
+    <button class="btn" onclick="genBrief()" id="genBtn">GENERATE SESSION BRIEF</button></div>
+</div></div>
+
+<div class="ov" id="ovNight"><div class="box glass wide">
+  <h3>Night shift</h3><p>Assign duties now. It works them while you are gone, and everything returns loose for you to judge.</p>
+  <div style="display:flex;gap:7px;flex-wrap:wrap;margin-bottom:11px">
+    <button class="abtn go" onclick="jt('fact')" id="jtfact">FIND OUT</button>
+    <button class="abtn" onclick="jt('threads')" id="jtthreads">PROPOSE NEW THREADS</button>
+    <button class="abtn" onclick="jt('patrol')" id="jtpatrol">PATROL A THREAD</button></div>
+  <div class="fld" id="jqw"><label id="jql">A QUESTION YOU DO NOT HAVE THE ANSWER TO</label>
+    <textarea id="jobQ" style="min-height:56px" placeholder="Is a two generator running minimum a class requirement, or our own policy?"></textarea></div>
+  <div class="fld" id="jtw"><label>ATTACH RESULT TO THREAD</label><select id="jobT"></select></div>
+  <div class="act" style="margin-bottom:18px"><button class="btn" onclick="addJob()">ADD TO THE QUEUE</button></div>
+  <div class="ih"><span>QUEUE</span><span id="qC"></span></div><div id="qL" style="margin-bottom:18px"></div>
+  <div class="ih"><span>PROPOSED THREADS</span><span id="pC"></span></div><div id="pL"></div>
+  <div class="act" style="margin-top:16px"><button class="btn ghost" onclick="cl('ovNight')">CLOSE</button>
+    <button class="btn" onclick="prepShift()" id="runBtn">BRIEF AND HAND OFF</button></div>
+</div></div>
+
+<div class="ov" id="ovBrief"><div class="box glass">
+  <h3>Brief for the night shift</h3><p>Written by the app from the current state. Read it, change it, then hand off. It is retained so you can hold the shift to it.</p>
+  <div id="briefB"></div>
+  <div class="act" style="margin-top:14px"><button class="btn ghost" onclick="cl('ovBrief')">CANCEL</button>
+    <button class="btn" onclick="handoff()">APPROVE AND HAND OFF</button></div>
+</div></div>
+
+<script>
+/* ============ constants ============ */
+const JOURNEY=[["Ordinary World","How it has always been done"],["Call to Adventure","The challenge surfaces"],["Refusal","We tried that. That is regulation."],["Meeting the Mentor","Method arrives"],["Crossing the Threshold","Committing to look again"],["Tests, Allies, Enemies","Which walls are real?"],["Approach the Cave","Closing on the real problem"],["The Ordeal","The original question dies"],["The Reward","A question worth answering"],["The Road Back","Ideas, ranked and owned"],["Resurrection","Proving it where it counts"],["Return with the Elixir","They run it without you"]];
+
+const BASE={
+ "first principles":{plain:"strip it down to what is actually true",
+  exec:"Strip the material to what is actually, physically or economically true. Separate hard constraints (physics, real regulation) from soft ones (policy, custom, habit). Question at least one inherited constraint everyone treats as fixed."},
+ "reframe":{plain:"change the question, not the answer",
+  exec:"Propose candidate replacement working questions. Each must be answerable, specific, and a genuine improvement on the current one. Begin each with 'Candidate: '."},
+ "invert":{plain:"assume the opposite and see what holds",
+  exec:"Assume the opposite of a stated assumption is true. Ask what would have to be true for that inversion to be unremarkable."},
+ "outsider view":{plain:"how this looks to someone who has never worked here",
+  exec:"Adopt the stance of an intelligent person with zero experience in this industry. Name what looks strange, arbitrary or unexamined to fresh eyes."},
+ "analogous":{plain:"how a different field solves this shape of problem",
+  exec:"Find how a completely different domain solves this SHAPE of problem. Name the domain and what they traded away. Never say 'like in nature' without naming the mechanism.",
+  variants:{
+   "pairwise":"Compare this situation to ONE clearly named domain. Map the deep structure they share, then name what that domain traded away to get its result.",
+   "triangulation":"Compare this situation against THREE OR FOUR unrelated domains at once, each clearly named. Then harvest twice. First, what holds true across all of them, which is likely structural rather than coincidental. Second, and more importantly, what appears in only ONE of them, because a property that survives into a set where nothing else carries it is a novelty candidate. Report both harvests separately."}},
+ "scope shift":{plain:"the same thing at the crew, the site, the company",
+  exec:"Take the same matter at a different altitude: the individual, the team, the site, the enterprise, the industry. Show how the problem changes identity at each level."},
+ "absence":{plain:"what nobody has said yet",
+  exec:"Name what is conspicuously MISSING from this line of reasoning. Who has not been mentioned. What dimension nobody has raised. What word never appears."},
+ "forced collision":{plain:"mash this against another thread",
+  exec:"Collide this line of thinking against the other named threads in this project. Look for hidden coupling, direct tension, or the possibility that two threads are secretly one."}};
+
+const GLYPH={"first principles":"▽","reframe":"↺","invert":"⇅","outsider view":"◇","analogous":"⇄","scope shift":"⇧","absence":"◌","forced collision":"✕","found out":"▣","night shift":"☾","fiber":"〜","origin":"●"};
+
+const SYS=`You are the provocation engine inside The Loom, an innovation instrument by Struinova Innovation.
+
+ABSOLUTE RULES:
+- You never provide solutions, answers, recommendations or advice.
+- You produce PROVOCATIONS: sharp observations and questions that make a person see their situation differently.
+- The human is the expert and the hero. You ask the awkward question.
+- Be specific to the material given. Never generic. If material is thin, provoke about what is missing rather than inventing facts.
+- Never invent facts, figures or events. Speculation must read as a question.
+- Short. Two or three sentences maximum each. No preamble, no encouragement, no summary.
+- Never use em dashes or en dashes. Use commas and periods.
+
+Return ONLY a JSON array of 2 to 3 strings. No markdown fence, no commentary.`;
+
+const SYS_FACT=`You are the night shift researcher inside The Loom, working while the humans sleep.
+
+You may answer FACTUAL questions: what is true about the world, physics, standards, regulation, typical industry practice, history. Fact finding is legitimate work.
+You may NOT solve the human's problem. No recommendations, no "you should". The thinking stays theirs.
+
+For every answer: state what you believe is true plainly, mark confidence as HIGH, MEDIUM or LOW, say explicitly what you cannot know from training alone, and name the specific authority or role who would actually know.
+Never fabricate numbers, standard numbers, clause references or citations. If you do not know, say so and say who would.
+Never use em dashes or en dashes.
+
+Return ONLY a JSON array of 1 to 3 strings. No markdown fence.`;
+
+const SYS_THREADS=`You are the night shift inside The Loom.
+
+Your job is opportunity finding: propose NEW lines of inquiry this project has not opened. Find the territory nobody has entered.
+Each proposal is a genuine question, never a problem statement and never a solution. Answerable, specific to this organisation, and something a person there would recognise as real.
+Prefer what is structurally missing over obvious adjacent topics.
+Never use em dashes or en dashes.
+
+Return ONLY a JSON array of 2 to 3 objects, each exactly {"name":"short thread name","question":"the working question","why":"one sentence on why this is worth opening"}. No markdown fence.`;
+
+const SYS_SCRIBE=`You are the scribe inside The Loom.
+
+You NARRATE THE RECORD. You do not think.
+- Every statement must trace to material you were given. If it is not in the record, it does not go in the document.
+- Never add analysis, recommendations, conclusions or ideas of your own.
+- Never resolve an open question. Report that it is open.
+- Write in the client's own language, using their words where they exist.
+- End on what is still open, never on what has been settled.
+- Plain and direct. No consultant throat clearing.
+- Never use em dashes or en dashes.
+
+Return ONLY JSON: {"name":"...","body":"..."}
+name: a short derived title, six words or fewer, naming the most significant movement in this record. Like a commit message for thinking. Not "Session Brief 3".
+body: markdown, ## for sections and - for bullets.`;
+
+const SYS_NB=`You are the chief of staff inside The Loom. You write the assignment brief handed to the night shift.
+You do not do the work. You specify it precisely, so a competent agent knows what is wanted and what is out of bounds.
+Ground every line in the record you were given. Concrete and specific. Never generic. Never use em dashes or en dashes.
+
+Return ONLY JSON: {"name":"short derived title","objective":"one sentence","focus":["2 to 4 specific items"],"questions":["1 to 3"],"bounds":["2 to 3 things it must NOT do, specific to this project"],"success":"one sentence"}`;
+
+/* ============ state ============ */
+let S={key:"",model:"claude-sonnet-5",who:"Ron",active:0,threads:[],queue:[],props:[],ledger:[],lib:{},cold:false,asTeam:false};
+let busy=false,sel="root",selItem=null,view={x:40,y:30,k:1},jobType="fact",pending=null,viewing=null;
+const $=i=>document.getElementById(i),T=()=>S.threads[S.active],N=()=>T().nodes;
+const nd=i=>N().find(n=>n.id===i), kids=i=>N().filter(n=>n.parent===i);
+const esc=s=>String(s==null?"":s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const cl=i=>$(i).classList.remove("open"), op=i=>$(i).classList.add("open");
+const uid=()=>Math.random().toString(36).slice(2,9);
+const days=t=>Math.floor((Date.now()-(t||Date.now()))/86400000);
+
+function seedThread(){return{id:Date.now(),name:"Power continuity",state:"live",step:1,participants:[],
+ context:"Offshore drilling rig. Six diesel generators run 24/7: two primary, two backup, two backup to the backup. Any total power loss means no ballast, no drilling, no operations. Diesel volume, cost and resupply logistics are a growing burden. Nobody can say whether the two running minimum is a class rule or company policy.",
+ questions:["How do we cut diesel use?"],fibers:[],
+ nodes:[{id:"root",parent:null,tech:"origin",items:[],state:"kept",by:"Ron",at:Date.now()}],touched:Date.now()};}
+function seedLib(){const L={};for(const k in BASE)L[k]={...BASE[k],exemplars:[],craft:"",stats:{pulls:0,kept:0,dropped:0}};return L;}
+
+/* ============ persist ============ */
+function load(){try{
+ S.key=localStorage.getItem("loom.key")||"";S.model=localStorage.getItem("loom.model")||"claude-sonnet-5";
+ S.who=localStorage.getItem("loom.who")||"Ron";
+ S.threads=JSON.parse(localStorage.getItem("loom2.threads")||"null")||[seedThread()];
+ S.queue=JSON.parse(localStorage.getItem("loom2.queue")||"[]");
+ S.props=JSON.parse(localStorage.getItem("loom2.props")||"[]");
+ S.ledger=JSON.parse(localStorage.getItem("loom2.ledger")||"[]");
+ S.lib=JSON.parse(localStorage.getItem("loom2.lib")||"null")||seedLib();
+ for(const k in BASE)if(!S.lib[k])S.lib[k]={...BASE[k],exemplars:[],craft:"",stats:{pulls:0,kept:0,dropped:0}};
+}catch(e){S.threads=[seedThread()];S.lib=seedLib();}
+ S.threads.forEach(t=>{t.fibers=t.fibers||[];t.nodes=t.nodes||[{id:"root",parent:null,tech:"origin",items:[],state:"kept"}];t.state=t.state||"live";t.participants=t.participants||[];});}
+function P(){try{
+ localStorage.setItem("loom2.threads",JSON.stringify(S.threads));
+ localStorage.setItem("loom2.queue",JSON.stringify(S.queue));
+ localStorage.setItem("loom2.props",JSON.stringify(S.props));
+ localStorage.setItem("loom2.ledger",JSON.stringify(S.ledger));
+ localStorage.setItem("loom2.lib",JSON.stringify(S.lib));}catch(e){}}
+function saveKey(){S.key=$("keyIn").value.trim();S.model=$("modelIn").value;S.who=$("whoIn").value.trim()||"Ron";
+ try{localStorage.setItem("loom.key",S.key);localStorage.setItem("loom.model",S.model);localStorage.setItem("loom.who",S.who);}catch(e){}
+ keyChip();cl("ovKey");}
+function dl(obj,name){const b=new Blob([JSON.stringify(obj,null,2)],{type:"application/json"});
+ const a=document.createElement("a");a.href=URL.createObjectURL(b);a.download=name;a.click();URL.revokeObjectURL(a.href);}
+function saveFile(){dl({exported:new Date().toISOString(),threads:S.threads,queue:S.queue,props:S.props,ledger:S.ledger,lib:S.lib},"loom-"+new Date().toISOString().slice(0,10)+".json");}
+function exportLib(){dl({exported:new Date().toISOString(),library:S.lib},"loom-library-"+new Date().toISOString().slice(0,10)+".json");toast("Library exported. It is yours, independent of any engagement.");}
+$("loadIn").onchange=e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();
+ r.onload=()=>{try{const d=JSON.parse(r.result);
+  if(d.library){S.lib=d.library;P();toast("Library loaded.");return;}
+  S.threads=d.threads||d;S.queue=d.queue||[];S.props=d.props||[];S.ledger=d.ledger||[];if(d.lib)S.lib=d.lib;
+  S.threads.forEach(t=>{t.fibers=t.fibers||[];t.state=t.state||"live";});
+  S.active=0;sel="root";P();all();fit();}catch(x){toast("That file could not be read.",true);}};
+ r.readAsText(f);};
+function toast(m,bad){const t=$("toast");t.textContent=m;t.className="toast glass show"+(bad?" err":"");
+ clearTimeout(t._t);t._t=setTimeout(()=>t.className="toast glass",7000);}
+function keyChip(){const c=$("keyChip");c.textContent=S.key?"● "+S.model.replace("claude-","").replace(/-\d{8}$/,""):"NO KEY";
+ c.className="chip "+(S.key?"ok":"warn");}
+
+/* ============ api ============ */
+async function ask(msg,tok=900,sys=SYS){
+ if(!S.key){op("ovKey");throw new Error("Add your API key first.");}
+ const r=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",
+  headers:{"content-type":"application/json","x-api-key":S.key,"anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},
+  body:JSON.stringify({model:S.model,max_tokens:tok,system:sys,messages:[{role:"user",content:msg}]})});
+ if(!r.ok){let d="";try{const j=await r.json();d=(j.error&&j.error.message)||"";}catch(e){}
+  throw new Error("API "+r.status+". "+(d||"Check the key, your credit balance and the model name."));}
+ const j=await r.json();return j.content.map(b=>b.text||"").join("");}
+function pList(t){let s=t.trim().replace(/^```(?:json)?/,"").replace(/```$/,"").trim();
+ const a=s.indexOf("["),b=s.lastIndexOf("]");
+ if(a>-1&&b>a){try{const r=JSON.parse(s.slice(a,b+1));if(Array.isArray(r))return r.map(String).filter(Boolean);}catch(e){}}
+ return s.split(/\n+/).map(l=>l.replace(/^[-*\d.)\s"]+/,"").replace(/"$/,"").trim()).filter(l=>l.length>25).slice(0,3);}
+function pObj(t){return JSON.parse(t.slice(t.indexOf("{"),t.lastIndexOf("}")+1));}
+function setBusy(b){busy=b;document.querySelectorAll(".tok").forEach(x=>x.disabled=b);}
+
+function line(id){const o=[];let n=nd(id);while(n){o.unshift(n);n=n.parent?nd(n.parent):null;}return o;}
+function blob(t,id,item){
+ const path=(id?line(id):[]).filter(n=>n.tech!=="origin");
+ const others=S.threads.filter(x=>x!==t&&x.state!=="cut").map(x=>x.name);
+ const fib=(t.fibers||[]).slice(-6);
+ const focus=(item!=null&&nd(id)&&nd(id).items[item])?`\n\nPULL SPECIFICALLY ON THIS LOOSE END, not the whole node:\n"${nd(id).items[item]}"`:"";
+ return `THREAD: ${t.name}
+WORKING QUESTION (current): ${t.questions[t.questions.length-1]}
+${t.questions.length>1?"EARLIER VERSIONS: "+t.questions.slice(0,-1).join(" | "):""}
+BACKGROUND: ${t.context||"(none supplied)"}
+${fib.length?"\nVOICES FROM THE FIELD, other people's own words:\n"+fib.map(f=>`- [${f.by}] ${f.text}`).join("\n"):""}
+
+THE LINE OF REASONING YOU ARE EXTENDING, in order:
+${path.length?path.map((n,i)=>`${i+1}. [${n.tech}] ${n.items.join(" / ")}`).join("\n"):"(you are starting from the working question itself)"}
+
+OTHER LIVE THREADS: ${others.length?others.join(", "):"none"}${focus}`;}
+
+/* ============ pulls ============ */
+async function pull(tech,variant){
+ const t=T();if(t.state==="cut"||busy)return;
+ const parent=sel||"root",item=selItem,forked=kids(parent).length>0;
+ setBusy(true);
+ const btn=[...document.querySelectorAll(".tok")].find(b=>b.dataset.t===tech&&b.dataset.v===(variant||""));
+ const old=btn?btn.innerHTML:"";if(btn)btn.innerHTML='<span class="spin"></span>'+tech;
+ try{
+  const L=S.lib[tech]||BASE[tech];
+  const exec=(variant&&L.variants&&L.variants[variant])?L.variants[variant]:L.exec;
+  const ex=(!S.cold&&L.exemplars&&L.exemplars.length)
+   ? `\n\nPROVOCATIONS FROM THIS TECHNIQUE THAT THIS FACILITATOR JUDGED WORTH KEEPING. Match this calibre and bite, never the subject matter:\n${L.exemplars.slice(-5).map(x=>"- "+x).join("\n")}`:"";
+  const craft=(!S.cold&&L.craft)?`\n\nTHE FACILITATOR'S OWN INSTRUCTION FOR THIS TECHNIQUE:\n${L.craft}`:"";
+  const out=pList(await ask(`${blob(t,parent,item)}
+
+TECHNIQUE TO APPLY NOW: ${tech}${variant?" ("+variant+")":""}
+${exec}${craft}${ex}
+
+Produce 2 or 3 provocations that extend this specific line of reasoning. Do not repeat what is already in the line above.`));
+  if(!out.length)throw new Error("Nothing usable came back. Try again.");
+  const id=uid();
+  N().push({id,parent,tech:tech+(variant?" · "+variant:""),base:tech,items:out,state:"prov",from:item,
+   by:S.asTeam?"team":S.who,at:Date.now()});
+  if(item!=null){const p=nd(parent);p.pulled=p.pulled||[];if(!p.pulled.includes(item))p.pulled.push(item);}
+  L.stats=L.stats||{pulls:0,kept:0,dropped:0};L.stats.pulls++;
+  sel=id;selItem=null;t.state="live";t.touched=Date.now();
+  if(forked)toast("The thread forked. Two techniques now run from the same point.");
+  P();all();center(id);
+ }catch(e){toast(e.message,true);}finally{setBusy(false);if(btn)btn.innerHTML=old;}}
+
+/* ============ node actions ============ */
+function keep(){const n=nd(sel);if(!n||n.id==="root")return;n.state="kept";
+ const L=S.lib[n.base];if(L){L.stats.kept++;L.exemplars=L.exemplars||[];
+  n.items.forEach(x=>{if(!/^Candidate:/i.test(x)&&L.exemplars.length<40)L.exemplars.push(x);});}
+ const t=T();if(t.step<11)t.step++;t.touched=Date.now();P();all();}
+function tie(){const n=nd(sel);if(!n||n.id==="root")return;n.state="pin";n.cond=n.cond||"set a resume condition";P();all();
+ toast("Tied off. Set its resume condition in the panel.");}
+function setCond(v){const n=nd(sel);if(n){n.cond=v;P();}}
+function ready(){const n=nd(sel);if(n){n.ready=!n.ready;P();all();}}
+function untie(){const n=nd(sel);if(n){n.state="kept";n.ready=false;P();all();toast("Untied. Pull from here to carry it forward.");}}
+function dropNode(){const n=nd(sel);if(!n||n.id==="root")return;
+ const L=S.lib[n.base];if(L)L.stats.dropped++;
+ const doom=new Set([n.id]);let g=true;
+ while(g){g=false;N().forEach(x=>{if(x.parent&&doom.has(x.parent)&&!doom.has(x.id)){doom.add(x.id);g=true;}});}
+ T().nodes=N().filter(x=>!doom.has(x.id));sel=n.parent||"root";P();all();}
+function dropItem(i){const n=nd(sel);if(!n)return;n.items.splice(i,1);
+ if(!n.items.length)dropNode();else{P();all();}}
+function promoteQ(i){const n=nd(sel),t=T();
+ t.questions.push(n.items[i].replace(/^Candidate:\s*/i,"").trim());
+ if(t.step<8)t.step=8;n.state="kept";t.touched=Date.now();
+ const L=S.lib[n.base];if(L)L.stats.kept++;
+ P();all();toast("Question retired. You are in the Ordeal.");}
+function pickItem(i){selItem=(selItem===i?null:i);insp();}
+function fold(id){const n=nd(id);n.folded=!n.folded;P();all();}
+
+/* ============ threads ============ */
+function newThread(){$("nName").value="";$("nQ").value="";$("nCtx").value="";op("ovNew");}
+function mkThread(){const n=$("nName").value.trim(),q=$("nQ").value.trim();
+ if(!n||!q){toast("A thread needs a name and a working question.",true);return;}
+ S.threads.unshift({id:Date.now(),name:n,state:"live",step:1,context:$("nCtx").value.trim(),questions:[q],
+  fibers:[],participants:[],nodes:[{id:"root",parent:null,tech:"origin",items:[],state:"kept",by:S.who,at:Date.now()}],touched:Date.now()});
+ S.active=0;sel="root";cl("ovNew");P();all();fit();}
+function openCtx(){const t=T();$("cName").value=t.name;$("cCtx").value=t.context||"";
+ $("cutBtn").textContent=t.state==="cut"?"UNCUT":"CUT THREAD";
+ $("qBtn").textContent=t.state==="quiet"?"BACK TO LIVE":"MARK WORKED AND QUIET";op("ovCtx");}
+function saveCtx(){const t=T();t.name=$("cName").value.trim()||t.name;t.context=$("cCtx").value.trim();cl("ovCtx");P();all();}
+function setState(s){const t=T();t.state=(t.state===s)?"live":s;cl("ovCtx");P();all();}
+function pick(i){S.active=i;sel="root";selItem=null;all();fit();}
+function step(i){T().step=i;P();all();}
+
+/* ============ fibers ============ */
+function openFib(){$("fWho").value="";$("fTxt").value="";renderFib();op("ovFib");}
+function addFib(){const w=$("fWho").value.trim(),x=$("fTxt").value.trim();
+ if(!w||!x){toast("A fiber needs a voice and something said.",true);return;}
+ T().fibers.push({id:uid(),by:w,text:x,at:Date.now()});
+ $("fWho").value="";$("fTxt").value="";P();renderFib();all();toast("Fiber added. Every pull will read it.");}
+function delFib(i){T().fibers.splice(i,1);P();renderFib();all();}
+function renderFib(){const f=T().fibers||[];$("fCount").textContent=f.length||"none";
+ $("fList").innerHTML=f.length?f.map((x,i)=>`<div class="prov" style="cursor:default;border-left-color:var(--voice)">
+  <button class="px" onclick="delFib(${i})" style="display:block">×</button>
+  <span class="ptag" style="color:var(--voice)">${esc(x.by)} · ${new Date(x.at).toLocaleDateString()}</span>${esc(x.text)}</div>`).join("")
+  :`<p class="hint">No voices from the field yet. Every word on this thread is your own.</p>`;}
+
+/* ============ library ============ */
+function openLib(){renderLib();op("ovLib");}
+function renderLib(){
+ $("libBody").innerHTML=Object.keys(S.lib).map(k=>{const L=S.lib[k],st=L.stats||{pulls:0,kept:0,dropped:0};
+  const rate=st.pulls?Math.round(100*st.kept/st.pulls):null;
+  return `<div class="lib">
+   <h4><span>${esc(k)}</span><em>${st.pulls} pulls${rate!=null?" · "+rate+"% kept":""}</em></h4>
+   <div class="pl">${esc(L.plain)}</div>
+   ${L.variants?`<div style="font-family:var(--mono);font-size:.5rem;letter-spacing:.1em;color:var(--cyan);margin-bottom:6px">VARIANTS · ${Object.keys(L.variants).join(" · ")}</div>`:""}
+   ${(L.exemplars&&L.exemplars.length)?`<div style="font-family:var(--mono);font-size:.5rem;letter-spacing:.1em;color:var(--muted);margin-bottom:4px">WHAT YOU HAVE KEPT · ${L.exemplars.length}</div>`+L.exemplars.slice(-3).map(x=>`<div class="ex">${esc(x)}</div>`).join(""):`<div class="hint" style="font-size:.72rem">Nothing kept yet. Weave a provocation in and it becomes calibration for this instrument.</div>`}
+   <textarea placeholder="Your own instruction for this technique. How you actually run it." oninput="setCraft('${k}',this.value)">${esc(L.craft||"")}</textarea>
+  </div>`;}).join("");}
+function setCraft(k,v){S.lib[k].craft=v;P();}
+
+/* ============ scoreboard + opinion ============ */
+function score(){
+ const t=T(),n=t.nodes.filter(x=>x.id!=="root");
+ const retired=S.threads.reduce((a,x)=>a+(x.questions.length-1),0);
+ const facts=S.threads.reduce((a,x)=>a+x.nodes.filter(y=>y.base==="found out"&&y.state==="kept").length,0);
+ let held=0,pulled=0;
+ n.forEach(x=>{held+=x.items.length-((x.pulled||[]).length);pulled+=(x.pulled||[]).length;});
+ const byTeam=n.filter(x=>x.by==="team").length, byYou=n.filter(x=>x.by&&x.by!=="team").length;
+ const pct=(byTeam+byYou)?Math.round(100*byTeam/(byTeam+byYou)):0;
+ const d=days(t.touched);
+ const live=S.threads.filter(x=>x.state==="live").length,
+       quiet=S.threads.filter(x=>x.state==="quiet").length,
+       cut=S.threads.filter(x=>x.state==="cut").length;
+ return {retired,facts,held,pulled,pct,d,live,quiet,cut};}
+
+function opinion(){
+ const t=T(),n=t.nodes.filter(x=>x.id!=="root");
+ if(!n.length)return "";
+ const used=new Set(n.map(x=>x.base));
+ const loose=n.reduce((a,x)=>a+x.items.length-((x.pulled||[]).length),0);
+ const d=days(t.touched);
+ if(n.length>=4&&!used.has("absence"))return "Four techniques in, and absence has never been one of them.";
+ if(!(t.fibers||[]).length&&n.length>=3)return "Every word on this thread is yours. Nobody from the field has spoken yet.";
+ if(n.length>=8&&t.questions.length===1)return "Eight pulls and the question has never once changed. Worth asking whether it should have.";
+ if(loose>=8&&d>=7)return loose+" loose ends sitting here, and nothing pulled in a week.";
+ if(d>=14)return "This thread has not moved in "+d+" days.";
+ if(n.filter(x=>x.state==="prov").length>=4)return "Four things are still provisional. Nothing is part of the record until you say so.";
+ return "";}
+
+/* ============ layout ============ */
+const NW=210,NH=84,GX=98,GY=24;
+function layout(){const p={};let slot=0;
+ const walk=(id,d)=>{const me=nd(id),ch=(me&&me.folded)?[]:kids(id);
+  if(!ch.length){p[id]={d,r:slot++};return p[id].r;}
+  const rs=ch.map(c=>walk(c.id,d+1));p[id]={d,r:(Math.min(...rs)+Math.max(...rs))/2};return p[id].r;};
+ walk("root",0);const o={};for(const i in p)o[i]={x:p[i].d*(NW+GX),y:p[i].r*(NH+GY)};return o;}
+function below(id){let c=0;const st=[id];while(st.length){const cur=st.pop();kids(cur).forEach(k=>{c++;st.push(k.id);});}return c;}
+
+/* ============ render ============ */
+function glyph(t){const n=Math.max((t.nodes||[]).length-1,1);let d="M2 9";
+ for(let i=1;i<=3;i++)d+=` Q ${i*6} ${9-Math.min(n,6)*.8*(i%2?1:-1)}, ${i*6+3} 9`;return d;}
+function rail(){$("rail").innerHTML=S.threads.map((t,i)=>`
+ <div class="tg ${i===S.active?"on":""} ${t.state}" onclick="pick(${i})">
+  <svg viewBox="0 0 24 18"><path d="${glyph(t)}" stroke="${t.state==="cut"?"#93a5b6":"#f8991d"}" stroke-width="${Math.min(1.2+(t.nodes||[]).length*.28,3.2)}" fill="none" stroke-linecap="round"/></svg>
+  <span class="lbl">${esc(t.name)}${t.state!=="live"?" · "+t.state:""}</span></div>`).join("")
+ +`<button class="radd" onclick="newThread()">+</button>`;}
+
+function head(){const t=T(),q=t.questions;
+ $("qver").textContent="WORKING QUESTION · V"+q.length+(t.state!=="live"?" · "+t.state.toUpperCase():"");
+ $("qghosts").innerHTML=q.slice(0,-1).map(o=>`<div class="qghost">${esc(o)}</div>`).join("");
+ $("qmain").textContent=q[q.length-1];
+ $("opine").textContent=opinion();
+ $("jrow").innerHTML=JOURNEY.map((j,i)=>`<span class="jd ${i<t.step?"done":""} ${i===t.step?"now":""}" title="${j[0]}" onclick="step(${i})"></span>`).join("");
+ $("jlab").innerHTML=`<b>${(t.step+1+"").padStart(2,"0")} ${JOURNEY[t.step][0].toUpperCase()}</b> · ${JOURNEY[t.step][1]}`;}
+
+function graph(){
+ const t=T(),P2=layout(),w=$("world"),svg=$("wires"),n=t.nodes.filter(x=>x.id!=="root").length;
+ $("stage").classList.toggle("none",n===0);
+ $("invite").style.display=n===0?"block":"none";
+ if(n===0){svg.innerHTML="";[...w.querySelectorAll(".nd")].forEach(e=>e.remove());return;}
+ let mx=0,my=0;for(const i in P2){mx=Math.max(mx,P2[i].x);my=Math.max(my,P2[i].y);}
+ svg.setAttribute("width",mx+NW+60);svg.setAttribute("height",my+NH+60);
+ let wires="",ports="";
+ N().forEach(x=>{if(!x.parent||!P2[x.parent]||!P2[x.id])return;
+  const a=P2[x.parent],b=P2[x.id],x1=a.x+NW,y1=a.y+NH/2,x2=b.x,y2=b.y+NH/2,m=(x1+x2)/2;
+  const on=x.id===sel;
+  wires+=`<path d="M${x1} ${y1} C ${m} ${y1}, ${m} ${y2}, ${x2} ${y2}" stroke="${on?"#ffd75e":"#d9a63f"}" stroke-width="${on?2.4:1.5}" fill="none" opacity="${x.state==="prov"?.45:on?.95:.75}" stroke-linecap="round"/>`;
+  ports+=`<circle cx="${x1}" cy="${y1}" r="3.4" fill="#ffd75e" stroke="#7a5a14" stroke-width="1" opacity="${x.state==="prov"?.55:1}"/><circle cx="${x2}" cy="${y2}" r="3.4" fill="#ffd75e" stroke="#7a5a14" stroke-width="1" opacity="${x.state==="prov"?.55:1}"/>`;});
+ svg.innerHTML=wires+ports;
+ [...w.querySelectorAll(".nd")].forEach(e=>e.remove());
+ N().forEach(x=>{const p=P2[x.id];if(!p)return;
+  const d=document.createElement("div"),root=x.id==="root",c=["nd"];
+  if(x.id===sel)c.push("sel");if(x.state==="prov")c.push("prov");if(x.state==="pin")c.push("pin");
+  if(x.base==="fiber")c.push("fib");if(x.folded)c.push("folded");
+  if(root){
+   d.className="nd pillq"+(x.id===sel?" sel":"");d.style.left=p.x+"px";d.style.top=p.y+"px";
+   d.innerHTML=`<span class="pv">WORKING QUESTION · V${t.questions.length}</span>
+    <span class="pq">${esc(t.questions[t.questions.length-1])}</span>`;
+   d.onclick=e=>{e.stopPropagation();sel="root";selItem=null;all();};
+   w.appendChild(d);return;}
+  d.className=c.join(" ");d.style.left=p.x+"px";d.style.top=p.y+"px";
+  const ex=x.pulled||[],open=x.items.length-ex.length;
+  const badge=x.state==="prov"?`<span class="badge amber">OPEN</span>`
+   :x.state==="pin"?`<span class="badge gold">${x.ready?"READY":"TIED"}</span>`
+   :x.by==="team"?`<span class="badge cyan">TEAM</span>`
+   :x.by==="night shift"?`<span class="badge night">NIGHT</span>`:"";
+  d.innerHTML=`<div class="nh"><span>${esc(x.tech)}</span><span class="nico">${GLYPH[x.base]||GLYPH[x.tech]||"◈"}</span></div>
+   <div class="nb">${esc(x.items[0]||"")}</div>
+   ${x.items.length?`<div class="dots">${x.items.map((_,i)=>`<span class="dot ${ex.includes(i)?"":"loose"}"></span>`).join("")}${open?`<span class="cache">${open} LOOSE</span>`:""}${badge}</div>`:badge}`;
+  if(kids(x.id).length){const b=document.createElement("button");b.className="coll";
+   b.textContent=x.folded?"+"+below(x.id):"−";
+   b.onclick=e=>{e.stopPropagation();fold(x.id);};d.appendChild(b);}
+  d.onclick=e=>{e.stopPropagation();sel=x.id;selItem=null;all();};
+  d.onmouseenter=()=>peek(x,d);d.onmouseleave=()=>$("peek").classList.remove("show");
+  w.appendChild(d);});
+ apply();}
+
+function peek(n,el){if(!n.items.length)return;const p=$("peek"),ex=n.pulled||[];
+ p.innerHTML=`<h5><span>${esc(n.tech)}</span><span>${n.items.length-ex.length} loose</span></h5>`+
+  n.items.map((x,i)=>`<div class="pk ${ex.includes(i)?"done":""}">${esc(x.length>150?x.slice(0,150)+"…":x)}</div>`).join("");
+ const r=el.getBoundingClientRect();p.classList.add("show");
+ p.style.left=Math.min(r.right+12,window.innerWidth-340)+"px";
+ p.style.top=Math.max(56,Math.min(r.top,window.innerHeight-p.offsetHeight-18))+"px";}
+
+function apply(){const w=$("world");w.style.transform=`translate(${view.x}px,${view.y}px) scale(${view.k})`;
+ w.className=(view.k<.55?"lod-far":view.k<.9?"lod-mid":"lod-near")+(walk>=0?" walking glide":"");}
+function fit(){const P2=layout();let mx=0,my=0;
+ for(const i in P2){mx=Math.max(mx,P2[i].x+NW);my=Math.max(my,P2[i].y+NH);}
+ const c=$("stage").getBoundingClientRect();if(!c.width)return;
+ view.k=Math.max(.4,Math.min(1,Math.min((c.width-60)/Math.max(mx,1),(c.height-40)/Math.max(my,1))));
+ view.x=24;view.y=Math.max(14,(c.height-my*view.k)/2);apply();}
+function center(id){const p=layout()[id];if(!p)return;const c=$("stage").getBoundingClientRect();
+ view.x=c.width/2-(p.x+NW/2)*view.k;view.y=c.height/2-(p.y+NH/2)*view.k;apply();}
+
+function insp(){
+ const t=T(),n=nd(sel)||nd("root"),root=n.id==="root",s=score();
+ let h=`<div class="ih"><span>${esc(t.name)}</span><span>${t.state.toUpperCase()}</span></div>`;
+ h+=`<div class="score">
+  <div class="sc hero"><b>${s.retired}</b><span>questions retired</span></div>
+  <div class="sc"><b>${s.facts}</b><span>assumptions to facts</span></div>
+  <div class="sc"><b>${s.held}</b><span>loose ends held</span></div>
+  <div class="sc"><b>${s.pulled}</b><span>loose ends pulled</span></div>
+  <div class="sc zpd"><b>${s.pct}%</b><span>pulls run by them</span></div>
+  <div class="sc ${s.d>=14?"warn":""}"><b>${s.d}</b><span>days since it moved</span></div>
+ </div>
+ <div class="scq">${s.pct<25?"Still mostly my hands on the wheel.":s.pct<55?"They are driving. I am steadying.":s.pct<80?"I mostly watch now.":"They do not need me for this one."}</div>
+ <div style="font-family:var(--mono);font-size:.47rem;letter-spacing:.1em;color:var(--muted);margin-top:8px">${s.live} LIVE · ${s.quiet} QUIET · ${s.cut} CUT</div>`;
+
+ if(root){
+  h+=`<div class="ih sub"><span>THIS THREAD</span></div>
+   <p class="hint">Select a node on the canvas to work it, or pull from here to start a new line off the question itself.</p>`;
+ }else{
+  const ex=n.pulled||[],loose=n.items.length-ex.length;
+  h+=`<div class="ih sub"><span>${esc(n.tech)}</span><span>${n.state==="prov"?"PROVISIONAL":n.state==="pin"?(n.ready?"READY":"TIED OFF"):"KEPT"}</span></div>`;
+  h+=`<div style="font-family:var(--mono);font-size:.47rem;letter-spacing:.1em;color:var(--muted);margin-bottom:8px">${loose} LOOSE OF ${n.items.length} · BY ${esc(n.by||"you").toUpperCase()} · CLICK ONE TO PULL IT ALONE</div>`;
+  h+=n.items.map((x,i)=>{const done=ex.includes(i),on=selItem===i;
+   return `<div class="prov${on?" on":""}${done?" pulled":""}" onclick="pickItem(${i})">
+    <button class="px" onclick="event.stopPropagation();dropItem(${i})">×</button>
+    <span class="ptag">${done?"PULLED":"LOOSE"}</span>${esc(x)}
+    ${/^Candidate:/i.test(x)?`<div style="margin-top:8px"><button class="abtn go" onclick="event.stopPropagation();promoteQ(${i})">MAKE THIS THE QUESTION</button></div>`:""}</div>`;}).join("");
+  h+=`<div class="acts">
+   ${n.state!=="kept"?`<button class="abtn go" onclick="keep()">KEEP</button>`:""}
+   ${n.state!=="pin"?`<button class="abtn" onclick="tie()">TIE OFF</button>`:""}
+   ${n.state==="pin"?`<button class="abtn" onclick="ready()">${n.ready?"NOT READY":"MARK READY"}</button><button class="abtn go" onclick="untie()">UNTIE</button>`:""}
+   <button class="abtn warn" onclick="dropNode()">DISCARD BRANCH</button></div>`;
+  if(n.state==="pin")h+=`<div class="fld" style="margin-top:9px"><label>UNTIE WHEN</label>
+   <input value="${esc(n.cond||"")}" onchange="setCond(this.value)" style="font-size:.78rem;padding:8px 11px"></div>`;
+ }
+ $("insp").innerHTML=h;}
+
+function dock(){
+ let h=Object.keys(S.lib).map(k=>{const L=S.lib[k];
+  if(L.variants)return Object.keys(L.variants).map(v=>
+   `<button class="tok" data-t="${k}" data-v="${v}" onclick="pull('${k}','${v}')">${k} · ${v}<small>${esc(L.plain)}</small></button>`).join("");
+  return `<button class="tok" data-t="${k}" data-v="" onclick="pull('${k}')">${k}<small>${esc(L.plain)}</small></button>`;}).join("");
+ h+=`<span class="dockend">
+  <button class="chip" onclick="startWalk()" title="Replay the thread pull by pull. Arrow keys step, Escape exits.">WALK</button>
+  <button class="chip ${S.asTeam?"on":""}" onclick="S.asTeam=!S.asTeam;dock();" title="Who is running this pull">${S.asTeam?"THEY PULL":"I PULL"}</button>
+  <button class="chip ${S.cold?"on":""}" onclick="S.cold=!S.cold;dock();toast(S.cold?'Running cold. The library is ignored.':'Library on.')" title="Ignore learned exemplars">${S.cold?"COLD":"LIBRARY"}</button>
+  <button class="tok nite" onclick="openNight()">night shift</button></span>`;
+ $("dock").innerHTML=h;}
+
+function all(){rail();head();graph();insp();dock();tele();}
+
+/* ============ telemetry ============ */
+function tele(){const s=score(),t=T();
+ const m=(v,l,c,f)=>`<div class="tm"><b${c?` style="color:${c}"`:""}>${v}</b><span>${l}</span>
+  <div class="tbar"><i style="width:${Math.round(Math.min(Math.max(f,0),1)*100)}%"></i></div></div>`;
+ const now=Date.now(),buk=Array(14).fill(0);
+ S.threads.forEach(th=>(th.nodes||[]).forEach(n=>{if(n.id==="root"||!n.at)return;
+  const d=Math.floor((now-n.at)/86400000);if(d>=0&&d<14)buk[13-d]++;}));
+ const mx=Math.max(...buk,1);
+ const pts=buk.map((v,i)=>`${(i/13*100).toFixed(1)},${(29-v/mx*24).toFixed(1)}`).join(" ");
+ $("tele").innerHTML=`
+  <div class="tm det"><span class="tdet">${esc(t.name)}</span><span>${t.state==="live"?"THREAD LIVE · CONNECTED":"THREAD "+t.state.toUpperCase()}</span></div>
+  ${m(s.retired,"QUESTIONS RETIRED","var(--orange)",s.retired/3)}
+  ${m(s.facts,"ASSUMPTIONS → FACTS","",s.facts/5)}
+  ${m(s.held,"LOOSE ENDS HELD","var(--port)",s.held/12)}
+  ${m(s.pct+"%","PULLS BY THE TEAM","var(--cyan)",s.pct/100)}
+  ${m(s.d,"DAYS SINCE MOVED",s.d>=14?"#ffab8a":"",s.d/14)}
+  <div class="tm spark"><span>ACTIVITY · 14 DAYS</span>
+   <svg viewBox="0 0 100 32" preserveAspectRatio="none"><polyline points="${pts}" fill="none" stroke="#9fc4e8" stroke-width="1.5" vector-effect="non-scaling-stroke"/></svg></div>`;}
+
+/* ============ ledger ============ */
+function md(s){return esc(s)
+ .replace(/^## (.*)$/gm,"<h2>$1</h2>").replace(/^# (.*)$/gm,"<h1>$1</h1>")
+ .replace(/\*\*(.+?)\*\*/g,"<strong>$1</strong>")
+ .replace(/^[-•] (.*)$/gm,"<li>$1</li>")
+ .replace(/(<li>[\s\S]*?<\/li>)(?!\s*<li>)/g,"<ul>$1</ul>")
+ .replace(/\n{2,}/g,"</p><p>").replace(/^/,"<p>").replace(/$/,"</p>")
+ .replace(/<p>\s*(<h[12]>)/g,"$1").replace(/(<\/h[12]>)\s*<\/p>/g,"$1")
+ .replace(/<p>\s*(<ul>)/g,"$1").replace(/(<\/ul>)\s*<\/p>/g,"$1");}
+const dstamp=d=>new Date(d).toLocaleDateString(undefined,{day:"2-digit",month:"short"});
+function openLedger(){renderLed();op("ovLedger");}
+function renderLed(){$("ledT").textContent="Ledger";
+ $("ledS").textContent="Append only. Each entry is a snapshot of the thinking on the day it was made.";
+ $("ledBack").style.display="none";$("ledCopy").style.display="none";$("genBtn").style.display="";
+ const L=S.ledger;
+ $("ledB").innerHTML=L.length?[...L].reverse().map((e,ri)=>{const i=L.length-1-ri;
+  return `<div class="led" onclick="viewE(${i})"><span class="lda">${dstamp(e.at)}</span>
+   <span class="ldn">${esc(e.name)}</span><span class="ldt">${esc(e.type).toUpperCase()}</span></div>`;}).join("")
+  :`<p class="hint">Nothing on the ledger yet. Generate a session brief and it becomes entry one.</p>`;
+ if(L.length>1)$("ledB").innerHTML+=`<div style="margin-top:12px"><button class="abtn" onclick="diffLast()">WHAT CHANGED SINCE THE PREVIOUS ENTRY</button></div>`;}
+function viewE(i){const e=S.ledger[i];viewing=i;$("ledT").textContent=e.name;
+ $("ledS").textContent=new Date(e.at).toLocaleString()+" · "+e.type+" · "+(e.by||S.who);
+ $("ledB").innerHTML=`<div class="doc">${md(e.body)}</div>`;
+ $("ledBack").style.display="";$("ledCopy").style.display="";$("genBtn").style.display="none";}
+function copyEntry(){const e=S.ledger[viewing];if(!e)return;
+ navigator.clipboard.writeText("# "+e.name+"\n\n"+e.body).then(()=>toast("Markdown copied."));}
+function snap(){return JSON.parse(JSON.stringify({threads:S.threads,queue:S.queue}));}
+
+function projBlob(){return S.threads.filter(t=>t.state!=="cut").map(t=>
+ `THREAD "${t.name}" (${t.state}) · question: ${t.questions[t.questions.length-1]}\n  background: ${(t.context||"none").slice(0,500)}`).join("\n\n");}
+function record(){const t=T(),s=score();
+ return `${projBlob()}
+
+THE ACTIVE THREAD "${t.name}" IN DETAIL:
+Working question now: ${t.questions[t.questions.length-1]}
+Earlier versions, oldest first: ${t.questions.slice(0,-1).join(" | ")||"none, it has never been reframed"}
+Journey: step ${t.step+1} of 12, ${JOURNEY[t.step][0]}
+Voices from the field: ${(t.fibers||[]).length?t.fibers.map(f=>`[${f.by}] ${f.text}`).join(" | "):"none, every word here is the facilitator's"}
+
+EVERY NODE, in order:
+${t.nodes.filter(n=>n.id!=="root").map(n=>`- [${n.tech}] state=${n.state} by=${n.by||"you"} loose=${n.items.length-((n.pulled||[]).length)} of ${n.items.length}
+${n.items.map(x=>"    · "+x).join("\n")}${n.cond?"\n    untie when: "+n.cond:""}`).join("\n")||"  (nothing pulled yet)"}
+
+SCOREBOARD: ${s.retired} questions retired, ${s.facts} assumptions turned to facts, ${s.held} loose ends held, ${s.pct}% of pulls run by the team, ${s.d} days since this thread moved
+NIGHT SHIFT: ${S.queue.filter(j=>!j.done).length} open assignments, ${S.props.length} proposed threads awaiting judgement
+PREVIOUS LEDGER ENTRIES: ${S.ledger.map(e=>dstamp(e.at)+" "+e.name).join(" | ")||"none, this is the first"}`;}
+
+async function genBrief(){if(busy)return;const b=$("genBtn");b.innerHTML='<span class="spin"></span>WRITING';setBusy(true);
+ try{const o=pObj(await ask(`${record()}
+
+Write a SESSION BRIEF for the facilitator, read just before walking into the room.
+
+Sections in this order:
+## Where this stands
+## What moved
+## Loose ends worth pulling
+## Still open
+## Suggested running order
+
+Narrate only. If the record is thin, say the record is thin rather than filling the gap.`,1600,SYS_SCRIBE));
+  S.ledger.push({id:uid(),at:Date.now(),type:"session brief",name:o.name||"Session brief",body:o.body||"",by:S.who,snap:snap()});
+  P();viewE(S.ledger.length-1);toast("Entry added to the ledger.");
+ }catch(e){toast(e.message||"The scribe returned something unreadable.",true);}
+ finally{setBusy(false);b.innerHTML="GENERATE SESSION BRIEF";}}
+
+async function diffLast(){if(busy||S.ledger.length<2)return;setBusy(true);toast("Comparing the last two entries.");
+ try{const a=S.ledger[S.ledger.length-2],b=S.ledger[S.ledger.length-1];
+  const o=pObj(await ask(`Two snapshots of the same project on different days.
+
+EARLIER, ${new Date(a.at).toDateString()}, "${a.name}":
+${JSON.stringify(a.snap).slice(0,6000)}
+
+LATER, ${new Date(b.at).toDateString()}, "${b.name}":
+${JSON.stringify(b.snap).slice(0,6000)}
+
+Write a MOVEMENT REPORT of what changed. Questions reframed, nodes added, loose ends pulled, threads opened or cut, pins tied or untied. Report only differences visible in the data. If little changed, say so plainly.
+
+Sections: ## What moved ## What did not ## What that suggests is still open`,1400,SYS_SCRIBE));
+  S.ledger.push({id:uid(),at:Date.now(),type:"movement",name:o.name||"Movement report",body:o.body||"",by:S.who,snap:snap()});
+  P();viewE(S.ledger.length-1);
+ }catch(e){toast(e.message||"Could not compare those entries.",true);}finally{setBusy(false);}}
+
+/* ============ night shift ============ */
+function jt(t){jobType=t;["fact","threads","patrol"].forEach(k=>$("jt"+k).className="abtn");
+ $("jt"+t).className="abtn go";
+ $("jqw").style.display=t==="threads"?"none":"block";$("jtw").style.display=t==="threads"?"none":"block";
+ $("jql").textContent=t==="fact"?"A QUESTION YOU DO NOT HAVE THE ANSWER TO":"WHAT SHOULD IT LOOK FOR? (OPTIONAL)";}
+function openNight(){$("jobT").innerHTML=S.threads.map((t,i)=>`<option value="${i}">${esc(t.name)}</option>`).join("");
+ $("jobT").value=S.active;jt(jobType);renderQ();op("ovNight");}
+function addJob(){const q=$("jobQ").value.trim();
+ if(jobType==="fact"&&!q){toast("Give it a question to find out.",true);return;}
+ S.queue.push({id:uid(),type:jobType,q,thread:jobType==="threads"?null:+$("jobT").value,done:false});
+ $("jobQ").value="";P();renderQ();toast("Assigned. It runs when you hand off.");}
+function delJob(i){S.queue.splice(i,1);P();renderQ();}
+function renderQ(){const L={fact:"FIND OUT",threads:"PROPOSE THREADS",patrol:"PATROL"};
+ $("qC").textContent=S.queue.length||"empty";
+ $("qL").innerHTML=S.queue.length?S.queue.map((j,i)=>`<div class="prov" style="cursor:default;border-left-color:${j.done?"rgba(255,255,255,.14)":"var(--night)"}">
+  <button class="px" onclick="delJob(${i})" style="display:block">×</button>
+  <span class="ptag" style="color:${j.done?"var(--muted)":"var(--night)"}">${L[j.type]}${j.thread!=null&&S.threads[j.thread]?" · "+esc(S.threads[j.thread].name):""}${j.done?" · DONE":""}</span>
+  ${esc(j.q||"(open brief)")}</div>`).join("")
+  :`<p class="hint">Nothing assigned. It will patrol the current thread.</p>`;
+ $("pC").textContent=S.props.length||"none";
+ $("pL").innerHTML=S.props.length?S.props.map((p,i)=>`<div class="prov" style="cursor:default;border-left-color:var(--cyan)">
+  <span class="ptag">PROPOSED THREAD</span><b style="font-weight:500">${esc(p.name)}</b><br>${esc(p.question)}
+  <div style="color:var(--muted);font-size:.73rem;margin-top:5px">${esc(p.why||"")}</div>
+  <div style="margin-top:9px;display:flex;gap:6px"><button class="abtn go" onclick="acceptP(${i})">OPEN THIS THREAD</button>
+  <button class="abtn warn" onclick="S.props.splice(${i},1);P();renderQ();">DISMISS</button></div></div>`).join("")
+  :`<p class="hint">No proposals waiting.</p>`;}
+function acceptP(i){const p=S.props.splice(i,1)[0];
+ S.threads.unshift({id:Date.now(),name:p.name,state:"live",step:1,context:"Proposed by the night shift. "+(p.why||""),
+  questions:[p.question],fibers:[],participants:[],
+  nodes:[{id:"root",parent:null,tech:"origin",items:[],state:"kept",by:"night shift",at:Date.now()}],touched:Date.now()});
+ S.active=0;sel="root";P();all();renderQ();fit();toast("Thread opened. Give it context before you pull.");}
+
+async function prepShift(){if(busy)return;const b=$("runBtn");b.innerHTML='<span class="spin"></span>WRITING THE BRIEF';setBusy(true);
+ try{const L={fact:"FIND OUT",threads:"PROPOSE NEW THREADS",patrol:"PATROL"};
+  const open=S.queue.filter(j=>!j.done);
+  pending=pObj(await ask(`${record()}
+
+ASSIGNMENTS THE FACILITATOR HAS QUEUED:
+${open.length?open.map(j=>`- ${L[j.type]}${j.thread!=null&&S.threads[j.thread]?' on thread "'+S.threads[j.thread].name+'"':""}: ${j.q||"(open brief)"}`).join("\n"):"- none, so a general patrol of the active thread is intended"}
+
+Write the assignment brief for tonight's shift.`,1100,SYS_NB));
+  briefUI();cl("ovNight");op("ovBrief");
+ }catch(e){toast(e.message||"Could not draft the brief.",true);}
+ finally{setBusy(false);b.innerHTML="BRIEF AND HAND OFF";}}
+function briefUI(){const p=pending;
+ const li=(k,l)=>`<div class="brf"><h4>${l}</h4><ul>${(p[k]||[]).map((x,i)=>
+  `<li contenteditable="true" oninput="pending['${k}'][${i}]=this.textContent">${esc(x)}</li>`).join("")}</ul></div>`;
+ $("briefB").innerHTML=`<div class="fld"><label>BRIEF TITLE</label><input value="${esc(p.name||"")}" oninput="pending.name=this.value"></div>
+  <div class="fld"><label>OBJECTIVE</label><textarea style="min-height:46px" oninput="pending.objective=this.value">${esc(p.objective||"")}</textarea></div>
+  ${li("focus","FOCUS ON")}${li("questions","TRY TO ANSWER OR SURFACE")}${li("bounds","OUT OF BOUNDS")}
+  <div class="fld"><label>A GOOD MORNING LOOKS LIKE</label><textarea style="min-height:42px" oninput="pending.success=this.value">${esc(p.success||"")}</textarea></div>`;}
+function briefText(){const p=pending;if(!p)return"";
+ return `THE BRIEF YOU HAVE BEEN GIVEN FOR THIS SHIFT:
+Objective: ${p.objective||""}
+Focus on:
+${(p.focus||[]).map(x=>"- "+x).join("\n")}
+Try to answer or surface:
+${(p.questions||[]).map(x=>"- "+x).join("\n")}
+OUT OF BOUNDS, do not do these:
+${(p.bounds||[]).map(x=>"- "+x).join("\n")}
+A good result looks like: ${p.success||""}
+
+Work strictly inside this brief.`;}
+
+function handoff(){const p=pending;if(!p)return;
+ S.ledger.push({id:uid(),at:Date.now(),type:"night brief",name:p.name||"Night shift brief",by:S.who,
+  body:`## Objective\n${p.objective||""}\n\n## Focus on\n${(p.focus||[]).map(x=>"- "+x).join("\n")}\n\n## Try to answer or surface\n${(p.questions||[]).map(x=>"- "+x).join("\n")}\n\n## Out of bounds\n${(p.bounds||[]).map(x=>"- "+x).join("\n")}\n\n## A good morning looks like\n${p.success||""}`,
+  snap:snap()});
+ P();cl("ovBrief");
+ const beats=[["BRIEF APPROVED",""],["HANDING OFF THE THREAD",""],["THE NIGHT SHIFT HAS IT","Thinking is hard, that is why people judge."]];
+ const d=$("drama");d.classList.add("on");$("dqt").textContent="";$("dsub").textContent="";$("dk").innerHTML="";
+ let i=0;
+ const go=()=>{const [b,q]=beats[i];
+  $("beat").style.animation="none";void $("beat").offsetWidth;$("beat").style.animation="bf .7s ease forwards";
+  $("beat").textContent=b;
+  if(i>0){const c=document.createElementNS("http://www.w3.org/2000/svg","circle");
+   c.setAttribute("cx",[200,380][i-1]);c.setAttribute("cy",[50,62][i-1]);c.setAttribute("r",7);
+   c.setAttribute("fill","#0a1119");c.setAttribute("stroke","#f8991d");c.setAttribute("stroke-width","3");
+   c.setAttribute("class","dknot");$("dk").appendChild(c);}
+  if(q){$("dqt").textContent="“"+q+"”";$("dsub").textContent="C. G. JUNG";}
+  i++;if(i<beats.length)setTimeout(go,1150);
+  else setTimeout(()=>{d.classList.remove("on");runShift();},2000);};
+ setTimeout(go,300);}
+
+async function runShift(){
+ if(busy)return;setBusy(true);toast("The night shift is working.");
+ const todo=S.queue.filter(j=>!j.done);
+ const jobs=todo.length?todo:[{type:"patrol",q:"",thread:S.active,temp:true}];
+ const prev=S.active,BR=briefText()+"\n\n";
+ try{
+  for(const j of jobs){
+   if(j.thread!=null&&S.threads[j.thread])S.active=j.thread;
+   const t=T();
+   const leaf=t.nodes.filter(n=>!t.nodes.some(k=>k.parent===n.id)).pop()||t.nodes[0];
+   if(j.type==="threads"){
+    const raw=await ask(`${BR}THE PROJECT SO FAR:\n\n${projBlob()}\n\n${j.q?"Look here: "+j.q:""}\n\nPropose new threads nobody has opened.`,1000,SYS_THREADS);
+    let arr=[];try{arr=JSON.parse(raw.slice(raw.indexOf("["),raw.lastIndexOf("]")+1));}catch(e){}
+    arr.filter(p=>p&&p.name&&p.question).forEach(p=>S.props.push(p));
+   }else if(j.type==="fact"){
+    const out=pList(await ask(`${BR}${blob(t,"root")}\n\nTHE QUESTION TO FIND OUT:\n${j.q}`,900,SYS_FACT));
+    t.nodes.push({id:uid(),parent:leaf.id,tech:"found out",base:"found out",items:out,state:"prov",by:"night shift",at:Date.now()});
+   }else{
+    const pins=t.nodes.filter(n=>n.state==="pin"&&!n.ready);
+    const out=pList(await ask(`${BR}${blob(t,leaf.id)}
+
+You are the overnight patrol. Produce AT MOST 3 observations, each from a DIFFERENT job: ABSENCE, CONTRADICTION, GRAVEYARD, UNPULLED, STALENESS. Prefix each with its job name in capitals and a colon.`));
+    const items=[];
+    if(pins.length)items.push(`PIN CHECK: you tied this off pending "${pins[0].cond}". Worth checking whether that has landed.`);
+    out.slice(0,3-items.length).forEach(x=>items.push(x));
+    t.nodes.push({id:uid(),parent:leaf.id,tech:"night shift",base:"night shift",items,state:"prov",by:"night shift",at:Date.now()});
+   }
+   if(!j.temp)j.done=true;P();
+  }
+  S.active=prev;P();all();renderQ();
+  toast(todo.length?`Night shift finished ${todo.length} assignment${todo.length>1?"s":""}.`:"Patrol done on this thread.");
+ }catch(e){S.active=prev;toast(e.message,true);}finally{setBusy(false);}}
+
+/* ============ walkthrough ============ */
+let walk=-1;
+const walkSeq=()=>N().filter(n=>n.id!=="root").sort((a,b)=>(a.at||0)-(b.at||0));
+function startWalk(){const q=walkSeq();if(!q.length){toast("Nothing to walk yet. Pull first.");return;}
+ walk=0;walkTo();}
+function walkTo(){const q=walkSeq();if(walk<0||!q.length){endWalk();return;}
+ walk=Math.max(0,Math.min(walk,q.length-1));
+ sel=q[walk].id;selItem=null;all();center(sel);walkBar();}
+function walkStep(d){if(walk<0)return;const q=walkSeq();
+ if(walk+d<0)return;
+ if(walk+d>=q.length){endWalk();toast("End of the thread. That is how the thinking unfolded.");return;}
+ walk+=d;walkTo();}
+function endWalk(){walk=-1;all();walkBar();}
+function walkBar(){const b=$("walkbar"),q=walkSeq();
+ if(walk<0){b.style.display="none";return;}
+ b.style.display="flex";
+ $("wkt").textContent=q[walk]?q[walk].tech.toUpperCase():"";
+ $("wkn").textContent=(walk+1)+" / "+q.length;}
+window.addEventListener("keydown",e=>{
+ if(walk<0)return;const tg=e.target.tagName;
+ if(tg==="INPUT"||tg==="TEXTAREA"||e.target.isContentEditable)return;
+ if(e.key==="ArrowRight"){e.preventDefault();walkStep(1);}
+ else if(e.key==="ArrowLeft"){e.preventDefault();walkStep(-1);}
+ else if(e.key==="Escape")endWalk();});
+
+/* ============ pan / zoom ============ */
+(()=>{const c=$("stage");let dr=false,sx,sy,ox,oy;
+ c.addEventListener("pointerdown",e=>{if(e.target.closest(".nd"))return;
+  dr=true;c.classList.add("pan");sx=e.clientX;sy=e.clientY;ox=view.x;oy=view.y;});
+ window.addEventListener("pointermove",e=>{if(!dr)return;view.x=ox+(e.clientX-sx);view.y=oy+(e.clientY-sy);apply();});
+ window.addEventListener("pointerup",()=>{dr=false;c.classList.remove("pan");});
+ c.addEventListener("wheel",e=>{e.preventDefault();const r=c.getBoundingClientRect(),mx=e.clientX-r.left,my=e.clientY-r.top;
+  const k=Math.max(.35,Math.min(1.8,view.k*(e.deltaY<0?1.1:.9)));
+  view.x=mx-(mx-view.x)*(k/view.k);view.y=my-(my-view.y)*(k/view.k);view.k=k;apply();},{passive:false});})();
+
+/* ============ boot ============ */
+$("keyChip").onclick=()=>op("ovKey");
+load();$("keyIn").value=S.key;$("modelIn").value=S.model;$("whoIn").value=S.who;
+keyChip();all();setTimeout(fit,60);
+if(!S.key)op("ovKey");
+</script>
+</body>
+</html>
