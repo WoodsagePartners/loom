@@ -34,7 +34,7 @@ export default function OnboardingPage() {
 
     const { data: org, error: orgErr } = await supabase
       .from("orgs")
-      .insert({ name, slug: slugify(name) + "-" + user.id.slice(0, 6) })
+      .insert({ name, slug: slugify(name) + "-" + user.id.slice(0, 6), created_by: user.id })
       .select()
       .single();
 
