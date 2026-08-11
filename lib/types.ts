@@ -25,5 +25,7 @@ export type NodeRow = {
   folded: boolean;
   by: string | null;
   by_label: string | null;
+  position_x: number | null;
+  position_y: number | null;
   created_at: string;
 };

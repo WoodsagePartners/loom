@@ -1,3 +1,5 @@
+@import "@xyflow/react/dist/style.css";
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -43,4 +45,31 @@ body {
   -webkit-backdrop-filter: blur(24px) saturate(155%);
   border: 1px solid var(--edge);
   box-shadow: 0 18px 48px rgba(0, 0, 0, 0.44), inset 0 1px 0 rgba(255, 255, 255, 0.14);
+}
+
+/* xyflow theme overrides — dark glass canvas instead of the default light UI */
+.react-flow__attribution {
+  display: none;
+}
+.react-flow__controls {
+  background: transparent;
+  box-shadow: none;
+  border: none;
+  gap: 4px;
+}
+.react-flow__controls-button {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 8px;
+  color: var(--text);
+  fill: var(--text);
+}
+.react-flow__controls-button:hover {
+  background: rgba(255, 255, 255, 0.14);
+}
+.react-flow__node {
+  cursor: grab;
+}
+.react-flow__node.dragging {
+  cursor: grabbing;
 }

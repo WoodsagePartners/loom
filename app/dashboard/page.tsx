@@ -34,7 +34,7 @@ export default async function DashboardPage() {
     const { data: nodeRows } = await supabase
       .from("nodes")
       .select(
-        "id, thread_id, parent_id, tech, base, items, pulled, state, ready, cond, folded, by, by_label, created_at"
+        "id, thread_id, parent_id, tech, base, items, pulled, state, ready, cond, folded, by, by_label, position_x, position_y, created_at"
       )
       .in("thread_id", threadIds)
       .order("created_at", { ascending: true });
