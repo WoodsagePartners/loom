@@ -1033,21 +1033,21 @@ export function ThreadWorkspace({
           onClick={() => setAddKnotOpen(false)}
         >
           <div
-            className="glass-readable border border-white/10 rounded-2xl p-5 w-[420px]"
+            className="glass-readable border border-white/10 rounded-2xl p-6 w-[480px]"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between mb-3">
-              <span className="font-mono text-[0.6rem] tracking-[0.16em] text-orange uppercase">
+              <span className="font-mono text-[0.85rem] tracking-[0.1em] text-orange uppercase">
                 Add knot
               </span>
               <button
                 onClick={() => setAddKnotOpen(false)}
-                className="text-muted hover:text-text text-sm leading-none"
+                className="text-muted hover:text-text text-lg leading-none"
               >
                 ✕
               </button>
             </div>
-            <p className="text-[0.68rem] font-light text-muted italic leading-relaxed mb-3">
+            <p className="text-[0.85rem] font-light text-muted italic leading-relaxed mb-3">
               A plain knot, in your own words — no technique applied. A new starting point you can
               run PULL from whenever you're ready to keep going.
             </p>
@@ -1057,20 +1057,20 @@ export function ThreadWorkspace({
               rows={4}
               autoFocus
               placeholder="What's this new starting point?"
-              className="w-full bg-black/30 border border-white/10 rounded-lg text-text text-[0.82rem] font-light p-2.5 outline-none focus:border-orange/50"
+              className="w-full bg-black/30 border border-white/10 rounded-lg text-text text-[1.05rem] font-light leading-snug p-3 outline-none focus:border-orange/50"
             />
-            {addKnotError && <p className="mt-2 text-[0.68rem] text-red-300">{addKnotError}</p>}
-            <div className="flex items-center gap-1.5 mt-3 justify-end">
+            {addKnotError && <p className="mt-2 text-[0.85rem] text-red-300">{addKnotError}</p>}
+            <div className="flex items-center gap-2 mt-3 justify-end">
               <button
                 onClick={() => setAddKnotOpen(false)}
-                className="font-mono text-[0.5rem] tracking-[0.1em] uppercase px-3 py-1.5 rounded-full border border-white/15 text-muted hover:text-text hover:border-white/30"
+                className="font-mono text-[0.75rem] tracking-[0.06em] uppercase px-4 py-2 rounded-full border border-white/15 text-muted hover:text-text hover:border-white/30"
               >
                 Cancel
               </button>
               <button
                 onClick={submitAddKnot}
                 disabled={addKnotSaving}
-                className="font-mono text-[0.5rem] tracking-[0.1em] uppercase px-3 py-1.5 rounded-full border border-orange/40 text-orange bg-orange/[.08] hover:bg-orange/[.16] disabled:opacity-50 disabled:cursor-wait"
+                className="font-mono text-[0.75rem] tracking-[0.06em] uppercase px-4 py-2 rounded-full border border-orange/40 text-orange bg-orange/[.08] hover:bg-orange/[.16] disabled:opacity-50 disabled:cursor-wait"
               >
                 {addKnotSaving ? "Saving…" : "Add knot"}
               </button>
@@ -1085,54 +1085,54 @@ export function ThreadWorkspace({
           onClick={() => setDetailNodeId(null)}
         >
           <div
-            className="glass-readable border border-white/10 rounded-2xl p-5 w-[480px] max-h-[80vh] overflow-y-auto"
+            className="glass-readable border border-white/10 rounded-2xl p-6 w-[560px] max-h-[80vh] overflow-y-auto"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex items-center justify-between mb-1">
-              <span className="font-mono text-[0.6rem] tracking-[0.16em] text-orange uppercase flex items-center gap-2">
+            <div className="flex items-center justify-between mb-1.5">
+              <span className="font-mono text-[0.85rem] tracking-[0.1em] text-orange uppercase flex items-center gap-2.5">
                 <span
-                  className="w-2.5 h-2.5 rounded-full flex-none"
+                  className="w-3 h-3 rounded-full flex-none"
                   style={{ background: techColor(detailNode.tech) }}
                 />
                 K{activeNodes.findIndex((n) => n.id === detailNode.id) + 1} · {detailNode.tech}
               </span>
               <button
                 onClick={() => setDetailNodeId(null)}
-                className="text-muted hover:text-text text-sm leading-none"
+                className="text-muted hover:text-text text-lg leading-none"
               >
                 ✕
               </button>
             </div>
-            <p className="font-mono text-[0.44rem] tracking-[0.1em] text-muted uppercase mb-3">
+            <p className="font-mono text-[0.65rem] tracking-[0.08em] text-muted uppercase mb-4">
               {detailNode.state}
             </p>
-            <div className="space-y-2.5">
+            <div className="space-y-3.5">
               {detailDraft.map((item, i) => (
                 <div key={i}>
-                  <span className="block font-mono text-[0.42rem] tracking-[0.1em] text-cyan mb-1 uppercase">
+                  <span className="block font-mono text-[0.62rem] tracking-[0.08em] text-cyan mb-1.5 uppercase">
                     {detailNode.pulled.includes(i) ? "Pulled" : "Loose"} · Item {i + 1}
                   </span>
                   <textarea
                     value={item}
                     onChange={(e) => updateDetailItem(i, e.target.value)}
                     rows={3}
-                    className="w-full bg-black/30 border border-white/10 rounded-lg text-text text-[0.8rem] font-light p-2.5 outline-none focus:border-cyan/50"
+                    className="w-full bg-black/30 border border-white/10 rounded-lg text-text text-[1.05rem] font-light leading-snug p-3 outline-none focus:border-cyan/50"
                   />
                 </div>
               ))}
             </div>
-            {detailError && <p className="mt-2 text-[0.68rem] text-red-300">{detailError}</p>}
-            <div className="flex items-center gap-1.5 mt-3 justify-end">
+            {detailError && <p className="mt-2 text-[0.85rem] text-red-300">{detailError}</p>}
+            <div className="flex items-center gap-2 mt-4 justify-end">
               <button
                 onClick={() => setDetailNodeId(null)}
-                className="font-mono text-[0.5rem] tracking-[0.1em] uppercase px-3 py-1.5 rounded-full border border-white/15 text-muted hover:text-text hover:border-white/30"
+                className="font-mono text-[0.75rem] tracking-[0.06em] uppercase px-4 py-2 rounded-full border border-white/15 text-muted hover:text-text hover:border-white/30"
               >
                 Cancel
               </button>
               <button
                 onClick={saveDetail}
                 disabled={detailSaving}
-                className="font-mono text-[0.5rem] tracking-[0.1em] uppercase px-3 py-1.5 rounded-full border border-cyan/40 text-cyan bg-cyan/[.08] hover:bg-cyan/[.16] disabled:opacity-50 disabled:cursor-wait"
+                className="font-mono text-[0.75rem] tracking-[0.06em] uppercase px-4 py-2 rounded-full border border-cyan/40 text-cyan bg-cyan/[.08] hover:bg-cyan/[.16] disabled:opacity-50 disabled:cursor-wait"
               >
                 {detailSaving ? "Saving…" : "Save"}
               </button>
