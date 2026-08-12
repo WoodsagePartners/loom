@@ -456,7 +456,7 @@ function CanvasInner({
   // handleTidy in thread-workspace.tsx) — this is the visible confirmation
   // that the action actually ran, not just a silent no-op.
   useEffect(() => {
-    if (fitSignal > 0) fitView({ padding: 0.25, duration: 500 });
+    if (fitSignal > 0) fitView({ padding: 0.12, duration: 500 });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [fitSignal]);
 
@@ -557,7 +557,7 @@ function CanvasInner({
         onNodeClick={onNodeClick}
         onPaneClick={() => onSelect(null)}
         fitView
-        fitViewOptions={{ padding: 0.25 }}
+        fitViewOptions={{ padding: 0.12 }}
         proOptions={{ hideAttribution: true }}
         minZoom={0.3}
         maxZoom={1.5}
@@ -571,7 +571,7 @@ function CanvasInner({
         <ControlButton onClick={() => zoomIn({ duration: 200 })} title="Zoom in">
           <span className="text-[0.85rem] leading-none">+</span>
         </ControlButton>
-        <ControlButton onClick={() => fitView({ padding: 0.25, duration: 400 })} title="Reframe the whole board">
+        <ControlButton onClick={() => fitView({ padding: 0.12, duration: 400 })} title="Reframe the whole board">
           <span className="block w-2.5 h-2.5 border border-current" />
         </ControlButton>
         <ControlButton onClick={() => zoomOut({ duration: 200 })} title="Zoom out">

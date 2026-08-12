@@ -77,6 +77,19 @@ const STARTING_POINTS = [
   { key: "mandate", label: "Mandate-triggered", glyph: "▣", blurb: "A directive, complaint, or requirement handed you the start." },
 ] as const;
 
+// Placeholder icon strip pinned to the bottom of the left rail — a running
+// list of workspace-level actions that don't belong to any single thread.
+// None of these are wired up yet; each is disabled with a "Soon" tooltip
+// exactly like the top-bar placeholders used to be. Add to this list as
+// more workspace-level actions get scoped.
+const RAIL_ICONS = [
+  { key: "settings", glyph: "⚙", label: "Settings", blurb: "Admin: manage users, roles, login, and billing." },
+  { key: "archive", glyph: "⛁", label: "Archive", blurb: "Save a snapshot of this canvas to come back to later." },
+  { key: "export", glyph: "⇩", label: "Export PDF", blurb: "Export this board as a shareable PDF." },
+  { key: "upload", glyph: "⇪", label: "Upload content", blurb: "Upload org documents to prime every pull with real context." },
+  { key: "skills", glyph: "◈", label: "Skills library", blurb: "Browse and customize the shared Loom Innovation technique library." },
+] as const;
+
 function CreativeCandidateCard({
   candidate,
   onKeep,
@@ -426,19 +439,23 @@ export function ThreadWorkspace({
 
   const question = active ? active.questions[active.questions.length - 1] ?? active.name : "";
 
-  // One unified strip: brand + org + build tag on the left, the working
-  // question inline to the right of that (not a separate row), thread
-  // controls and the always-there upload/library placeholders on the far
-  // right. Shared between the "no threads yet" state and the normal view
-  // so branding is never missing.
+  // "THE LOOM | ORG NAME"  ·  "WORKSPACE NAME – CHALLENGE STATEMENT" — brand
+  // identity on the left, the active thread's name and its working question
+  // inline to the right of that (not a separate row). Build tag rides along
+  // with the brand block since it's a deploy-diagnostic detail, not part of
+  // the workspace identity. Shared between the "no threads yet" state and
+  // the normal view so branding is never missing.
   const topBar = (
     <div className="glass-chrome flex-none border-b border-white/10 h-14 flex items-center gap-3 px-5 relative">
-      <span className="font-semibold tracking-[0.16em] text-xs flex-none">
-        THE <span className="text-orange">LOOM</span>
-      </span>
-      <span className="text-muted text-xs font-light flex-none">{orgName}</span>
+      <div className="flex items-center gap-2 flex-none">
+        <span className="font-semibold tracking-[0.16em] text-xs">
+          THE <span className="text-orange">LOOM</span>
+        </span>
+        <span className="text-muted/40 text-xs">|</span>
+        <span className="text-muted text-xs font-light uppercase tracking-[0.04em]">{orgName}</span>
+      </div>
       <span
-        className="font-mono text-[0.55rem] tracking-[0.08em] text-muted/50 flex-none"
+        className="font-mono text-[0.55rem] tracking-[0.08em] text-muted/40 flex-none"
         title="Deployed commit — compare against your latest git push"
       >
         build {buildSha}
@@ -448,11 +465,15 @@ export function ThreadWorkspace({
         <>
           <span className="w-px h-5 bg-white/10 flex-none" />
           <div className="min-w-0 flex-1 flex items-baseline gap-2">
-            <span className="font-mono text-[0.55rem] tracking-[0.12em] text-orange flex-none">
+            <span className="text-[0.95rem] font-medium text-text flex-none truncate max-w-[16rem]">
+              {active.name}
+            </span>
+            <span className="text-muted/60 text-[0.9rem] font-light flex-none">–</span>
+            <span className="text-[0.95rem] font-light text-text truncate">{question}</span>
+            <span className="font-mono text-[0.52rem] tracking-[0.12em] text-orange/70 flex-none">
               V{active.questions.length}
               {active.state !== "live" ? ` · ${active.state.toUpperCase()}` : ""}
             </span>
-            <span className="text-[0.95rem] font-light text-text truncate">{question}</span>
           </div>
         </>
       )}
@@ -532,39 +553,6 @@ export function ThreadWorkspace({
           </div>
         )}
 
-        <div className="group relative">
-          <button
-            disabled
-            className="flex items-center gap-1.5 font-mono text-[0.5rem] tracking-[0.1em] uppercase px-2.5 py-1.5 rounded-full border border-white/10 text-muted/70 cursor-not-allowed"
-          >
-            ⇪ Upload context
-          </button>
-          <div className="pointer-events-none absolute right-0 top-8 w-56 rounded-xl border border-white/10 bg-[#0d1420]/95 backdrop-blur-sm p-2.5 opacity-0 group-hover:opacity-100 transition-opacity duration-150 shadow-lg z-20">
-            <span className="block font-mono text-[0.42rem] tracking-[0.1em] text-orange uppercase mb-1">
-              Soon
-            </span>
-            <span className="text-[0.68rem] font-light text-[#dbe7f2] leading-snug">
-              Upload org documents to prime every pull with real context.
-            </span>
-          </div>
-        </div>
-
-        <div className="group relative">
-          <button
-            disabled
-            className="flex items-center gap-1.5 font-mono text-[0.5rem] tracking-[0.1em] uppercase px-2.5 py-1.5 rounded-full border border-white/10 text-muted/70 cursor-not-allowed"
-          >
-            ◈ Library
-          </button>
-          <div className="pointer-events-none absolute right-0 top-8 w-56 rounded-xl border border-white/10 bg-[#0d1420]/95 backdrop-blur-sm p-2.5 opacity-0 group-hover:opacity-100 transition-opacity duration-150 shadow-lg z-20">
-            <span className="block font-mono text-[0.42rem] tracking-[0.1em] text-orange uppercase mb-1">
-              Soon
-            </span>
-            <span className="text-[0.68rem] font-light text-[#dbe7f2] leading-snug">
-              Browse and customize the shared technique knowledge base.
-            </span>
-          </div>
-        </div>
       </div>
     </div>
   );
@@ -790,7 +778,7 @@ export function ThreadWorkspace({
               </button>
             </div>
             <ThreadRail threads={rail} activeId={activeId} onSelect={selectThread} />
-            <div className="mt-2 pb-4 pt-3 border-t border-white/10">
+            <div className="mt-2 pt-3 border-t border-white/10">
               <div className="font-mono text-[0.42rem] tracking-[0.14em] text-orange uppercase mb-2 px-1">
                 New thread · starting point
               </div>
@@ -805,6 +793,28 @@ export function ThreadWorkspace({
                       {sp.glyph}
                     </span>
                     <span className="text-[0.66rem] font-light text-text truncate">{sp.label}</span>
+                    <span className="ml-auto font-mono text-[0.36rem] tracking-[0.08em] text-orange/70 uppercase flex-none">
+                      Soon
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div className="mt-2 pb-4 pt-3 border-t border-white/10">
+              <div className="font-mono text-[0.42rem] tracking-[0.14em] text-orange uppercase mb-2 px-1">
+                Workspace
+              </div>
+              <div className="space-y-1">
+                {RAIL_ICONS.map((ic) => (
+                  <div
+                    key={ic.key}
+                    className="flex items-center gap-2 rounded-lg px-1.5 py-1.5 opacity-55 cursor-not-allowed"
+                    title={ic.blurb}
+                  >
+                    <span className="w-4 h-4 rounded border border-white/15 bg-white/[.05] grid place-items-center text-[0.5rem] text-[#cfe2f6] flex-none">
+                      {ic.glyph}
+                    </span>
+                    <span className="text-[0.66rem] font-light text-text truncate">{ic.label}</span>
                     <span className="ml-auto font-mono text-[0.36rem] tracking-[0.08em] text-orange/70 uppercase flex-none">
                       Soon
                     </span>
@@ -828,6 +838,13 @@ export function ThreadWorkspace({
                 }`}
               />
             ))}
+            <span className="mt-auto mb-3 flex flex-col items-center gap-2.5 pt-3 border-t border-white/10 w-full">
+              {RAIL_ICONS.map((ic) => (
+                <span key={ic.key} title={ic.label} className="text-muted/60 text-[0.7rem]">
+                  {ic.glyph}
+                </span>
+              ))}
+            </span>
           </button>
         )}
       </aside>
