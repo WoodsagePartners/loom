@@ -1,7 +1,8 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { NodeRow, ThreadRow } from "@/lib/types";
+import type { Technique } from "@/lib/techniques";
 import { ThreadRail, type ThreadSummary } from "@/components/thread-rail";
 import { ThreadCanvas } from "@/components/thread-canvas";
 import { createClient } from "@/lib/supabase/client";
@@ -42,7 +43,25 @@ export function ThreadWorkspace({
   const [activeId, setActiveId] = useState<string | null>(threads[0]?.id ?? null);
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
   const [nodesState, setNodesState] = useState<Record<string, NodeRow[]>>(nodesByThread);
+  const [techniques, setTechniques] = useState<Technique[]>([]);
   const [pullingId, setPullingId] = useState<string | null>(null);
+
+  // The technique library that powers both the pull picker (server-side)
+  // and the hover suggestion icon (client-side, free heuristic). Fetched
+  // once per org — RLS scopes it to members automatically.
+  useEffect(() => {
+    let cancelled = false;
+    createClient()
+      .from("library_techniques")
+      .select("id, key, plain, exec, exemplars, antipatterns, stats")
+      .eq("org_id", orgId)
+      .then(({ data }) => {
+        if (!cancelled) setTechniques((data ?? []) as unknown as Technique[]);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [orgId]);
   const [pullError, setPullError] = useState<string | null>(null);
 
   const active = threads.find((t) => t.id === activeId) ?? null;
@@ -168,6 +187,7 @@ export function ThreadWorkspace({
             onSelect={setSelectedNodeId}
             onPull={handlePull}
             pullingId={pullingId}
+            techniques={techniques}
           />
         </div>
       </main>

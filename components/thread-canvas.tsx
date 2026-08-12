@@ -22,6 +22,18 @@ import "@xyflow/react/dist/style.css";
 import type { NodeRow } from "@/lib/types";
 import { layoutThread, pathTo, ROOT_ID, NODE_W, NODE_H } from "@/lib/layout";
 import { createClient } from "@/lib/supabase/client";
+import { pickTechnique, explainSuggestion, type Technique } from "@/lib/techniques";
+
+type Suggestion = { key: string; why: string } | null;
+
+function suggestFor(nodeId: string, nodes: NodeRow[], techniques: Technique[]): Suggestion {
+  if (techniques.length === 0) return null;
+  const used = [...pathTo(nodes, nodeId)]
+    .map((id) => nodes.find((x) => x.id === id)?.tech)
+    .filter((t): t is string => !!t);
+  const picked = pickTechnique(used, techniques);
+  return picked ? { key: picked.key, why: explainSuggestion(picked, used) } : null;
+}
 
 const GLYPH: Record<string, string> = {
   "first principles": "▽",
@@ -94,6 +106,23 @@ function Fray({ count }: { count: number }) {
   );
 }
 
+function SuggestionIcon({ suggestion }: { suggestion: Suggestion }) {
+  if (!suggestion) return null;
+  return (
+    <div className="nodrag nopan group absolute -left-2 -top-2 z-10">
+      <div className="w-5 h-5 rounded-full border border-gold/50 bg-gold/15 grid place-items-center text-[0.6rem] text-gold cursor-help">
+        ✦
+      </div>
+      <div className="pointer-events-none absolute left-0 top-6 w-52 rounded-xl border border-gold/30 bg-[#0d1420]/95 backdrop-blur-sm p-2.5 opacity-0 group-hover:opacity-100 transition-opacity duration-150 shadow-lg z-20">
+        <div className="font-mono text-[0.5rem] tracking-[0.12em] text-gold uppercase mb-1">
+          Suggested · {suggestion.key}
+        </div>
+        <div className="text-[0.68rem] font-light text-[#dbe7f2] leading-snug">{suggestion.why}</div>
+      </div>
+    </div>
+  );
+}
+
 const PORT_STYLE = {
   background: "#ffd75e",
   border: "2px solid #7a5a14",
@@ -149,10 +178,11 @@ type KnotData = {
   selected: boolean;
   pulling: boolean;
   onPull: (id: string) => void;
+  suggestion: Suggestion;
 };
 
 function KnotNode({ data, positionAbsoluteX, positionAbsoluteY, width, height, dragging }: NodeProps) {
-  const { node: n, dim, selected, pulling, onPull } = data as unknown as KnotData;
+  const { node: n, dim, selected, pulling, onPull, suggestion } = data as unknown as KnotData;
   const open = n.items.length - n.pulled.length;
   const b = badge(n);
   const hoverZoom = useHoverZoom(positionAbsoluteX, positionAbsoluteY, width, height, !!dragging);
@@ -181,6 +211,7 @@ function KnotNode({ data, positionAbsoluteX, positionAbsoluteY, width, height, d
     >
       <Handle type="target" position={Position.Left} style={PORT_STYLE} />
       <Handle type="source" position={Position.Right} style={PORT_STYLE} />
+      <SuggestionIcon suggestion={suggestion} />
 
       <div className="flex items-center justify-between gap-2 mb-1.5">
         <span className="font-mono text-[0.55rem] tracking-[0.12em] uppercase text-[#a8d4ff]">
@@ -213,10 +244,11 @@ type QuestionData = {
   questionVersion: number;
   pulling: boolean;
   onPull: () => void;
+  suggestion: Suggestion;
 };
 
 function QuestionNode({ data, positionAbsoluteX, positionAbsoluteY, width, height, dragging }: NodeProps) {
-  const { question, questionVersion, pulling, onPull } = data as unknown as QuestionData;
+  const { question, questionVersion, pulling, onPull, suggestion } = data as unknown as QuestionData;
   const hoverZoom = useHoverZoom(positionAbsoluteX, positionAbsoluteY, width, height, !!dragging);
   return (
     <div
@@ -227,6 +259,7 @@ function QuestionNode({ data, positionAbsoluteX, positionAbsoluteY, width, heigh
       style={{ width: NODE_W, minHeight: NODE_H }}
     >
       <Handle type="source" position={Position.Right} style={PORT_STYLE} />
+      <SuggestionIcon suggestion={suggestion} />
       <span className="font-mono text-[0.5rem] tracking-[0.18em] text-orange">
         WORKING QUESTION · V{questionVersion}
       </span>
@@ -248,6 +281,7 @@ function CanvasInner({
   onSelect,
   onPull,
   pullingId,
+  techniques,
 }: {
   nodes: NodeRow[];
   question: string;
@@ -256,6 +290,7 @@ function CanvasInner({
   onSelect: (id: string) => void;
   onPull: (sourceId: string | null) => void;
   pullingId: string | null;
+  techniques: Technique[];
 }) {
   const supabase = useMemo(() => createClient(), []);
   const nodesKey = nodes.map((n) => n.id).join(",");
@@ -270,7 +305,13 @@ function CanvasInner({
       type: "question",
       position: rootPos,
       selectable: false,
-      data: { question, questionVersion, pulling: pullingId === ROOT_ID, onPull: () => onPull(null) },
+      data: {
+        question,
+        questionVersion,
+        pulling: pullingId === ROOT_ID,
+        onPull: () => onPull(null),
+        suggestion: suggestFor(ROOT_ID, nodes, techniques),
+      },
       style: { width: NODE_W },
     };
 
@@ -290,6 +331,7 @@ function CanvasInner({
           selected: n.id === selectedId,
           pulling: pullingId === n.id,
           onPull: () => onPull(n.id),
+          suggestion: suggestFor(n.id, nodes, techniques),
         },
         style: { width: NODE_W },
       };
@@ -328,6 +370,7 @@ function CanvasInner({
         return {
           ...fn,
           data: {
+            ...fn.data,
             node: n,
             dim: !!focusPath && !onPath,
             selected: n.id === selectedId,
@@ -339,6 +382,21 @@ function CanvasInner({
     );
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedId, nodes, pullingId, onPull]);
+
+  // The technique library loads asynchronously after mount — once it (or
+  // the node set) changes, refresh just the suggestion field in place.
+  useEffect(() => {
+    setFlowNodes((cur) =>
+      cur.map((fn) => ({
+        ...fn,
+        data: {
+          ...fn.data,
+          suggestion: suggestFor(fn.id, nodes, techniques),
+        },
+      }))
+    );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [techniques, nodes]);
 
   const edges: Edge[] = useMemo(() => {
     const focusPath = selectedId ? pathTo(nodes, selectedId) : null;
@@ -413,6 +471,7 @@ export function ThreadCanvas(props: {
   onSelect: (id: string) => void;
   onPull: (sourceId: string | null) => void;
   pullingId: string | null;
+  techniques: Technique[];
 }) {
   return (
     <ReactFlowProvider>

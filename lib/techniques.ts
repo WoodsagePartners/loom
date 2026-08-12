@@ -31,3 +31,12 @@ export function pickTechnique(usedKeys: string[], techniques: Technique[]): Tech
 export function buildTechniqueGuidance(t: Technique): string {
   return `Apply this technique specifically: "${t.key}". ${t.plain} ${t.exec}`.trim();
 }
+
+/** Free, instant, no model call — the hover suggestion's "why" comes from
+ * the same signal the picker used, explained in a sentence. */
+export function explainSuggestion(t: Technique, usedKeys: string[]): string {
+  if (!usedKeys.includes(t.key)) return "Not yet tried on this branch.";
+  const { pulls, kept } = t.stats;
+  if (pulls === 0) return "No track record yet on this thread — worth a first try.";
+  return `Kept ${kept} of ${pulls} pulls with this technique so far.`;
+}
