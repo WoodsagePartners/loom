@@ -62,6 +62,19 @@ function parseTraceResponse(text: string): { steps: string[]; summary: string } 
 type Candidate = { id: string; text: string; tech: string };
 const CREATIVE_ROUNDS = 3;
 
+// Preview only — the actual composer (task #26) picks one of these before
+// naming a thread. Content matches the framework already agreed on.
+const STARTING_POINTS = [
+  { key: "prevent-recurrence", label: "Prevent recurrence", glyph: "⛒", blurb: "Something broke. Make sure it never happens again." },
+  { key: "innovate-new", label: "Innovate for new", glyph: "✦", blurb: "Generate genuinely new value, not a fix." },
+  { key: "business-model", label: "New business", glyph: "▦", blurb: "One thread per Business Model Canvas cell." },
+  { key: "respond-threat", label: "Respond to a threat", glyph: "⚠", blurb: "A competitor or disruption is already moving." },
+  { key: "exploit-signal", label: "Exploit a signal", glyph: "↗", blurb: "Something's shifting before it becomes a threat to someone else." },
+  { key: "constraint-removal", label: "Constraint removal", glyph: "◌", blurb: "What if this limit simply didn't exist." },
+  { key: "decision-fork", label: "Decision fork", glyph: "⑂", blurb: "Pressure-test two or three real paths, not generate new ones." },
+  { key: "mandate", label: "Mandate-triggered", glyph: "▣", blurb: "A directive, complaint, or requirement handed you the start." },
+] as const;
+
 function CreativeCandidateCard({
   candidate,
   onKeep,
@@ -172,6 +185,7 @@ export function ThreadWorkspace({
   const [creativeError, setCreativeError] = useState<string | null>(null);
   const [creativeSourceId, setCreativeSourceId] = useState<string | null>(null);
   const [candidates, setCandidates] = useState<Candidate[]>([]);
+  const [composerOpen, setComposerOpen] = useState(false);
 
   const active = threads.find((t) => t.id === activeId) ?? null;
   const activeNodes = activeId ? nodesState[activeId] ?? [] : [];
@@ -400,7 +414,12 @@ export function ThreadWorkspace({
   return (
     <div className="flex h-screen">
       <aside className="glass-chrome w-56 flex-none border-r border-white/10 px-2">
-        <ThreadRail threads={rail} activeId={activeId} onSelect={selectThread} />
+        <ThreadRail
+          threads={rail}
+          activeId={activeId}
+          onSelect={selectThread}
+          onNew={() => setComposerOpen(true)}
+        />
       </aside>
 
       <main className="flex-1 min-w-0 flex flex-col">
@@ -560,6 +579,45 @@ export function ThreadWorkspace({
                 onEdit={(text) => editCandidate(c.id, text)}
               />
             ))}
+          </div>
+        </div>
+      )}
+
+      {composerOpen && (
+        <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/60 backdrop-blur-sm p-6">
+          <div className="glass-chrome w-full max-w-2xl rounded-3xl border border-white/10 p-6 max-h-[85vh] overflow-y-auto">
+            <div className="flex items-center justify-between mb-1">
+              <div className="font-mono text-[0.6rem] tracking-[0.16em] text-orange uppercase">
+                Start a weaving session
+              </div>
+              <button
+                onClick={() => setComposerOpen(false)}
+                className="text-muted hover:text-text text-sm leading-none"
+              >
+                ✕
+              </button>
+            </div>
+            <p className="text-muted text-[0.75rem] font-light italic mb-5">
+              Composer coming soon — pick the shape of the problem before picking a technique.
+              Preview below.
+            </p>
+            <div className="grid grid-cols-2 gap-3">
+              {STARTING_POINTS.map((sp) => (
+                <div
+                  key={sp.key}
+                  className="relative rounded-2xl border border-white/10 bg-white/[.03] p-3 opacity-60 cursor-not-allowed"
+                >
+                  <span className="absolute top-2 right-2 font-mono text-[0.4rem] tracking-[0.1em] text-orange/80 uppercase">
+                    Soon
+                  </span>
+                  <span className="w-6 h-6 rounded-md border border-white/15 bg-white/[.06] grid place-items-center text-[0.7rem] text-[#cfe2f6] mb-2">
+                    {sp.glyph}
+                  </span>
+                  <div className="text-[0.78rem] font-normal text-text mb-1">{sp.label}</div>
+                  <div className="text-[0.68rem] font-light text-muted leading-snug">{sp.blurb}</div>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       )}

@@ -51,6 +51,42 @@ export default async function DashboardPage() {
           THE <span className="text-orange">LOOM</span>
         </span>
         <span className="text-muted text-xs font-light ml-2">{orgName}</span>
+
+        <div className="ml-auto flex items-center gap-2">
+          <div className="group relative">
+            <button
+              disabled
+              className="flex items-center gap-1.5 font-mono text-[0.5rem] tracking-[0.1em] uppercase px-2.5 py-1.5 rounded-full border border-white/10 text-muted/70 cursor-not-allowed"
+            >
+              ⇪ Upload context
+            </button>
+            <div className="pointer-events-none absolute right-0 top-8 w-56 rounded-xl border border-white/10 bg-[#0d1420]/95 backdrop-blur-sm p-2.5 opacity-0 group-hover:opacity-100 transition-opacity duration-150 shadow-lg z-20">
+              <span className="block font-mono text-[0.42rem] tracking-[0.1em] text-orange uppercase mb-1">
+                Soon
+              </span>
+              <span className="text-[0.68rem] font-light text-[#dbe7f2] leading-snug">
+                Upload org documents to prime every pull with real context.
+              </span>
+            </div>
+          </div>
+
+          <div className="group relative">
+            <button
+              disabled
+              className="flex items-center gap-1.5 font-mono text-[0.5rem] tracking-[0.1em] uppercase px-2.5 py-1.5 rounded-full border border-white/10 text-muted/70 cursor-not-allowed"
+            >
+              ◈ Library
+            </button>
+            <div className="pointer-events-none absolute right-0 top-8 w-56 rounded-xl border border-white/10 bg-[#0d1420]/95 backdrop-blur-sm p-2.5 opacity-0 group-hover:opacity-100 transition-opacity duration-150 shadow-lg z-20">
+              <span className="block font-mono text-[0.42rem] tracking-[0.1em] text-orange uppercase mb-1">
+                Soon
+              </span>
+              <span className="text-[0.68rem] font-light text-[#dbe7f2] leading-snug">
+                Browse and customize the shared technique knowledge base.
+              </span>
+            </div>
+          </div>
+        </div>
       </div>
       <div className="flex-1 min-h-0">
         {threads.length > 0 ? (
