@@ -22,7 +22,7 @@ import "@xyflow/react/dist/style.css";
 import type { NodeRow } from "@/lib/types";
 import { layoutThread, pathTo, ROOT_ID, NODE_W, NODE_H } from "@/lib/layout";
 import { createClient } from "@/lib/supabase/client";
-import { pickTechnique, explainSuggestion, type Technique } from "@/lib/techniques";
+import { pickTechnique, explainSuggestion, techColor, type Technique } from "@/lib/techniques";
 
 type Suggestion = { key: string; why: string } | null;
 
@@ -206,6 +206,8 @@ function KnotNode({ data, positionAbsoluteX, positionAbsoluteY, width, height, d
         backdropFilter: "blur(20px) saturate(125%)",
         WebkitBackdropFilter: "blur(20px) saturate(125%)",
         border: `1px solid ${selected ? "rgba(66,232,224,.5)" : "rgba(150,190,235,.3)"}`,
+        borderLeftWidth: "4px",
+        borderLeftColor: techColor(n.tech),
         boxShadow: "0 10px 26px rgba(0,0,0,.44), inset 0 1px 0 rgba(255,255,255,.16)",
       }}
     >
@@ -217,7 +219,14 @@ function KnotNode({ data, positionAbsoluteX, positionAbsoluteY, width, height, d
         <span className="font-mono text-[0.55rem] tracking-[0.12em] uppercase text-[#a8d4ff]">
           {n.tech}
         </span>
-        <span className="w-5 h-5 rounded-md border border-white/20 bg-white/[.07] grid place-items-center text-[0.64rem] font-mono text-[#cfe2f6] flex-none">
+        <span
+          className="w-5 h-5 rounded-md grid place-items-center text-[0.64rem] font-mono flex-none"
+          style={{
+            border: `1px solid ${techColor(n.tech)}66`,
+            background: `${techColor(n.tech)}22`,
+            color: techColor(n.tech),
+          }}
+        >
           {GLYPH[n.base ?? n.tech] ?? "◈"}
         </span>
       </div>
@@ -293,7 +302,13 @@ function CanvasInner({
   techniques: Technique[];
 }) {
   const supabase = useMemo(() => createClient(), []);
-  const nodesKey = nodes.map((n) => n.id).join(",");
+  // Position is part of the key, not just id, so a TIDY (which overwrites
+  // position_x/position_y on every node in the thread) actually triggers a
+  // full rebuild instead of silently no-opping because the id list didn't
+  // change. Ordinary drags don't touch this — they only ever write to
+  // Supabase, never back into the `nodes` prop, so this stays quiet for
+  // the common case.
+  const nodesKey = nodes.map((n) => `${n.id}:${n.position_x ?? ""}:${n.position_y ?? ""}`).join(",");
 
   const buildNodes = useCallback((): Node[] => {
     const layout = layoutThread(nodes);
@@ -409,9 +424,11 @@ function CanvasInner({
         source,
         target: n.id,
         style: {
-          stroke: onPath ? "#ffd75e" : "#d9a63f",
-          strokeWidth: onPath ? 2.4 : 1.5,
-          opacity: dim ? 0.12 : n.state === "prov" ? 0.55 : 0.85,
+          // Colored by the technique of the knot it leads into — the wire
+          // itself tells you what kind of pull is at the other end.
+          stroke: techColor(n.tech),
+          strokeWidth: onPath ? 2.6 : 1.5,
+          opacity: dim ? 0.12 : onPath ? 0.95 : n.state === "prov" ? 0.55 : 0.8,
         },
       };
     });

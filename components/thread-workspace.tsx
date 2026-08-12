@@ -6,7 +6,7 @@ import type { Technique } from "@/lib/techniques";
 import { ThreadRail, type ThreadSummary } from "@/components/thread-rail";
 import { ThreadCanvas } from "@/components/thread-canvas";
 import { createClient } from "@/lib/supabase/client";
-import { ROOT_ID, pathTo } from "@/lib/layout";
+import { ROOT_ID, pathTo, layoutThread } from "@/lib/layout";
 
 function buildPullPrompt(thread: ThreadRow, source: NodeRow | null, question: string) {
   const ctx = thread.context ? `Context: ${thread.context}` : "No additional context was given.";
@@ -193,6 +193,7 @@ export function ThreadWorkspace({
   const [inspectorHover, setInspectorHover] = useState(false);
   const railExpanded = railPinned || railHover;
   const inspectorExpanded = inspectorPinned || inspectorHover;
+  const [tidyLoading, setTidyLoading] = useState(false);
 
   const active = threads.find((t) => t.id === activeId) ?? null;
   const activeNodes = activeId ? nodesState[activeId] ?? [] : [];
@@ -224,6 +225,38 @@ export function ThreadWorkspace({
   function selectNode(id: string) {
     setSelectedNodeId(id);
     setInspectorPinned(true);
+  }
+
+  // Recomputes the same depth/row auto-layout the canvas falls back to for
+  // brand-new knots, then overwrites every knot's saved position with it —
+  // this is what clears manual drag placements and untangles overlap on
+  // request, rather than trying to reason about it from a screenshot.
+  async function handleTidy() {
+    if (!active || activeNodes.length === 0) return;
+    setTidyLoading(true);
+    try {
+      const layout = layoutThread(activeNodes);
+      const supabase = createClient();
+      await Promise.all(
+        activeNodes.map((n) => {
+          const pos = layout[n.id];
+          if (!pos) return null;
+          return supabase
+            .from("nodes")
+            .update({ position_x: pos.x, position_y: pos.y })
+            .eq("id", n.id);
+        })
+      );
+      setNodesState((cur) => ({
+        ...cur,
+        [active.id]: activeNodes.map((n) => {
+          const pos = layout[n.id];
+          return pos ? { ...n, position_x: pos.x, position_y: pos.y } : n;
+        }),
+      }));
+    } finally {
+      setTidyLoading(false);
+    }
   }
 
   async function bumpTechniqueStat(techKey: string, field: "kept" | "dropped") {
@@ -494,9 +527,20 @@ export function ThreadWorkspace({
 
       <main className="flex-1 min-w-0 flex flex-col">
         <div className="px-8 pt-6 pb-3 flex-none">
-          <div className="font-mono text-[0.55rem] tracking-[0.2em] text-orange mb-1">
-            WORKING QUESTION · V{active.questions.length}
-            {active.state !== "live" ? ` · ${active.state.toUpperCase()}` : ""}
+          <div className="flex items-center justify-between gap-3 mb-1">
+            <div className="font-mono text-[0.55rem] tracking-[0.2em] text-orange">
+              WORKING QUESTION · V{active.questions.length}
+              {active.state !== "live" ? ` · ${active.state.toUpperCase()}` : ""}
+            </div>
+            <button
+              onClick={handleTidy}
+              disabled={tidyLoading}
+              title="Reset every knot in this thread to a clean auto-layout"
+              className="flex-none inline-flex items-center gap-1.5 font-mono text-[0.48rem] tracking-[0.12em] uppercase px-2.5 py-1.5 rounded-full border border-white/15 text-muted hover:text-text hover:border-white/30 disabled:opacity-50 disabled:cursor-wait transition-colors"
+            >
+              <span className={tidyLoading ? "animate-spin" : ""}>⟲</span>
+              {tidyLoading ? "Tidying…" : "Tidy board"}
+            </button>
           </div>
           <div className="text-2xl font-light leading-snug max-w-3xl">{question}</div>
           {pullError && (

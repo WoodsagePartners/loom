@@ -40,3 +40,23 @@ export function explainSuggestion(t: Technique, usedKeys: string[]): string {
   if (pulls === 0) return "No track record yet on this thread — worth a first try.";
   return `Kept ${kept} of ${pulls} pulls with this technique so far.`;
 }
+
+/** One color per technique — deliberately kept as a thin accent (left
+ * border, glyph badge, wire) rather than a full card recolor, so it reads
+ * as "which thread of yarn pulled this" without reopening the legibility
+ * problem a full-saturation card background caused earlier. */
+export const TECHNIQUE_COLOR: Record<string, string> = {
+  "first principles": "#b48cff",
+  reframe: "#ff6b9d",
+  invert: "#6bd4ff",
+  "outsider view": "#8cffb4",
+  analogous: "#c9ff6b",
+  "scope shift": "#ff6b6b",
+  absence: "#9aa5b1",
+  "forced collision": "#ffe66b",
+};
+const DEFAULT_TECHNIQUE_COLOR = "#d9a63f"; // matches --wire, for untagged/legacy nodes
+
+export function techColor(key: string): string {
+  return TECHNIQUE_COLOR[key] ?? DEFAULT_TECHNIQUE_COLOR;
+}
