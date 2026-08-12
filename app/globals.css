@@ -106,6 +106,16 @@ body > * {
   -webkit-backdrop-filter: blur(26px) saturate(125%);
 }
 
+/* Deliberately less transparent than the rest of the board — this is
+   where you're reading proposed knots and deciding whether to keep them,
+   so it trades some of the glow-through for guaranteed contrast. */
+.glass-readable {
+  background: linear-gradient(145deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.015)),
+    linear-gradient(rgba(6, 10, 16, 0.93), rgba(6, 10, 16, 0.93));
+  backdrop-filter: blur(14px) saturate(108%);
+  -webkit-backdrop-filter: blur(14px) saturate(108%);
+}
+
 /* xyflow theme overrides — dark glass canvas instead of the default light UI */
 .react-flow__attribution {
   display: none;

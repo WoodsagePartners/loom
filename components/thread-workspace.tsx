@@ -62,8 +62,10 @@ function parseTraceResponse(text: string): { steps: string[]; summary: string } 
 type Candidate = { id: string; text: string; tech: string };
 const CREATIVE_ROUNDS = 3;
 
-// Preview only — the actual composer (task #26) picks one of these before
-// naming a thread. Content matches the framework already agreed on.
+// Preview only, rendered inline in the thread rail — the actual composer
+// (task #26) picks one of these before naming a thread. A new starting
+// point always means a brand new thread; existing threads are untouched
+// and stay browsable in the rail above.
 const STARTING_POINTS = [
   { key: "prevent-recurrence", label: "Prevent recurrence", glyph: "⛒", blurb: "Something broke. Make sure it never happens again." },
   { key: "innovate-new", label: "Innovate for new", glyph: "✦", blurb: "Generate genuinely new value, not a fix." },
@@ -185,7 +187,12 @@ export function ThreadWorkspace({
   const [creativeError, setCreativeError] = useState<string | null>(null);
   const [creativeSourceId, setCreativeSourceId] = useState<string | null>(null);
   const [candidates, setCandidates] = useState<Candidate[]>([]);
-  const [composerOpen, setComposerOpen] = useState(false);
+  const [railPinned, setRailPinned] = useState(false);
+  const [railHover, setRailHover] = useState(false);
+  const [inspectorPinned, setInspectorPinned] = useState(false);
+  const [inspectorHover, setInspectorHover] = useState(false);
+  const railExpanded = railPinned || railHover;
+  const inspectorExpanded = inspectorPinned || inspectorHover;
 
   const active = threads.find((t) => t.id === activeId) ?? null;
   const activeNodes = activeId ? nodesState[activeId] ?? [] : [];
@@ -212,6 +219,11 @@ export function ThreadWorkspace({
     setCreativeError(null);
     setCandidates([]);
     setCreativeSourceId(null);
+  }
+
+  function selectNode(id: string) {
+    setSelectedNodeId(id);
+    setInspectorPinned(true);
   }
 
   async function bumpTechniqueStat(techKey: string, field: "kept" | "dropped") {
@@ -413,13 +425,71 @@ export function ThreadWorkspace({
 
   return (
     <div className="flex h-screen">
-      <aside className="glass-chrome w-56 flex-none border-r border-white/10 px-2">
-        <ThreadRail
-          threads={rail}
-          activeId={activeId}
-          onSelect={selectThread}
-          onNew={() => setComposerOpen(true)}
-        />
+      <aside
+        onMouseEnter={() => setRailHover(true)}
+        onMouseLeave={() => setRailHover(false)}
+        className={`glass-chrome flex-none border-r border-white/10 overflow-hidden transition-[width] duration-200 ease-out ${
+          railExpanded ? "w-56 px-2" : "w-14"
+        }`}
+      >
+        {railExpanded ? (
+          <div onClick={() => setRailPinned(true)} className="h-full flex flex-col">
+            <div className="flex justify-end pt-2">
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setRailPinned((p) => !p);
+                }}
+                className={`font-mono text-[0.42rem] tracking-[0.1em] uppercase px-2 py-1 rounded-full border ${
+                  railPinned
+                    ? "border-orange/50 text-orange bg-orange/10"
+                    : "border-white/15 text-muted hover:text-text"
+                }`}
+              >
+                {railPinned ? "Pinned" : "Pin"}
+              </button>
+            </div>
+            <ThreadRail threads={rail} activeId={activeId} onSelect={selectThread} />
+            <div className="mt-2 pb-4 pt-3 border-t border-white/10">
+              <div className="font-mono text-[0.42rem] tracking-[0.14em] text-orange uppercase mb-2 px-1">
+                New thread · starting point
+              </div>
+              <div className="space-y-1">
+                {STARTING_POINTS.map((sp) => (
+                  <div
+                    key={sp.key}
+                    className="flex items-center gap-2 rounded-lg px-1.5 py-1.5 opacity-55 cursor-not-allowed"
+                    title={sp.blurb}
+                  >
+                    <span className="w-4 h-4 rounded border border-white/15 bg-white/[.05] grid place-items-center text-[0.5rem] text-[#cfe2f6] flex-none">
+                      {sp.glyph}
+                    </span>
+                    <span className="text-[0.66rem] font-light text-text truncate">{sp.label}</span>
+                    <span className="ml-auto font-mono text-[0.36rem] tracking-[0.08em] text-orange/70 uppercase flex-none">
+                      Soon
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        ) : (
+          <button
+            onClick={() => setRailPinned(true)}
+            className="w-full h-full flex flex-col items-center pt-3 gap-3"
+            title="Threads"
+          >
+            <span className="text-orange text-xs">≡</span>
+            {rail.map((t) => (
+              <span
+                key={t.id}
+                className={`w-1.5 h-1.5 rounded-full flex-none ${
+                  t.id === activeId ? "bg-orange" : "bg-white/20"
+                }`}
+              />
+            ))}
+          </button>
+        )}
       </aside>
 
       <main className="flex-1 min-w-0 flex flex-col">
@@ -444,7 +514,7 @@ export function ThreadWorkspace({
             question={question}
             questionVersion={active.questions.length}
             selectedId={selectedNodeId}
-            onSelect={setSelectedNodeId}
+            onSelect={selectNode}
             onPull={handlePull}
             pullingId={pullingId}
             techniques={techniques}
@@ -452,8 +522,40 @@ export function ThreadWorkspace({
         </div>
       </main>
 
-      <aside className="glass-chrome w-80 flex-none border-l border-white/10 p-4 overflow-y-auto">
-        {selectedNode ? (
+      <aside
+        onMouseEnter={() => setInspectorHover(true)}
+        onMouseLeave={() => setInspectorHover(false)}
+        className={`glass-readable flex-none border-l border-white/10 overflow-hidden transition-[width] duration-200 ease-out ${
+          inspectorExpanded ? "w-80" : "w-14"
+        }`}
+      >
+        {!inspectorExpanded && (
+          <button
+            onClick={() => setInspectorPinned(true)}
+            className="w-full h-full flex items-center justify-center"
+            title="Details"
+          >
+            <span className="text-muted text-sm">◈</span>
+          </button>
+        )}
+        {inspectorExpanded && (
+          <div onClick={() => setInspectorPinned(true)} className="p-4 h-full overflow-y-auto">
+            <div className="flex justify-end mb-2">
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setInspectorPinned((p) => !p);
+                }}
+                className={`font-mono text-[0.42rem] tracking-[0.1em] uppercase px-2 py-1 rounded-full border ${
+                  inspectorPinned
+                    ? "border-orange/50 text-orange bg-orange/10"
+                    : "border-white/15 text-muted hover:text-text"
+                }`}
+              >
+                {inspectorPinned ? "Pinned" : "Pin"}
+              </button>
+            </div>
+            {selectedNode ? (
           <div>
             <div className="font-mono text-[0.55rem] tracking-[0.17em] text-orange mb-3 flex items-center justify-between">
               <span>{selectedNode.tech.toUpperCase()}</span>
@@ -538,6 +640,8 @@ export function ThreadWorkspace({
             Select a node on the canvas to read what it pulled, or pull from the question itself
             to start a new line of inquiry.
           </p>
+            )}
+          </div>
         )}
       </aside>
 
@@ -583,44 +687,6 @@ export function ThreadWorkspace({
         </div>
       )}
 
-      {composerOpen && (
-        <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/60 backdrop-blur-sm p-6">
-          <div className="glass-chrome w-full max-w-2xl rounded-3xl border border-white/10 p-6 max-h-[85vh] overflow-y-auto">
-            <div className="flex items-center justify-between mb-1">
-              <div className="font-mono text-[0.6rem] tracking-[0.16em] text-orange uppercase">
-                Start a weaving session
-              </div>
-              <button
-                onClick={() => setComposerOpen(false)}
-                className="text-muted hover:text-text text-sm leading-none"
-              >
-                ✕
-              </button>
-            </div>
-            <p className="text-muted text-[0.75rem] font-light italic mb-5">
-              Composer coming soon — pick the shape of the problem before picking a technique.
-              Preview below.
-            </p>
-            <div className="grid grid-cols-2 gap-3">
-              {STARTING_POINTS.map((sp) => (
-                <div
-                  key={sp.key}
-                  className="relative rounded-2xl border border-white/10 bg-white/[.03] p-3 opacity-60 cursor-not-allowed"
-                >
-                  <span className="absolute top-2 right-2 font-mono text-[0.4rem] tracking-[0.1em] text-orange/80 uppercase">
-                    Soon
-                  </span>
-                  <span className="w-6 h-6 rounded-md border border-white/15 bg-white/[.06] grid place-items-center text-[0.7rem] text-[#cfe2f6] mb-2">
-                    {sp.glyph}
-                  </span>
-                  <div className="text-[0.78rem] font-normal text-text mb-1">{sp.label}</div>
-                  <div className="text-[0.68rem] font-light text-muted leading-snug">{sp.blurb}</div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
