@@ -18,6 +18,7 @@
   --wire: #d9a63f;
   --glass: rgba(255, 255, 255, 0.05);
   --glass-hi: rgba(255, 255, 255, 0.095);
+  --glass-tint: rgba(7, 12, 19, 0.64);
   --edge: rgba(255, 255, 255, 0.12);
 }
 
@@ -40,20 +41,21 @@ body {
   line-height: 1.55;
 }
 
-/* Three "light sources" bleeding through every glass panel in the app —
-   mix-blend-mode: screen makes them actually glow against the dark ink
-   instead of just tinting it, which is what a light source does. A slow
-   drift keeps them from reading as a static wallpaper. */
+/* Three "light sources" bleeding through every glass panel in the app.
+   Plain alpha, no blend mode — mix-blend-mode: screen was compounding at
+   the gradient overlaps and washing text out to the point of illegibility.
+   Every glass surface also carries its own dark tint (see --glass-tint)
+   specifically so this glow reads as ambiance, never as something bright
+   enough to fight with content sitting on top of it. */
 body::before {
   content: "";
   position: fixed;
   inset: 0;
   z-index: 0;
   pointer-events: none;
-  mix-blend-mode: screen;
-  background: radial-gradient(48vw circle at 14% 18%, rgba(248, 153, 29, 0.75), transparent 58%),
-    radial-gradient(52vw circle at 88% 8%, rgba(66, 232, 224, 0.6), transparent 56%),
-    radial-gradient(58vw circle at 46% 102%, rgba(217, 183, 74, 0.58), transparent 62%);
+  background: radial-gradient(48vw circle at 14% 18%, rgba(248, 153, 29, 0.26), transparent 58%),
+    radial-gradient(52vw circle at 88% 8%, rgba(66, 232, 224, 0.2), transparent 56%),
+    radial-gradient(58vw circle at 46% 102%, rgba(217, 183, 74, 0.2), transparent 62%);
   animation: light-drift 26s ease-in-out infinite alternate;
 }
 
@@ -81,9 +83,13 @@ body > * {
 }
 
 .glass {
-  background: linear-gradient(145deg, var(--glass-hi), var(--glass));
-  backdrop-filter: blur(26px) saturate(180%);
-  -webkit-backdrop-filter: blur(26px) saturate(180%);
+  /* Highlight sheen on top, solid dark tint underneath — the tint is what
+     guarantees text stays legible no matter how bright the glow behind it
+     gets. First layer listed paints on top in CSS multi-backgrounds. */
+  background: linear-gradient(145deg, var(--glass-hi), var(--glass)),
+    linear-gradient(var(--glass-tint), var(--glass-tint));
+  backdrop-filter: blur(26px) saturate(125%);
+  -webkit-backdrop-filter: blur(26px) saturate(125%);
   border: 1px solid var(--edge);
   box-shadow: 0 18px 48px rgba(0, 0, 0, 0.44), inset 0 1px 0 rgba(255, 255, 255, 0.22),
     inset 0 0 60px rgba(255, 255, 255, 0.03);
@@ -91,11 +97,13 @@ body > * {
 
 /* Lighter touch than .glass — no border or shadow of its own, just the
    blur+saturate so structural chrome (header, rails, panels) catches the
-   light sources without turning into a floating card. */
+   light sources without turning into a floating card. Same dark tint,
+   slightly less opaque since it's structural, not a floating surface. */
 .glass-chrome {
-  background: linear-gradient(145deg, var(--glass-hi), var(--glass));
-  backdrop-filter: blur(26px) saturate(180%);
-  -webkit-backdrop-filter: blur(26px) saturate(180%);
+  background: linear-gradient(145deg, var(--glass-hi), var(--glass)),
+    linear-gradient(rgba(7, 12, 19, 0.58), rgba(7, 12, 19, 0.58));
+  backdrop-filter: blur(26px) saturate(125%);
+  -webkit-backdrop-filter: blur(26px) saturate(125%);
 }
 
 /* xyflow theme overrides — dark glass canvas instead of the default light UI */
