@@ -59,6 +59,74 @@ function parseTraceResponse(text: string): { steps: string[]; summary: string } 
   return null;
 }
 
+type Candidate = { id: string; text: string; tech: string };
+const CREATIVE_ROUNDS = 3;
+
+function CreativeCandidateCard({
+  candidate,
+  onKeep,
+  onDiscard,
+  onEdit,
+}: {
+  candidate: Candidate;
+  onKeep: () => void;
+  onDiscard: () => void;
+  onEdit: (text: string) => void;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(candidate.text);
+
+  return (
+    <div className="rounded-xl border border-white/10 bg-white/[.04] p-3">
+      <span className="block font-mono text-[0.44rem] tracking-[0.1em] text-cyan mb-1.5 uppercase">
+        {candidate.tech}
+      </span>
+      {editing ? (
+        <textarea
+          value={draft}
+          onChange={(e) => setDraft(e.target.value)}
+          rows={3}
+          className="w-full bg-black/30 border border-white/10 rounded-lg text-text text-[0.78rem] font-light p-2 outline-none focus:border-cyan/50"
+        />
+      ) : (
+        <p className="text-[0.79rem] font-light text-[#dbe7f2] leading-snug">{candidate.text}</p>
+      )}
+      <div className="flex items-center gap-1.5 mt-2.5">
+        {editing ? (
+          <button
+            onClick={() => {
+              onEdit(draft);
+              setEditing(false);
+            }}
+            className="font-mono text-[0.5rem] tracking-[0.1em] uppercase px-2.5 py-1 rounded-full border border-cyan/40 text-cyan bg-cyan/[.08] hover:bg-cyan/[.16]"
+          >
+            Save
+          </button>
+        ) : (
+          <button
+            onClick={() => setEditing(true)}
+            className="font-mono text-[0.5rem] tracking-[0.1em] uppercase px-2.5 py-1 rounded-full border border-white/15 text-muted hover:text-text hover:border-white/30"
+          >
+            Edit
+          </button>
+        )}
+        <button
+          onClick={onKeep}
+          className="font-mono text-[0.5rem] tracking-[0.1em] uppercase px-2.5 py-1 rounded-full border border-orange/40 text-orange bg-orange/[.08] hover:bg-orange/[.16]"
+        >
+          Keep
+        </button>
+        <button
+          onClick={onDiscard}
+          className="font-mono text-[0.5rem] tracking-[0.1em] uppercase px-2.5 py-1 rounded-full border border-white/15 text-muted hover:text-red-300 hover:border-red-300/40 ml-auto"
+        >
+          Discard
+        </button>
+      </div>
+    </div>
+  );
+}
+
 export function ThreadWorkspace({
   orgId,
   threads,
@@ -99,6 +167,11 @@ export function ThreadWorkspace({
   } | null>(null);
   const [traceLoading, setTraceLoading] = useState(false);
   const [traceError, setTraceError] = useState<string | null>(null);
+  const [creativeOpen, setCreativeOpen] = useState(false);
+  const [creativeLoading, setCreativeLoading] = useState(false);
+  const [creativeError, setCreativeError] = useState<string | null>(null);
+  const [creativeSourceId, setCreativeSourceId] = useState<string | null>(null);
+  const [candidates, setCandidates] = useState<Candidate[]>([]);
 
   const active = threads.find((t) => t.id === activeId) ?? null;
   const activeNodes = activeId ? nodesState[activeId] ?? [] : [];
@@ -121,6 +194,18 @@ export function ThreadWorkspace({
     setPullError(null);
     setTrace(null);
     setTraceError(null);
+    setCreativeOpen(false);
+    setCreativeError(null);
+    setCandidates([]);
+    setCreativeSourceId(null);
+  }
+
+  async function bumpTechniqueStat(techKey: string, field: "kept" | "dropped") {
+    const t = techniques.find((x) => x.key === techKey);
+    if (!t) return;
+    const next = { ...t.stats, [field]: t.stats[field] + 1 };
+    await createClient().from("library_techniques").update({ stats: next }).eq("id", t.id);
+    setTechniques((cur) => cur.map((x) => (x.id === t.id ? { ...x, stats: next } : x)));
   }
 
   if (!active) {
@@ -225,6 +310,93 @@ export function ThreadWorkspace({
     }
   }
 
+  async function handleCreative(sourceId: string) {
+    if (!active) return;
+    setCreativeError(null);
+    setCreativeLoading(true);
+    setCreativeSourceId(sourceId);
+    setCandidates([]);
+
+    try {
+      const source = activeNodes.find((n) => n.id === sourceId) ?? null;
+      const prompt = buildPullPrompt(active, source, question);
+      const usedSoFar = [...pathTo(activeNodes, sourceId)]
+        .map((id) => activeNodes.find((n) => n.id === id)?.tech)
+        .filter((t): t is string => !!t);
+
+      const collected: Candidate[] = [];
+
+      for (let i = 0; i < CREATIVE_ROUNDS; i++) {
+        const res = await fetch("/api/pull", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ orgId, prompt, usedTechniques: usedSoFar }),
+        });
+        const json = await res.json();
+        if (!res.ok) {
+          if (collected.length === 0) throw new Error(json.error ?? "Creative batch failed.");
+          break;
+        }
+        const items = parsePullResponse(json.text as string);
+        const tech = json.technique?.key ?? "pull";
+        usedSoFar.push(tech);
+        for (const text of items) collected.push({ id: crypto.randomUUID(), text, tech });
+      }
+
+      setCandidates(collected);
+    } catch (e) {
+      setCreativeError(e instanceof Error ? e.message : "Creative batch failed.");
+    } finally {
+      setCreativeLoading(false);
+    }
+  }
+
+  async function keepCandidate(candidate: Candidate) {
+    if (!active || !creativeSourceId) return;
+    const supabase = createClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    const { data: newNode, error } = await supabase
+      .from("nodes")
+      .insert({
+        thread_id: active.id,
+        parent_id: creativeSourceId,
+        tech: candidate.tech,
+        base: candidate.tech,
+        items: [candidate.text],
+        pulled: [],
+        state: "prov",
+        by: user?.id ?? null,
+      })
+      .select(
+        "id, thread_id, parent_id, tech, base, items, pulled, state, ready, cond, folded, by, by_label, position_x, position_y, created_at"
+      )
+      .single();
+
+    if (error || !newNode) {
+      setCreativeError(error?.message ?? "Could not keep that candidate.");
+      return;
+    }
+
+    setNodesState((cur) => ({
+      ...cur,
+      [active.id]: [...(cur[active.id] ?? []), newNode as unknown as NodeRow],
+    }));
+    setCandidates((cur) => cur.filter((c) => c.id !== candidate.id));
+    void bumpTechniqueStat(candidate.tech, "kept");
+  }
+
+  function discardCandidate(candidate: Candidate) {
+    setCandidates((cur) => cur.filter((c) => c.id !== candidate.id));
+    void bumpTechniqueStat(candidate.tech, "dropped");
+  }
+
+  function editCandidate(id: string, text: string) {
+    setCandidates((cur) => cur.map((c) => (c.id === id ? { ...c, text } : c)));
+  }
+
   return (
     <div className="flex h-screen">
       <aside className="glass-chrome w-56 flex-none border-r border-white/10 px-2">
@@ -292,14 +464,27 @@ export function ThreadWorkspace({
               })}
             </div>
 
-            <button
-              onClick={handleTraceBack}
-              disabled={traceLoading}
-              className="mt-4 w-full inline-flex items-center justify-center gap-1.5 font-mono text-[0.55rem] tracking-[0.14em] uppercase px-3 py-2 rounded-full border border-gold/40 text-gold bg-gold/[.08] hover:bg-gold/[.16] disabled:opacity-50 disabled:cursor-wait transition-colors"
-            >
-              <span className={traceLoading ? "animate-spin" : ""}>↺</span>
-              {traceLoading ? "TRACING BACK…" : "TRACE BACK"}
-            </button>
+            <div className="flex gap-1.5 mt-4">
+              <button
+                onClick={() => {
+                  setCreativeOpen(true);
+                  void handleCreative(selectedNode.id);
+                }}
+                disabled={creativeLoading}
+                className="flex-1 inline-flex items-center justify-center gap-1.5 font-mono text-[0.55rem] tracking-[0.14em] uppercase px-3 py-2 rounded-full border border-orange/40 text-orange bg-orange/[.08] hover:bg-orange/[.16] disabled:opacity-50 disabled:cursor-wait transition-colors"
+              >
+                <span className={creativeLoading ? "animate-spin" : ""}>✦</span>
+                {creativeLoading ? "GENERATING…" : "CREATIVE"}
+              </button>
+              <button
+                onClick={handleTraceBack}
+                disabled={traceLoading}
+                className="flex-1 inline-flex items-center justify-center gap-1.5 font-mono text-[0.55rem] tracking-[0.14em] uppercase px-3 py-2 rounded-full border border-gold/40 text-gold bg-gold/[.08] hover:bg-gold/[.16] disabled:opacity-50 disabled:cursor-wait transition-colors"
+              >
+                <span className={traceLoading ? "animate-spin" : ""}>↺</span>
+                {traceLoading ? "TRACING…" : "TRACE BACK"}
+              </button>
+            </div>
             {traceError && <p className="mt-2 text-[0.68rem] text-red-300">{traceError}</p>}
 
             {trace && trace.nodeId === selectedNode.id && (
@@ -336,6 +521,48 @@ export function ThreadWorkspace({
           </p>
         )}
       </aside>
+
+      {creativeOpen && (
+        <div className="fixed inset-y-0 right-0 w-[420px] z-30 glass-chrome border-l border-orange/25 shadow-2xl flex flex-col">
+          <div className="flex items-center justify-between px-4 py-3 border-b border-white/10 flex-none">
+            <div className="font-mono text-[0.6rem] tracking-[0.16em] text-orange uppercase">
+              Creative batch
+            </div>
+            <button
+              onClick={() => setCreativeOpen(false)}
+              className="text-muted hover:text-text text-sm leading-none"
+            >
+              ✕
+            </button>
+          </div>
+          <p className="px-4 pt-3 text-[0.68rem] font-light text-muted italic leading-relaxed flex-none">
+            Nothing here is saved until you keep it. Discard clears it for good, close the tray to
+            walk away from the rest.
+          </p>
+          <div className="flex-1 overflow-y-auto p-4 space-y-3">
+            {creativeLoading && (
+              <p className="text-muted text-[0.78rem] font-light italic">
+                Generating a batch across techniques…
+              </p>
+            )}
+            {creativeError && <p className="text-red-300 text-[0.72rem]">{creativeError}</p>}
+            {!creativeLoading && candidates.length === 0 && !creativeError && (
+              <p className="text-muted text-[0.78rem] font-light italic">
+                Nothing left to review.
+              </p>
+            )}
+            {candidates.map((c) => (
+              <CreativeCandidateCard
+                key={c.id}
+                candidate={c}
+                onKeep={() => keepCandidate(c)}
+                onDiscard={() => discardCandidate(c)}
+                onEdit={(text) => editCandidate(c.id, text)}
+              />
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
