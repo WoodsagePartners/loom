@@ -48,6 +48,7 @@ const GLYPH: Record<string, string> = {
   "night shift": "☾",
   fiber: "〜",
   pull: "↯",
+  note: "✎",
 };
 
 function PullButton({ onClick, pulling, label }: { onClick: () => void; pulling: boolean; label: string }) {
@@ -62,6 +63,21 @@ function PullButton({ onClick, pulling, label }: { onClick: () => void; pulling:
     >
       <span className={pulling ? "animate-spin" : ""}>↯</span>
       {pulling ? "PULLING…" : label}
+    </button>
+  );
+}
+
+function AddKnotButton({ onClick }: { onClick: () => void }) {
+  return (
+    <button
+      className="nodrag nopan mt-2 inline-flex items-center gap-1 font-mono text-[0.5rem] tracking-[0.12em] uppercase px-2 py-1 rounded-full border border-white/15 text-muted hover:text-text hover:border-white/30 transition-colors"
+      onClick={(e) => {
+        e.stopPropagation();
+        onClick();
+      }}
+      title="Add a plain knot here — no technique, just your own words"
+    >
+      + Add
     </button>
   );
 }
@@ -178,11 +194,14 @@ type KnotData = {
   selected: boolean;
   pulling: boolean;
   onPull: (id: string) => void;
+  onAddKnot: (id: string) => void;
   suggestion: Suggestion;
+  label: number;
 };
 
 function KnotNode({ data, positionAbsoluteX, positionAbsoluteY, width, height, dragging }: NodeProps) {
-  const { node: n, dim, selected, pulling, onPull, suggestion } = data as unknown as KnotData;
+  const { node: n, dim, selected, pulling, onPull, onAddKnot, suggestion, label } =
+    data as unknown as KnotData;
   const open = n.items.length - n.pulled.length;
   const b = badge(n);
   const hoverZoom = useHoverZoom(positionAbsoluteX, positionAbsoluteY, width, height, !!dragging);
@@ -217,6 +236,7 @@ function KnotNode({ data, positionAbsoluteX, positionAbsoluteY, width, height, d
 
       <div className="flex items-center justify-between gap-2 mb-1.5">
         <span className="font-mono text-[0.55rem] tracking-[0.12em] uppercase text-[#a8d4ff]">
+          <span className="text-muted">K{label} · </span>
           {n.tech}
         </span>
         <span
@@ -240,8 +260,9 @@ function KnotNode({ data, positionAbsoluteX, positionAbsoluteY, width, height, d
           {b.label}
         </span>
       )}
-      <div>
+      <div className="flex items-center gap-1.5">
         <PullButton onClick={() => onPull(n.id)} pulling={pulling} label="PULL" />
+        <AddKnotButton onClick={() => onAddKnot(n.id)} />
       </div>
       {open > 0 && <Fray count={open} />}
     </div>
@@ -253,11 +274,13 @@ type QuestionData = {
   questionVersion: number;
   pulling: boolean;
   onPull: () => void;
+  onAddKnot: () => void;
   suggestion: Suggestion;
 };
 
 function QuestionNode({ data, positionAbsoluteX, positionAbsoluteY, width, height, dragging }: NodeProps) {
-  const { question, questionVersion, pulling, onPull, suggestion } = data as unknown as QuestionData;
+  const { question, questionVersion, pulling, onPull, onAddKnot, suggestion } =
+    data as unknown as QuestionData;
   const hoverZoom = useHoverZoom(positionAbsoluteX, positionAbsoluteY, width, height, !!dragging);
   return (
     <div
@@ -275,7 +298,10 @@ function QuestionNode({ data, positionAbsoluteX, positionAbsoluteY, width, heigh
       <span className="text-xs font-light text-text text-center leading-snug line-clamp-2">
         {question}
       </span>
-      <PullButton onClick={onPull} pulling={pulling} label="PULL" />
+      <div className="flex items-center gap-1.5">
+        <PullButton onClick={onPull} pulling={pulling} label="PULL" />
+        <AddKnotButton onClick={onAddKnot} />
+      </div>
     </div>
   );
 }
@@ -290,6 +316,7 @@ function CanvasInner({
   onSelect,
   onPull,
   pullingId,
+  onAddKnot,
   techniques,
 }: {
   nodes: NodeRow[];
@@ -299,6 +326,7 @@ function CanvasInner({
   onSelect: (id: string | null) => void;
   onPull: (sourceId: string | null) => void;
   pullingId: string | null;
+  onAddKnot: (sourceId: string | null) => void;
   techniques: Technique[];
 }) {
   const supabase = useMemo(() => createClient(), []);
@@ -325,12 +353,13 @@ function CanvasInner({
         questionVersion,
         pulling: pullingId === ROOT_ID,
         onPull: () => onPull(null),
+        onAddKnot: () => onAddKnot(null),
         suggestion: suggestFor(ROOT_ID, nodes, techniques),
       },
       style: { width: NODE_W },
     };
 
-    const knotNodes: Node[] = nodes.map((n) => {
+    const knotNodes: Node[] = nodes.map((n, i) => {
       const saved =
         n.position_x != null && n.position_y != null
           ? { x: n.position_x, y: n.position_y }
@@ -346,7 +375,9 @@ function CanvasInner({
           selected: n.id === selectedId,
           pulling: pullingId === n.id,
           onPull: () => onPull(n.id),
+          onAddKnot: () => onAddKnot(n.id),
           suggestion: suggestFor(n.id, nodes, techniques),
+          label: i + 1,
         },
         style: { width: NODE_W },
       };
@@ -376,7 +407,12 @@ function CanvasInner({
         if (fn.id === ROOT_ID) {
           return {
             ...fn,
-            data: { ...fn.data, pulling: pullingId === ROOT_ID, onPull: () => onPull(null) },
+            data: {
+              ...fn.data,
+              pulling: pullingId === ROOT_ID,
+              onPull: () => onPull(null),
+              onAddKnot: () => onAddKnot(null),
+            },
           };
         }
         const n = nodes.find((x) => x.id === fn.id);
@@ -391,12 +427,13 @@ function CanvasInner({
             selected: n.id === selectedId,
             pulling: pullingId === n.id,
             onPull: () => onPull(n.id),
+            onAddKnot: () => onAddKnot(n.id),
           },
         };
       })
     );
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedId, nodes, pullingId, onPull]);
+  }, [selectedId, nodes, pullingId, onPull, onAddKnot]);
 
   // The technique library loads asynchronously after mount — once it (or
   // the node set) changes, refresh just the suggestion field in place.
@@ -424,11 +461,12 @@ function CanvasInner({
         source,
         target: n.id,
         style: {
-          // Colored by the technique of the knot it leads into — the wire
-          // itself tells you what kind of pull is at the other end.
-          stroke: techColor(n.tech),
-          strokeWidth: onPath ? 2.6 : 1.5,
-          opacity: dim ? 0.12 : onPath ? 0.95 : n.state === "prov" ? 0.55 : 0.8,
+          // Uniform wire color — technique is already legible from the
+          // knot's left-edge accent, keeping every wire the same color
+          // reads as one continuous weave instead of a tangle.
+          stroke: onPath ? "#ffd75e" : "#d9a63f",
+          strokeWidth: onPath ? 2.4 : 1.5,
+          opacity: dim ? 0.12 : n.state === "prov" ? 0.55 : 0.85,
         },
       };
     });
@@ -489,6 +527,7 @@ export function ThreadCanvas(props: {
   onSelect: (id: string | null) => void;
   onPull: (sourceId: string | null) => void;
   pullingId: string | null;
+  onAddKnot: (sourceId: string | null) => void;
   techniques: Technique[];
 }) {
   return (

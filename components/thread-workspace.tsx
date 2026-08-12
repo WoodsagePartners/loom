@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import type { NodeRow, ThreadRow } from "@/lib/types";
-import type { Technique } from "@/lib/techniques";
+import { techColor, type Technique } from "@/lib/techniques";
 import { ThreadRail, type ThreadSummary } from "@/components/thread-rail";
 import { ThreadCanvas } from "@/components/thread-canvas";
 import { createClient } from "@/lib/supabase/client";
@@ -194,6 +194,12 @@ export function ThreadWorkspace({
   const railExpanded = railPinned || railHover;
   const inspectorExpanded = inspectorPinned || inspectorHover;
   const [tidyLoading, setTidyLoading] = useState(false);
+  const [legendOpen, setLegendOpen] = useState(false);
+  const [addKnotOpen, setAddKnotOpen] = useState(false);
+  const [addKnotSourceId, setAddKnotSourceId] = useState<string | null>(null);
+  const [addKnotText, setAddKnotText] = useState("");
+  const [addKnotSaving, setAddKnotSaving] = useState(false);
+  const [addKnotError, setAddKnotError] = useState<string | null>(null);
 
   const active = threads.find((t) => t.id === activeId) ?? null;
   const activeNodes = activeId ? nodesState[activeId] ?? [] : [];
@@ -256,6 +262,66 @@ export function ThreadWorkspace({
       }));
     } finally {
       setTidyLoading(false);
+    }
+  }
+
+  // Manual, technique-free knot: the user supplies the content directly,
+  // no model call. Functions as a fresh starting point on the same canvas —
+  // this is what "split into N threads for evaluation" turned out to mean
+  // once we cut the scope down: not a new thread row, just a new place to
+  // pull from.
+  function openAddKnot(sourceId: string | null) {
+    setAddKnotSourceId(sourceId);
+    setAddKnotText("");
+    setAddKnotError(null);
+    setAddKnotOpen(true);
+  }
+
+  async function submitAddKnot() {
+    if (!active) return;
+    const text = addKnotText.trim();
+    if (!text) {
+      setAddKnotError("Give this knot some words first.");
+      return;
+    }
+    setAddKnotSaving(true);
+    setAddKnotError(null);
+    try {
+      const supabase = createClient();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+
+      const { data: newNode, error } = await supabase
+        .from("nodes")
+        .insert({
+          thread_id: active.id,
+          parent_id: addKnotSourceId,
+          tech: "note",
+          base: "note",
+          items: [text],
+          pulled: [],
+          state: "kept",
+          by: user?.id ?? null,
+        })
+        .select(
+          "id, thread_id, parent_id, tech, base, items, pulled, state, ready, cond, folded, by, by_label, position_x, position_y, created_at"
+        )
+        .single();
+
+      if (error || !newNode) throw new Error(error?.message ?? "Could not save that knot.");
+
+      setNodesState((cur) => ({
+        ...cur,
+        [active.id]: [...(cur[active.id] ?? []), newNode as unknown as NodeRow],
+      }));
+      setSelectedNodeId(newNode.id);
+      setInspectorPinned(true);
+      setAddKnotOpen(false);
+    } catch (e) {
+      setAddKnotError(e instanceof Error ? e.message : "Could not save that knot.");
+    } finally {
+      setAddKnotSaving(false);
     }
   }
 
@@ -532,7 +598,7 @@ export function ThreadWorkspace({
               WORKING QUESTION · V{active.questions.length}
               {active.state !== "live" ? ` · ${active.state.toUpperCase()}` : ""}
             </div>
-            <div className="flex-none flex items-center gap-1.5">
+            <div className="relative flex-none flex items-center gap-1.5">
               {selectedNodeId && (
                 <button
                   onClick={() => selectNode(null)}
@@ -543,6 +609,17 @@ export function ThreadWorkspace({
                 </button>
               )}
               <button
+                onClick={() => setLegendOpen((o) => !o)}
+                title="What each knot color means"
+                className={`inline-flex items-center gap-1.5 font-mono text-[0.48rem] tracking-[0.12em] uppercase px-2.5 py-1.5 rounded-full border transition-colors ${
+                  legendOpen
+                    ? "border-orange/50 text-orange bg-orange/10"
+                    : "border-white/15 text-muted hover:text-text hover:border-white/30"
+                }`}
+              >
+                ◆ Legend
+              </button>
+              <button
                 onClick={handleTidy}
                 disabled={tidyLoading}
                 title="Reset every knot in this thread to a clean auto-layout"
@@ -551,6 +628,45 @@ export function ThreadWorkspace({
                 <span className={tidyLoading ? "animate-spin" : ""}>⟲</span>
                 {tidyLoading ? "Tidying…" : "Tidy board"}
               </button>
+
+              {legendOpen && (
+                <div className="absolute right-0 top-full mt-2 w-64 glass-readable border border-white/10 rounded-xl p-3 z-40 shadow-2xl">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="font-mono text-[0.5rem] tracking-[0.14em] text-orange uppercase">
+                      Knot colors
+                    </span>
+                    <button
+                      onClick={() => setLegendOpen(false)}
+                      className="text-muted hover:text-text text-xs leading-none"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                  <p className="text-[0.62rem] font-light text-muted italic leading-relaxed mb-2">
+                    Left edge of each knot shows which technique pulled it.
+                  </p>
+                  <div className="space-y-1.5 max-h-64 overflow-y-auto">
+                    {techniques.map((t) => (
+                      <div key={t.id} className="flex items-center gap-2" title={t.plain}>
+                        <span
+                          className="w-2.5 h-2.5 rounded-full flex-none"
+                          style={{ background: techColor(t.key) }}
+                        />
+                        <span className="text-[0.72rem] font-light text-[#dbe7f2] truncate">{t.key}</span>
+                      </div>
+                    ))}
+                    <div className="flex items-center gap-2 pt-1.5 mt-1.5 border-t border-white/10">
+                      <span
+                        className="w-2.5 h-2.5 rounded-full flex-none"
+                        style={{ background: techColor("note") }}
+                      />
+                      <span className="text-[0.72rem] font-light text-[#dbe7f2]">
+                        note — manual knot, no technique
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
           <div className="text-2xl font-light leading-snug max-w-3xl">{question}</div>
@@ -573,6 +689,7 @@ export function ThreadWorkspace({
             onPull={handlePull}
             pullingId={pullingId}
             techniques={techniques}
+            onAddKnot={openAddKnot}
           />
         </div>
       </main>
@@ -738,6 +855,58 @@ export function ThreadWorkspace({
                 onEdit={(text) => editCandidate(c.id, text)}
               />
             ))}
+          </div>
+        </div>
+      )}
+
+      {addKnotOpen && (
+        <div
+          className="fixed inset-0 z-40 flex items-center justify-center bg-black/50"
+          onClick={() => setAddKnotOpen(false)}
+        >
+          <div
+            className="glass-readable border border-white/10 rounded-2xl p-5 w-[420px]"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between mb-3">
+              <span className="font-mono text-[0.6rem] tracking-[0.16em] text-orange uppercase">
+                Add knot
+              </span>
+              <button
+                onClick={() => setAddKnotOpen(false)}
+                className="text-muted hover:text-text text-sm leading-none"
+              >
+                ✕
+              </button>
+            </div>
+            <p className="text-[0.68rem] font-light text-muted italic leading-relaxed mb-3">
+              A plain knot, in your own words — no technique applied. A new starting point you can
+              run PULL from whenever you're ready to keep going.
+            </p>
+            <textarea
+              value={addKnotText}
+              onChange={(e) => setAddKnotText(e.target.value)}
+              rows={4}
+              autoFocus
+              placeholder="What's this new starting point?"
+              className="w-full bg-black/30 border border-white/10 rounded-lg text-text text-[0.82rem] font-light p-2.5 outline-none focus:border-orange/50"
+            />
+            {addKnotError && <p className="mt-2 text-[0.68rem] text-red-300">{addKnotError}</p>}
+            <div className="flex items-center gap-1.5 mt-3 justify-end">
+              <button
+                onClick={() => setAddKnotOpen(false)}
+                className="font-mono text-[0.5rem] tracking-[0.1em] uppercase px-3 py-1.5 rounded-full border border-white/15 text-muted hover:text-text hover:border-white/30"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={submitAddKnot}
+                disabled={addKnotSaving}
+                className="font-mono text-[0.5rem] tracking-[0.1em] uppercase px-3 py-1.5 rounded-full border border-orange/40 text-orange bg-orange/[.08] hover:bg-orange/[.16] disabled:opacity-50 disabled:cursor-wait"
+              >
+                {addKnotSaving ? "Saving…" : "Add knot"}
+              </button>
+            </div>
           </div>
         </div>
       )}
