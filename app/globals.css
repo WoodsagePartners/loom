@@ -138,7 +138,14 @@ body > * {
 }
 .react-flow__node {
   cursor: grab;
+  /* Auto-repositioning (Tidy, or any programmatic layout change) snaps
+     position with no interpolation by default — easy to miss entirely,
+     especially once the camera's own re-fit is also moving. Animating the
+     transform turns that snap into a visible slide. Excluded while actively
+     dragging so a live drag never lags behind the pointer. */
+  transition: transform 400ms ease;
 }
 .react-flow__node.dragging {
   cursor: grabbing;
+  transition: none;
 }

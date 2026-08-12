@@ -243,6 +243,20 @@ export function ThreadWorkspace({
     if (id) setInspectorPinned(true);
   }
 
+  // The canvas persists a drag straight to Supabase itself, but this is
+  // what keeps nodesState — the source of truth every full canvas rebuild
+  // reads from — in sync with it. Without this, the next pull, add-knot, or
+  // tidy silently snaps the dragged knot back to its last-known state.
+  function handleNodeMoved(id: string, x: number, y: number) {
+    if (!active) return;
+    setNodesState((cur) => ({
+      ...cur,
+      [active.id]: (cur[active.id] ?? []).map((n) =>
+        n.id === id ? { ...n, position_x: x, position_y: y } : n
+      ),
+    }));
+  }
+
   // Recomputes the same depth/row auto-layout the canvas falls back to for
   // brand-new knots, then overwrites every knot's saved position with it —
   // this is what clears manual drag placements and untangles overlap on
@@ -588,7 +602,101 @@ export function ThreadWorkspace({
   }
 
   return (
-    <div className="flex h-screen">
+    <div className="h-screen flex flex-col">
+      <div className="glass-chrome flex-none border-b border-white/10 px-8 py-3 relative">
+        <div className="flex items-center justify-between gap-3 mb-1">
+          <div className="min-w-0">
+            <div className="font-mono text-[0.55rem] tracking-[0.2em] text-orange mb-1">
+              WORKING QUESTION · V{active.questions.length}
+              {active.state !== "live" ? ` · ${active.state.toUpperCase()}` : ""}
+            </div>
+            <div className="text-xl font-light leading-snug truncate">{question}</div>
+          </div>
+          <div className="relative flex-none flex items-center gap-1.5">
+            {selectedNodeId && (
+              <button
+                onClick={() => selectNode(null)}
+                title="Clear focus and show every knot at full brightness"
+                className="inline-flex items-center gap-1.5 font-mono text-[0.48rem] tracking-[0.12em] uppercase px-2.5 py-1.5 rounded-full border border-white/15 text-muted hover:text-text hover:border-white/30 transition-colors"
+              >
+                ☀ Light up all
+              </button>
+            )}
+            <button
+              onClick={() => setLegendOpen((o) => !o)}
+              title="What each knot color means"
+              className={`inline-flex items-center gap-1.5 font-mono text-[0.48rem] tracking-[0.12em] uppercase px-2.5 py-1.5 rounded-full border transition-colors ${
+                legendOpen
+                  ? "border-orange/50 text-orange bg-orange/10"
+                  : "border-white/15 text-muted hover:text-text hover:border-white/30"
+              }`}
+            >
+              ◆ Legend
+            </button>
+
+            {(tidyMessage || tidyError) && (
+              <div
+                className={`absolute right-0 top-full mt-2 whitespace-nowrap font-mono text-[0.5rem] tracking-[0.1em] uppercase px-2.5 py-1.5 rounded-full border ${
+                  tidyError
+                    ? "border-red-500/30 text-red-300 bg-red-500/10"
+                    : "border-white/15 text-muted bg-black/40"
+                }`}
+              >
+                {tidyError ?? tidyMessage}
+              </div>
+            )}
+
+            {legendOpen && (
+              <div className="absolute right-0 top-full mt-2 w-64 glass-readable border border-white/10 rounded-xl p-3 z-40 shadow-2xl">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="font-mono text-[0.5rem] tracking-[0.14em] text-orange uppercase">
+                    Knot colors
+                  </span>
+                  <button
+                    onClick={() => setLegendOpen(false)}
+                    className="text-muted hover:text-text text-xs leading-none"
+                  >
+                    ✕
+                  </button>
+                </div>
+                <p className="text-[0.62rem] font-light text-muted italic leading-relaxed mb-2">
+                  Left edge of each knot shows which technique pulled it.
+                </p>
+                <div className="space-y-1.5 max-h-64 overflow-y-auto">
+                  {techniques.map((t) => (
+                    <div key={t.id} className="flex items-center gap-2" title={t.plain}>
+                      <span
+                        className="w-2.5 h-2.5 rounded-full flex-none"
+                        style={{ background: techColor(t.key) }}
+                      />
+                      <span className="text-[0.72rem] font-light text-[#dbe7f2] truncate">{t.key}</span>
+                    </div>
+                  ))}
+                  <div className="flex items-center gap-2 pt-1.5 mt-1.5 border-t border-white/10">
+                    <span
+                      className="w-2.5 h-2.5 rounded-full flex-none"
+                      style={{ background: techColor("note") }}
+                    />
+                    <span className="text-[0.72rem] font-light text-[#dbe7f2]">
+                      note — manual knot, no technique
+                    </span>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+        {pullError && (
+          <div className="inline-flex items-center gap-2 text-[0.7rem] font-mono text-red-300 bg-red-500/10 border border-red-500/30 rounded-lg px-2.5 py-1">
+            {pullError}
+            <button onClick={() => setPullError(null)} className="text-red-200/70 hover:text-red-100">
+              ✕
+            </button>
+          </div>
+        )}
+      </div>
+
+      <div className="flex flex-1 min-h-0">
       <aside
         onMouseEnter={() => setRailHover(true)}
         onMouseLeave={() => setRailHover(false)}
@@ -657,96 +765,6 @@ export function ThreadWorkspace({
       </aside>
 
       <main className="flex-1 min-w-0 flex flex-col">
-        <div className="px-8 pt-6 pb-3 flex-none">
-          <div className="flex items-center justify-between gap-3 mb-1">
-            <div className="font-mono text-[0.55rem] tracking-[0.2em] text-orange">
-              WORKING QUESTION · V{active.questions.length}
-              {active.state !== "live" ? ` · ${active.state.toUpperCase()}` : ""}
-            </div>
-            <div className="relative flex-none flex items-center gap-1.5">
-              {selectedNodeId && (
-                <button
-                  onClick={() => selectNode(null)}
-                  title="Clear focus and show every knot at full brightness"
-                  className="inline-flex items-center gap-1.5 font-mono text-[0.48rem] tracking-[0.12em] uppercase px-2.5 py-1.5 rounded-full border border-white/15 text-muted hover:text-text hover:border-white/30 transition-colors"
-                >
-                  ☀ Light up all
-                </button>
-              )}
-              <button
-                onClick={() => setLegendOpen((o) => !o)}
-                title="What each knot color means"
-                className={`inline-flex items-center gap-1.5 font-mono text-[0.48rem] tracking-[0.12em] uppercase px-2.5 py-1.5 rounded-full border transition-colors ${
-                  legendOpen
-                    ? "border-orange/50 text-orange bg-orange/10"
-                    : "border-white/15 text-muted hover:text-text hover:border-white/30"
-                }`}
-              >
-                ◆ Legend
-              </button>
-
-              {(tidyMessage || tidyError) && (
-                <div
-                  className={`absolute right-0 top-full mt-2 whitespace-nowrap font-mono text-[0.5rem] tracking-[0.1em] uppercase px-2.5 py-1.5 rounded-full border ${
-                    tidyError
-                      ? "border-red-500/30 text-red-300 bg-red-500/10"
-                      : "border-white/15 text-muted bg-black/40"
-                  }`}
-                >
-                  {tidyError ?? tidyMessage}
-                </div>
-              )}
-
-              {legendOpen && (
-                <div className="absolute right-0 top-full mt-2 w-64 glass-readable border border-white/10 rounded-xl p-3 z-40 shadow-2xl">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="font-mono text-[0.5rem] tracking-[0.14em] text-orange uppercase">
-                      Knot colors
-                    </span>
-                    <button
-                      onClick={() => setLegendOpen(false)}
-                      className="text-muted hover:text-text text-xs leading-none"
-                    >
-                      ✕
-                    </button>
-                  </div>
-                  <p className="text-[0.62rem] font-light text-muted italic leading-relaxed mb-2">
-                    Left edge of each knot shows which technique pulled it.
-                  </p>
-                  <div className="space-y-1.5 max-h-64 overflow-y-auto">
-                    {techniques.map((t) => (
-                      <div key={t.id} className="flex items-center gap-2" title={t.plain}>
-                        <span
-                          className="w-2.5 h-2.5 rounded-full flex-none"
-                          style={{ background: techColor(t.key) }}
-                        />
-                        <span className="text-[0.72rem] font-light text-[#dbe7f2] truncate">{t.key}</span>
-                      </div>
-                    ))}
-                    <div className="flex items-center gap-2 pt-1.5 mt-1.5 border-t border-white/10">
-                      <span
-                        className="w-2.5 h-2.5 rounded-full flex-none"
-                        style={{ background: techColor("note") }}
-                      />
-                      <span className="text-[0.72rem] font-light text-[#dbe7f2]">
-                        note — manual knot, no technique
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-          <div className="text-2xl font-light leading-snug max-w-3xl">{question}</div>
-          {pullError && (
-            <div className="mt-2 inline-flex items-center gap-2 text-[0.7rem] font-mono text-red-300 bg-red-500/10 border border-red-500/30 rounded-lg px-2.5 py-1">
-              {pullError}
-              <button onClick={() => setPullError(null)} className="text-red-200/70 hover:text-red-100">
-                ✕
-              </button>
-            </div>
-          )}
-        </div>
         <div className="flex-1 min-h-0">
           <ThreadCanvas
             nodes={activeNodes}
@@ -762,6 +780,7 @@ export function ThreadWorkspace({
             fitSignal={tidyFitSignal}
             onTidy={handleTidy}
             tidyLoading={tidyLoading}
+            onNodeMoved={handleNodeMoved}
           />
         </div>
       </main>
@@ -888,6 +907,7 @@ export function ThreadWorkspace({
           </div>
         )}
       </aside>
+      </div>
 
       {creativeOpen && (
         <div className="fixed inset-y-0 right-0 w-[420px] z-30 glass-chrome border-l border-orange/25 shadow-2xl flex flex-col">

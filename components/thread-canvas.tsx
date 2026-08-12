@@ -54,7 +54,7 @@ const GLYPH: Record<string, string> = {
 function PullButton({ onClick, pulling, label }: { onClick: () => void; pulling: boolean; label: string }) {
   return (
     <button
-      className="nodrag nopan mt-2 inline-flex items-center gap-1 font-mono text-[0.62rem] tracking-[0.1em] uppercase px-2.5 py-1 rounded-full border border-orange/40 text-orange bg-orange/[.08] hover:bg-orange/[.16] disabled:opacity-50 disabled:cursor-wait transition-colors"
+      className="nodrag nopan mt-2 inline-flex items-center gap-1.5 font-mono text-[0.78rem] tracking-[0.06em] uppercase px-3 py-1.5 rounded-full border border-orange/40 text-orange bg-orange/[.08] hover:bg-orange/[.16] disabled:opacity-50 disabled:cursor-wait transition-colors"
       onClick={(e) => {
         e.stopPropagation();
         onClick();
@@ -70,7 +70,7 @@ function PullButton({ onClick, pulling, label }: { onClick: () => void; pulling:
 function AddKnotButton({ onClick }: { onClick: () => void }) {
   return (
     <button
-      className="nodrag nopan mt-2 inline-flex items-center gap-1 font-mono text-[0.62rem] tracking-[0.1em] uppercase px-2.5 py-1 rounded-full border border-white/15 text-muted hover:text-text hover:border-white/30 transition-colors"
+      className="nodrag nopan mt-2 inline-flex items-center gap-1.5 font-mono text-[0.78rem] tracking-[0.06em] uppercase px-3 py-1.5 rounded-full border border-white/15 text-muted hover:text-text hover:border-white/30 transition-colors"
       onClick={(e) => {
         e.stopPropagation();
         onClick();
@@ -146,52 +146,9 @@ const PORT_STYLE = {
   height: 8,
 };
 
-const HOVER_ZOOM_DELAY_MS = 650;
-const HOVER_ZOOM_LEVEL = 1.15;
-
-/** Dwell on a knot long enough and the viewport eases in on it — canvas
- * navigation on a large thread otherwise means constant manual pan/zoom.
- * Cancels on early pointer-leave or on drag-start so it never fights a
- * drag in progress. `onBeforeZoom` gets one chance to snapshot the pre-zoom
- * viewport so it can be restored later. Opening the full content is a
- * separate, click-driven action (see onNodeClick in CanvasInner) — hover
- * only ever zooms, never pops a modal, so passing through is never erratic. */
-function useHoverZoom(
-  x: number | undefined,
-  y: number | undefined,
-  w: number | undefined,
-  h: number | undefined,
-  dragging: boolean,
-  onBeforeZoom?: () => void
-) {
-  const { setCenter, getZoom } = useReactFlow();
-  const zoomTimerRef = useRef<number | null>(null);
-
-  const clear = useCallback(() => {
-    if (zoomTimerRef.current != null) {
-      window.clearTimeout(zoomTimerRef.current);
-      zoomTimerRef.current = null;
-    }
-  }, []);
-
-  const onPointerEnter = useCallback(() => {
-    if (dragging || x == null || y == null) return;
-    const width = w ?? NODE_W;
-    const height = h ?? NODE_H;
-    const reduceMotion =
-      typeof window !== "undefined" &&
-      window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    zoomTimerRef.current = window.setTimeout(() => {
-      onBeforeZoom?.();
-      setCenter(x + width / 2, y + height / 2, {
-        zoom: Math.max(getZoom(), HOVER_ZOOM_LEVEL),
-        duration: reduceMotion ? 0 : 450,
-      });
-    }, HOVER_ZOOM_DELAY_MS);
-  }, [dragging, x, y, w, h, setCenter, getZoom, onBeforeZoom]);
-
-  return { onPointerEnter, onPointerLeave: clear, onPointerDown: clear };
-}
+// How far in a knot-focus click zooms, at minimum (won't zoom OUT if
+// you're already closer than this).
+const FOCUS_ZOOM_LEVEL = 1.15;
 
 type KnotData = {
   node: NodeRow;
@@ -200,23 +157,18 @@ type KnotData = {
   pulling: boolean;
   onPull: (id: string) => void;
   onAddKnot: (id: string) => void;
-  captureViewport: () => void;
   suggestion: Suggestion;
   label: number;
 };
 
-function KnotNode({ data, positionAbsoluteX, positionAbsoluteY, width, height, dragging }: NodeProps) {
-  const { node: n, dim, selected, pulling, onPull, onAddKnot, captureViewport, suggestion, label } =
+function KnotNode({ data }: NodeProps) {
+  const { node: n, dim, selected, pulling, onPull, onAddKnot, suggestion, label } =
     data as unknown as KnotData;
   const open = n.items.length - n.pulled.length;
   const b = badge(n);
-  const hoverZoom = useHoverZoom(positionAbsoluteX, positionAbsoluteY, width, height, !!dragging, captureViewport);
 
   return (
     <div
-      onPointerEnter={hoverZoom.onPointerEnter}
-      onPointerLeave={hoverZoom.onPointerLeave}
-      onPointerDown={hoverZoom.onPointerDown}
       className={`relative text-left rounded-2xl p-3 cursor-grab active:cursor-grabbing transition-all duration-200 ${
         selected ? "ring-2 ring-cyan/60" : ""
       }`}
@@ -240,13 +192,13 @@ function KnotNode({ data, positionAbsoluteX, positionAbsoluteY, width, height, d
       <Handle type="source" position={Position.Right} style={PORT_STYLE} />
       <SuggestionIcon suggestion={suggestion} />
 
-      <div className="flex items-center justify-between gap-2 mb-1.5">
-        <span className="font-mono text-[0.68rem] tracking-[0.1em] uppercase text-[#a8d4ff]">
+      <div className="flex items-center justify-between gap-2 mb-2">
+        <span className="font-mono text-[0.8rem] tracking-[0.06em] uppercase text-[#a8d4ff]">
           <span className="text-muted">K{label} · </span>
           {n.tech}
         </span>
         <span
-          className="w-6 h-6 rounded-md grid place-items-center text-[0.76rem] font-mono flex-none"
+          className="w-7 h-7 rounded-md grid place-items-center text-[0.9rem] font-mono flex-none"
           style={{
             border: `1px solid ${techColor(n.tech)}66`,
             background: `${techColor(n.tech)}22`,
@@ -256,12 +208,12 @@ function KnotNode({ data, positionAbsoluteX, positionAbsoluteY, width, height, d
           {GLYPH[n.base ?? n.tech] ?? "◈"}
         </span>
       </div>
-      <div className="text-[0.88rem] font-light leading-snug text-[#dbe7f2] line-clamp-3">
+      <div className="text-[1rem] font-light leading-snug text-[#dbe7f2] line-clamp-3">
         {n.items[0] ?? ""}
       </div>
       {b && (
         <span
-          className={`inline-block mt-2 font-mono text-[0.56rem] tracking-[0.08em] px-1.5 py-0.5 rounded-lg border ${b.cls}`}
+          className={`inline-block mt-2 font-mono text-[0.66rem] tracking-[0.06em] px-2 py-0.5 rounded-lg border ${b.cls}`}
         >
           {b.label}
         </span>
@@ -281,28 +233,23 @@ type QuestionData = {
   pulling: boolean;
   onPull: () => void;
   onAddKnot: () => void;
-  captureViewport: () => void;
   suggestion: Suggestion;
 };
 
-function QuestionNode({ data, positionAbsoluteX, positionAbsoluteY, width, height, dragging }: NodeProps) {
-  const { question, questionVersion, pulling, onPull, onAddKnot, captureViewport, suggestion } =
+function QuestionNode({ data }: NodeProps) {
+  const { question, questionVersion, pulling, onPull, onAddKnot, suggestion } =
     data as unknown as QuestionData;
-  const hoverZoom = useHoverZoom(positionAbsoluteX, positionAbsoluteY, width, height, !!dragging, captureViewport);
   return (
     <div
-      onPointerEnter={hoverZoom.onPointerEnter}
-      onPointerLeave={hoverZoom.onPointerLeave}
-      onPointerDown={hoverZoom.onPointerDown}
       className="relative rounded-[2.5rem] flex flex-col items-center justify-center gap-1 px-6 py-4 glass cursor-grab active:cursor-grabbing"
       style={{ width: NODE_W, minHeight: NODE_H }}
     >
       <Handle type="source" position={Position.Right} style={PORT_STYLE} />
       <SuggestionIcon suggestion={suggestion} />
-      <span className="font-mono text-[0.6rem] tracking-[0.16em] text-orange">
+      <span className="font-mono text-[0.7rem] tracking-[0.14em] text-orange">
         WORKING QUESTION · V{questionVersion}
       </span>
-      <span className="text-[0.95rem] font-light text-text text-center leading-snug line-clamp-2">
+      <span className="text-[1.05rem] font-light text-text text-center leading-snug line-clamp-2">
         {question}
       </span>
       <div className="flex items-center gap-1.5">
@@ -328,6 +275,7 @@ function CanvasInner({
   fitSignal,
   onTidy,
   tidyLoading,
+  onNodeMoved,
   techniques,
 }: {
   nodes: NodeRow[];
@@ -342,37 +290,41 @@ function CanvasInner({
   fitSignal: number;
   onTidy: () => void;
   tidyLoading: boolean;
+  onNodeMoved: (id: string, x: number, y: number) => void;
   techniques: Technique[];
 }) {
   const supabase = useMemo(() => createClient(), []);
   const { fitView, zoomIn, zoomOut, getZoom, setCenter, screenToFlowPosition } = useReactFlow();
   const containerRef = useRef<HTMLDivElement>(null);
   // Snapshot of the *flow-space point* under the container's center, plus
-  // the zoom level, just before a hover-zoom kicks in. Storing a flow
-  // coordinate rather than a raw pixel viewport is what makes the restore
-  // self-correcting if the container resizes in between (e.g. the inspector
-  // panel opening or closing) — setCenter recomputes against whatever the
-  // container measures at restore time instead of replaying stale pixels.
-  const preHoverCenter = useRef<{ x: number; y: number; zoom: number } | null>(null);
+  // the zoom level, taken right before a click focuses in on a knot. Storing
+  // a flow coordinate rather than a raw pixel viewport is what makes the
+  // restore self-correcting if the container resizes in between (e.g. the
+  // inspector panel opening or closing) — setCenter recomputes against
+  // whatever the container measures at restore time instead of replaying
+  // stale pixels. Escape restores it and clears focus in one motion.
+  const savedViewport = useRef<{ x: number; y: number; zoom: number } | null>(null);
   const captureViewport = useCallback(() => {
-    if (preHoverCenter.current != null) return;
+    if (savedViewport.current != null) return;
     const el = containerRef.current;
     if (!el) return;
     const rect = el.getBoundingClientRect();
     const flow = screenToFlowPosition({ x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 });
-    preHoverCenter.current = { x: flow.x, y: flow.y, zoom: getZoom() };
+    savedViewport.current = { x: flow.x, y: flow.y, zoom: getZoom() };
   }, [screenToFlowPosition, getZoom]);
-  const handlePaneHover = useCallback(
-    (e: React.MouseEvent) => {
-      if (!preHoverCenter.current) return;
-      const target = e.target as HTMLElement;
-      if (target.closest(".react-flow__node")) return;
-      const c = preHoverCenter.current;
-      preHoverCenter.current = null;
+
+  useEffect(() => {
+    function onKeyDown(e: KeyboardEvent) {
+      if (e.key !== "Escape") return;
+      onSelect(null);
+      if (!savedViewport.current) return;
+      const c = savedViewport.current;
+      savedViewport.current = null;
       setCenter(c.x, c.y, { zoom: c.zoom, duration: 400 });
-    },
-    [setCenter]
-  );
+    }
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [setCenter, onSelect]);
 
   // The zoom dock is deliberately NOT an xyflow Panel — Panel positions
   // itself relative to the .react-flow container's own box, which isn't
@@ -419,7 +371,6 @@ function CanvasInner({
         pulling: pullingId === ROOT_ID,
         onPull: () => onPull(null),
         onAddKnot: () => onAddKnot(null),
-        captureViewport,
         suggestion: suggestFor(ROOT_ID, nodes, techniques),
       },
       style: { width: NODE_W },
@@ -442,7 +393,6 @@ function CanvasInner({
           pulling: pullingId === n.id,
           onPull: () => onPull(n.id),
           onAddKnot: () => onAddKnot(n.id),
-          captureViewport,
           suggestion: suggestFor(n.id, nodes, techniques),
           label: i + 1,
         },
@@ -552,31 +502,52 @@ function CanvasInner({
     []
   );
 
+  // Persisting to Supabase alone isn't enough — ThreadWorkspace's nodesState
+  // is the source of truth buildNodes() rebuilds from, and it never learns
+  // about a drag unless told. Skip that and the very next full rebuild
+  // (a new pull, a new knot, a Tidy) silently snaps the dragged knot back to
+  // wherever nodesState still thinks it is.
   const onNodeDragStop: OnNodeDrag<Node> = useCallback(
     (_, node) => {
       if (node.id === ROOT_ID) return;
+      onNodeMoved(node.id, node.position.x, node.position.y);
       void supabase
         .from("nodes")
         .update({ position_x: node.position.x, position_y: node.position.y })
-        .eq("id", node.id);
+        .eq("id", node.id)
+        .then(({ error }) => {
+          if (error) console.error("Failed to save knot position:", error.message);
+        });
     },
-    [supabase]
+    [supabase, onNodeMoved]
   );
 
-  // Click both selects (focus/dim the rest of the board) and opens the full
-  // content popup — a click is a deliberate action, unlike a hover pass-by,
-  // so it's the right trigger for a modal.
+  // First click on a knot focuses it: select (dims the rest of the board),
+  // snapshot the current viewport, and zoom in on it. Click the SAME knot
+  // again — it's already selected — and that second, deliberate click opens
+  // the full content for editing. Escape (see the effect above) is what
+  // backs out of a focused knot and restores the pre-focus viewport.
   const onNodeClick: NodeMouseHandler = useCallback(
     (_, node) => {
       if (node.id === ROOT_ID) return;
+      if (selectedId === node.id) {
+        onOpenDetail(node.id);
+        return;
+      }
+      captureViewport();
       onSelect(node.id);
-      onOpenDetail(node.id);
+      const width = node.measured?.width ?? NODE_W;
+      const height = node.measured?.height ?? NODE_H;
+      setCenter(node.position.x + width / 2, node.position.y + height / 2, {
+        zoom: Math.max(getZoom(), FOCUS_ZOOM_LEVEL),
+        duration: 450,
+      });
     },
-    [onSelect, onOpenDetail]
+    [selectedId, onOpenDetail, captureViewport, onSelect, setCenter, getZoom]
   );
 
   return (
-    <div className="h-full w-full" ref={containerRef} onMouseMove={handlePaneHover}>
+    <div className="h-full w-full" ref={containerRef}>
       <ReactFlow
         nodes={flowNodes}
         edges={edges}
@@ -631,6 +602,7 @@ export function ThreadCanvas(props: {
   fitSignal: number;
   onTidy: () => void;
   tidyLoading: boolean;
+  onNodeMoved: (id: string, x: number, y: number) => void;
   techniques: Technique[];
 }) {
   return (
