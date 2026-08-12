@@ -684,15 +684,6 @@ export function ThreadWorkspace({
               >
                 ◆ Legend
               </button>
-              <button
-                onClick={handleTidy}
-                disabled={tidyLoading}
-                title="Reset every knot in this thread to a clean auto-layout"
-                className="inline-flex items-center gap-1.5 font-mono text-[0.48rem] tracking-[0.12em] uppercase px-2.5 py-1.5 rounded-full border border-white/15 text-muted hover:text-text hover:border-white/30 disabled:opacity-50 disabled:cursor-wait transition-colors"
-              >
-                <span className={tidyLoading ? "animate-spin" : ""}>⟲</span>
-                {tidyLoading ? "Tidying…" : "Tidy board"}
-              </button>
 
               {(tidyMessage || tidyError) && (
                 <div
@@ -769,6 +760,8 @@ export function ThreadWorkspace({
             onAddKnot={openAddKnot}
             onOpenDetail={openDetail}
             fitSignal={tidyFitSignal}
+            onTidy={handleTidy}
+            tidyLoading={tidyLoading}
           />
         </div>
       </main>

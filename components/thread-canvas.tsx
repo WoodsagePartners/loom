@@ -6,7 +6,6 @@ import {
   ReactFlowProvider,
   Background,
   BackgroundVariant,
-  Controls,
   ControlButton,
   Handle,
   Position,
@@ -55,7 +54,7 @@ const GLYPH: Record<string, string> = {
 function PullButton({ onClick, pulling, label }: { onClick: () => void; pulling: boolean; label: string }) {
   return (
     <button
-      className="nodrag nopan mt-2 inline-flex items-center gap-1 font-mono text-[0.5rem] tracking-[0.12em] uppercase px-2 py-1 rounded-full border border-orange/40 text-orange bg-orange/[.08] hover:bg-orange/[.16] disabled:opacity-50 disabled:cursor-wait transition-colors"
+      className="nodrag nopan mt-2 inline-flex items-center gap-1 font-mono text-[0.62rem] tracking-[0.1em] uppercase px-2.5 py-1 rounded-full border border-orange/40 text-orange bg-orange/[.08] hover:bg-orange/[.16] disabled:opacity-50 disabled:cursor-wait transition-colors"
       onClick={(e) => {
         e.stopPropagation();
         onClick();
@@ -71,7 +70,7 @@ function PullButton({ onClick, pulling, label }: { onClick: () => void; pulling:
 function AddKnotButton({ onClick }: { onClick: () => void }) {
   return (
     <button
-      className="nodrag nopan mt-2 inline-flex items-center gap-1 font-mono text-[0.5rem] tracking-[0.12em] uppercase px-2 py-1 rounded-full border border-white/15 text-muted hover:text-text hover:border-white/30 transition-colors"
+      className="nodrag nopan mt-2 inline-flex items-center gap-1 font-mono text-[0.62rem] tracking-[0.1em] uppercase px-2.5 py-1 rounded-full border border-white/15 text-muted hover:text-text hover:border-white/30 transition-colors"
       onClick={(e) => {
         e.stopPropagation();
         onClick();
@@ -127,14 +126,14 @@ function SuggestionIcon({ suggestion }: { suggestion: Suggestion }) {
   if (!suggestion) return null;
   return (
     <div className="nodrag nopan group absolute -left-2 -top-2 z-10">
-      <div className="w-5 h-5 rounded-full border border-gold/50 bg-gold/15 grid place-items-center text-[0.6rem] text-gold cursor-help">
+      <div className="w-5 h-5 rounded-full border border-gold/50 bg-gold/15 grid place-items-center text-[0.7rem] text-gold cursor-help">
         ✦
       </div>
-      <div className="pointer-events-none absolute left-0 top-6 w-52 rounded-xl border border-gold/30 bg-[#0d1420]/95 backdrop-blur-sm p-2.5 opacity-0 group-hover:opacity-100 transition-opacity duration-150 shadow-lg z-20">
-        <div className="font-mono text-[0.5rem] tracking-[0.12em] text-gold uppercase mb-1">
+      <div className="pointer-events-none absolute left-0 top-6 w-56 rounded-xl border border-gold/30 bg-[#0d1420]/95 backdrop-blur-sm p-2.5 opacity-0 group-hover:opacity-100 transition-opacity duration-150 shadow-lg z-20">
+        <div className="font-mono text-[0.6rem] tracking-[0.1em] text-gold uppercase mb-1">
           Suggested · {suggestion.key}
         </div>
-        <div className="text-[0.68rem] font-light text-[#dbe7f2] leading-snug">{suggestion.why}</div>
+        <div className="text-[0.78rem] font-light text-[#dbe7f2] leading-snug">{suggestion.why}</div>
       </div>
     </div>
   );
@@ -242,12 +241,12 @@ function KnotNode({ data, positionAbsoluteX, positionAbsoluteY, width, height, d
       <SuggestionIcon suggestion={suggestion} />
 
       <div className="flex items-center justify-between gap-2 mb-1.5">
-        <span className="font-mono text-[0.55rem] tracking-[0.12em] uppercase text-[#a8d4ff]">
+        <span className="font-mono text-[0.68rem] tracking-[0.1em] uppercase text-[#a8d4ff]">
           <span className="text-muted">K{label} · </span>
           {n.tech}
         </span>
         <span
-          className="w-5 h-5 rounded-md grid place-items-center text-[0.64rem] font-mono flex-none"
+          className="w-6 h-6 rounded-md grid place-items-center text-[0.76rem] font-mono flex-none"
           style={{
             border: `1px solid ${techColor(n.tech)}66`,
             background: `${techColor(n.tech)}22`,
@@ -257,12 +256,12 @@ function KnotNode({ data, positionAbsoluteX, positionAbsoluteY, width, height, d
           {GLYPH[n.base ?? n.tech] ?? "◈"}
         </span>
       </div>
-      <div className="text-[0.73rem] font-light leading-snug text-[#dbe7f2] line-clamp-3">
+      <div className="text-[0.88rem] font-light leading-snug text-[#dbe7f2] line-clamp-3">
         {n.items[0] ?? ""}
       </div>
       {b && (
         <span
-          className={`inline-block mt-2 font-mono text-[0.44rem] tracking-[0.1em] px-1.5 py-0.5 rounded-lg border ${b.cls}`}
+          className={`inline-block mt-2 font-mono text-[0.56rem] tracking-[0.08em] px-1.5 py-0.5 rounded-lg border ${b.cls}`}
         >
           {b.label}
         </span>
@@ -300,10 +299,10 @@ function QuestionNode({ data, positionAbsoluteX, positionAbsoluteY, width, heigh
     >
       <Handle type="source" position={Position.Right} style={PORT_STYLE} />
       <SuggestionIcon suggestion={suggestion} />
-      <span className="font-mono text-[0.5rem] tracking-[0.18em] text-orange">
+      <span className="font-mono text-[0.6rem] tracking-[0.16em] text-orange">
         WORKING QUESTION · V{questionVersion}
       </span>
-      <span className="text-xs font-light text-text text-center leading-snug line-clamp-2">
+      <span className="text-[0.95rem] font-light text-text text-center leading-snug line-clamp-2">
         {question}
       </span>
       <div className="flex items-center gap-1.5">
@@ -327,6 +326,8 @@ function CanvasInner({
   onAddKnot,
   onOpenDetail,
   fitSignal,
+  onTidy,
+  tidyLoading,
   techniques,
 }: {
   nodes: NodeRow[];
@@ -339,6 +340,8 @@ function CanvasInner({
   onAddKnot: (sourceId: string | null) => void;
   onOpenDetail: (id: string) => void;
   fitSignal: number;
+  onTidy: () => void;
+  tidyLoading: boolean;
   techniques: Technique[];
 }) {
   const supabase = useMemo(() => createClient(), []);
@@ -370,6 +373,28 @@ function CanvasInner({
     },
     [setCenter]
   );
+
+  // The zoom dock is deliberately NOT an xyflow Panel — Panel positions
+  // itself relative to the .react-flow container's own box, which isn't
+  // reliably the same as the bottom of the actual browser window (nested
+  // flex heights, the rail/inspector panels resizing, etc). Rendering it as
+  // a plain position:fixed element pins it to the real viewport edge, then
+  // this just tracks the canvas container's left edge so it still sits
+  // where the canvas begins horizontally.
+  const [dockLeft, setDockLeft] = useState(20);
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    const update = () => setDockLeft(el.getBoundingClientRect().left + 20);
+    update();
+    const ro = new ResizeObserver(update);
+    ro.observe(el);
+    window.addEventListener("resize", update);
+    return () => {
+      ro.disconnect();
+      window.removeEventListener("resize", update);
+    };
+  }, []);
   // Position is part of the key, not just id, so a TIDY (which overwrites
   // position_x/position_y on every node in the thread) actually triggers a
   // full rebuild instead of silently no-opping because the id list didn't
@@ -567,21 +592,28 @@ function CanvasInner({
         maxZoom={1.5}
       >
         <Background variant={BackgroundVariant.Dots} gap={24} size={1} color="rgba(255,255,255,0.06)" />
-        <Controls showZoom={false} showFitView={false} showInteractive={false} orientation="horizontal">
-          <ControlButton onClick={() => zoomIn({ duration: 200 })} title="Zoom in">
-            <span className="text-[0.85rem] leading-none">+</span>
-          </ControlButton>
-          <ControlButton
-            onClick={() => fitView({ padding: 0.25, duration: 400 })}
-            title="Reframe the whole board"
-          >
-            <span className="block w-2.5 h-2.5 border border-current" />
-          </ControlButton>
-          <ControlButton onClick={() => zoomOut({ duration: 200 })} title="Zoom out">
-            <span className="text-[0.95rem] leading-none">−</span>
-          </ControlButton>
-        </Controls>
       </ReactFlow>
+      <div
+        className="react-flow__controls horizontal fixed bottom-5 z-20"
+        style={{ left: dockLeft }}
+      >
+        <ControlButton onClick={() => zoomIn({ duration: 200 })} title="Zoom in">
+          <span className="text-[0.85rem] leading-none">+</span>
+        </ControlButton>
+        <ControlButton onClick={() => fitView({ padding: 0.25, duration: 400 })} title="Reframe the whole board">
+          <span className="block w-2.5 h-2.5 border border-current" />
+        </ControlButton>
+        <ControlButton onClick={() => zoomOut({ duration: 200 })} title="Zoom out">
+          <span className="text-[0.95rem] leading-none">−</span>
+        </ControlButton>
+        <ControlButton
+          onClick={onTidy}
+          disabled={tidyLoading}
+          title="Tidy board — reset every knot to a clean auto-layout"
+        >
+          <span className={`text-[0.85rem] leading-none ${tidyLoading ? "animate-spin" : ""}`}>⟲</span>
+        </ControlButton>
+      </div>
     </div>
   );
 }
@@ -597,6 +629,8 @@ export function ThreadCanvas(props: {
   onAddKnot: (sourceId: string | null) => void;
   onOpenDetail: (id: string) => void;
   fitSignal: number;
+  onTidy: () => void;
+  tidyLoading: boolean;
   techniques: Technique[];
 }) {
   return (
