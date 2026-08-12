@@ -31,6 +31,34 @@ function parsePullResponse(text: string): string[] {
   return [cleaned];
 }
 
+function buildTracePrompt(thread: ThreadRow, chain: NodeRow[], question: string) {
+  const ctx = thread.context ? `Context: ${thread.context}` : "No additional context was given.";
+  const steps = chain.map((n, i) => `${i + 1}. [${n.tech}] ${n.items.join(" ")}`).join("\n");
+  return `${ctx}\n\nWorking question: ${question}\n\nLine of inquiry so far, in order from the start:\n${steps}\n\nFor each numbered step above, in the same order, name one thing that could have been pulled or considered instead at that exact step. Then write one short summary of the arc of this line of inquiry so far.`;
+}
+
+function parseTraceResponse(text: string): { steps: string[]; summary: string } | null {
+  const cleaned = text
+    .trim()
+    .replace(/^```(?:json)?\s*/i, "")
+    .replace(/```$/, "")
+    .trim();
+  try {
+    const parsed = JSON.parse(cleaned);
+    if (
+      parsed &&
+      Array.isArray(parsed.steps) &&
+      parsed.steps.every((x: unknown) => typeof x === "string") &&
+      typeof parsed.summary === "string"
+    ) {
+      return parsed;
+    }
+  } catch {
+    // fall through
+  }
+  return null;
+}
+
 export function ThreadWorkspace({
   orgId,
   threads,
@@ -63,6 +91,14 @@ export function ThreadWorkspace({
     };
   }, [orgId]);
   const [pullError, setPullError] = useState<string | null>(null);
+  const [trace, setTrace] = useState<{
+    nodeId: string;
+    chain: NodeRow[];
+    steps: string[];
+    summary: string;
+  } | null>(null);
+  const [traceLoading, setTraceLoading] = useState(false);
+  const [traceError, setTraceError] = useState<string | null>(null);
 
   const active = threads.find((t) => t.id === activeId) ?? null;
   const activeNodes = activeId ? nodesState[activeId] ?? [] : [];
@@ -83,6 +119,8 @@ export function ThreadWorkspace({
     setActiveId(id);
     setSelectedNodeId(null);
     setPullError(null);
+    setTrace(null);
+    setTraceError(null);
   }
 
   if (!active) {
@@ -156,6 +194,37 @@ export function ThreadWorkspace({
     }
   }
 
+  async function handleTraceBack() {
+    if (!active || !selectedNode) return;
+    setTraceError(null);
+    setTraceLoading(true);
+
+    try {
+      const chain = [...pathTo(activeNodes, selectedNode.id)]
+        .reverse()
+        .map((id) => activeNodes.find((n) => n.id === id))
+        .filter((n): n is NodeRow => !!n);
+
+      const prompt = buildTracePrompt(active, chain, question);
+      const res = await fetch("/api/trace", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ orgId, prompt }),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error ?? "Trace back failed.");
+
+      const parsed = parseTraceResponse(json.text as string);
+      if (!parsed) throw new Error("Could not read the retrospective.");
+
+      setTrace({ nodeId: selectedNode.id, chain, steps: parsed.steps, summary: parsed.summary });
+    } catch (e) {
+      setTraceError(e instanceof Error ? e.message : "Trace back failed.");
+    } finally {
+      setTraceLoading(false);
+    }
+  }
+
   return (
     <div className="flex h-screen">
       <aside className="glass-chrome w-56 flex-none border-r border-white/10 px-2">
@@ -222,6 +291,43 @@ export function ThreadWorkspace({
                 );
               })}
             </div>
+
+            <button
+              onClick={handleTraceBack}
+              disabled={traceLoading}
+              className="mt-4 w-full inline-flex items-center justify-center gap-1.5 font-mono text-[0.55rem] tracking-[0.14em] uppercase px-3 py-2 rounded-full border border-gold/40 text-gold bg-gold/[.08] hover:bg-gold/[.16] disabled:opacity-50 disabled:cursor-wait transition-colors"
+            >
+              <span className={traceLoading ? "animate-spin" : ""}>↺</span>
+              {traceLoading ? "TRACING BACK…" : "TRACE BACK"}
+            </button>
+            {traceError && <p className="mt-2 text-[0.68rem] text-red-300">{traceError}</p>}
+
+            {trace && trace.nodeId === selectedNode.id && (
+              <div className="mt-4 pt-4 border-t border-white/10">
+                <div className="font-mono text-[0.5rem] tracking-[0.14em] text-gold mb-2">
+                  ROADS NOT TAKEN
+                </div>
+                <div className="space-y-2 mb-3">
+                  {trace.chain.map((n, i) => (
+                    <div
+                      key={n.id}
+                      className="text-[0.72rem] font-light rounded-lg border border-white/10 bg-white/[.03] px-2.5 py-2"
+                    >
+                      <span className="block font-mono text-[0.42rem] tracking-[0.1em] text-muted mb-1 uppercase">
+                        {n.tech}
+                      </span>
+                      <span className="text-[#dbe7f2]">{trace.steps[i] ?? "—"}</span>
+                    </div>
+                  ))}
+                </div>
+                <div className="font-mono text-[0.5rem] tracking-[0.14em] text-gold mb-1.5">
+                  ARC SO FAR
+                </div>
+                <p className="text-[0.74rem] font-light italic text-muted leading-relaxed">
+                  {trace.summary}
+                </p>
+              </div>
+            )}
           </div>
         ) : (
           <p className="text-muted text-[0.78rem] font-light italic leading-relaxed">
