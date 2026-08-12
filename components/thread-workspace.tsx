@@ -222,9 +222,9 @@ export function ThreadWorkspace({
     setCreativeSourceId(null);
   }
 
-  function selectNode(id: string) {
+  function selectNode(id: string | null) {
     setSelectedNodeId(id);
-    setInspectorPinned(true);
+    if (id) setInspectorPinned(true);
   }
 
   // Recomputes the same depth/row auto-layout the canvas falls back to for
@@ -532,15 +532,26 @@ export function ThreadWorkspace({
               WORKING QUESTION · V{active.questions.length}
               {active.state !== "live" ? ` · ${active.state.toUpperCase()}` : ""}
             </div>
-            <button
-              onClick={handleTidy}
-              disabled={tidyLoading}
-              title="Reset every knot in this thread to a clean auto-layout"
-              className="flex-none inline-flex items-center gap-1.5 font-mono text-[0.48rem] tracking-[0.12em] uppercase px-2.5 py-1.5 rounded-full border border-white/15 text-muted hover:text-text hover:border-white/30 disabled:opacity-50 disabled:cursor-wait transition-colors"
-            >
-              <span className={tidyLoading ? "animate-spin" : ""}>⟲</span>
-              {tidyLoading ? "Tidying…" : "Tidy board"}
-            </button>
+            <div className="flex-none flex items-center gap-1.5">
+              {selectedNodeId && (
+                <button
+                  onClick={() => selectNode(null)}
+                  title="Clear focus and show every knot at full brightness"
+                  className="inline-flex items-center gap-1.5 font-mono text-[0.48rem] tracking-[0.12em] uppercase px-2.5 py-1.5 rounded-full border border-white/15 text-muted hover:text-text hover:border-white/30 transition-colors"
+                >
+                  ☀ Light up all
+                </button>
+              )}
+              <button
+                onClick={handleTidy}
+                disabled={tidyLoading}
+                title="Reset every knot in this thread to a clean auto-layout"
+                className="inline-flex items-center gap-1.5 font-mono text-[0.48rem] tracking-[0.12em] uppercase px-2.5 py-1.5 rounded-full border border-white/15 text-muted hover:text-text hover:border-white/30 disabled:opacity-50 disabled:cursor-wait transition-colors"
+              >
+                <span className={tidyLoading ? "animate-spin" : ""}>⟲</span>
+                {tidyLoading ? "Tidying…" : "Tidy board"}
+              </button>
+            </div>
           </div>
           <div className="text-2xl font-light leading-snug max-w-3xl">{question}</div>
           {pullError && (

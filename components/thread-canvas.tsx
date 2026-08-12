@@ -296,7 +296,7 @@ function CanvasInner({
   question: string;
   questionVersion: number;
   selectedId: string | null;
-  onSelect: (id: string) => void;
+  onSelect: (id: string | null) => void;
   onPull: (sourceId: string | null) => void;
   pullingId: string | null;
   techniques: Technique[];
@@ -467,6 +467,7 @@ function CanvasInner({
         onNodesChange={onNodesChange}
         onNodeDragStop={onNodeDragStop}
         onNodeClick={onNodeClick}
+        onPaneClick={() => onSelect(null)}
         fitView
         fitViewOptions={{ padding: 0.25 }}
         proOptions={{ hideAttribution: true }}
@@ -485,7 +486,7 @@ export function ThreadCanvas(props: {
   question: string;
   questionVersion: number;
   selectedId: string | null;
-  onSelect: (id: string) => void;
+  onSelect: (id: string | null) => void;
   onPull: (sourceId: string | null) => void;
   pullingId: string | null;
   techniques: Technique[];
