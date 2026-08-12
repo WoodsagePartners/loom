@@ -1,21 +1,22 @@
 import type { NodeRow } from "./types";
 
 export const ROOT_ID = "__root__";
-// Widened alongside the larger knot fonts (was 220, then 240) — more
-// horizontal room means the same text wraps to fewer lines, which keeps
-// the height bump from the bigger type smaller than it would otherwise be.
-export const NODE_W = 260;
+// Widened alongside the larger knot fonts (was 220, then 240, then 260) —
+// more horizontal room means the same text wraps to fewer lines, which
+// keeps the height bump from the bigger type smaller than it would
+// otherwise be.
+export const NODE_W = 280;
 export const NODE_H = 92;
-export const GAP_X = 110;
+export const GAP_X = 120;
 // A knot's real rendered height (tech label + glyph, up to 3 lines of
 // wrapped text at the larger legible font, an optional state badge, the
 // PULL button row, padding and border) comfortably exceeds NODE_H once
-// badge + button are both present — worst case runs close to 195px at the
+// badge + button are both present — worst case runs close to 210px at the
 // current font sizes. GAP_Y has to absorb that gap on top of NODE_H, not
 // just add cosmetic breathing room, or sibling knots at the same depth
-// overlap. Row pitch (NODE_H + GAP_Y) = 222px, ~25px of margin over the
+// overlap. Row pitch (NODE_H + GAP_Y) = 232px, ~20px of margin over the
 // realistic worst case.
-export const GAP_Y = 130;
+export const GAP_Y = 140;
 
 export type Point = { x: number; y: number };
 

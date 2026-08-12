@@ -262,12 +262,17 @@ export function ThreadWorkspace({
   // this is what clears manual drag placements and untangles overlap on
   // request, rather than trying to reason about it from a screenshot.
   async function handleTidy() {
-    if (!active || activeNodes.length === 0) return;
+    console.log("[Tidy] click received", { active: active?.id, nodeCount: activeNodes.length });
+    if (!active || activeNodes.length === 0) {
+      console.log("[Tidy] bailed early — no active thread or no nodes");
+      return;
+    }
     setTidyLoading(true);
     setTidyError(null);
     setTidyMessage(null);
     try {
       const layout = layoutThread(activeNodes);
+      console.log("[Tidy] computed layout", layout);
       const supabase = createClient();
       let moved = 0;
       const results = await Promise.all(
@@ -281,6 +286,7 @@ export function ThreadWorkspace({
             .eq("id", n.id);
         })
       );
+      console.log("[Tidy] write results", results);
       const failed = results.find((r) => r && r.error);
       if (failed?.error) throw new Error(failed.error.message);
 
@@ -295,7 +301,9 @@ export function ThreadWorkspace({
       // already tidy gives zero visible feedback and looks broken.
       setTidyFitSignal((s) => s + 1);
       setTidyMessage(moved > 0 ? `Rearranged ${moved} knot${moved === 1 ? "" : "s"}.` : "Already tidy.");
+      console.log("[Tidy] success, moved:", moved);
     } catch (e) {
+      console.error("[Tidy] failed:", e);
       setTidyError(e instanceof Error ? e.message : "Could not tidy the board.");
     } finally {
       setTidyLoading(false);

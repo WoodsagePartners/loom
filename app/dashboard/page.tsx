@@ -44,6 +44,12 @@ export default async function DashboardPage() {
     }
   }
 
+  // Vercel sets this automatically at build time for every deployment — no
+  // config needed. Shown in the corner so a stale-looking browser can be
+  // diagnosed by eye: if this doesn't match the commit you just pushed,
+  // you're not looking at the deployment you think you are.
+  const buildSha = process.env.VERCEL_GIT_COMMIT_SHA?.slice(0, 7) ?? "dev";
+
   return (
     <div className="min-h-screen flex flex-col">
       <div className="glass-chrome h-12 flex-none flex items-center gap-3 px-5 border-b border-white/10">
@@ -51,6 +57,12 @@ export default async function DashboardPage() {
           THE <span className="text-orange">LOOM</span>
         </span>
         <span className="text-muted text-xs font-light ml-2">{orgName}</span>
+        <span
+          className="font-mono text-[0.55rem] tracking-[0.08em] text-muted/50"
+          title="Deployed commit — compare against your latest git push"
+        >
+          build {buildSha}
+        </span>
 
         <div className="ml-auto flex items-center gap-2">
           <div className="group relative">
