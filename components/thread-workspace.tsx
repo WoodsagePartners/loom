@@ -144,10 +144,14 @@ function CreativeCandidateCard({
 
 export function ThreadWorkspace({
   orgId,
+  orgName,
+  buildSha,
   threads,
   nodesByThread,
 }: {
   orgId: string;
+  orgName: string;
+  buildSha: string;
   threads: ThreadRow[];
   nodesByThread: Record<string, NodeRow[]>;
 }) {
@@ -420,15 +424,162 @@ export function ThreadWorkspace({
     setTechniques((cur) => cur.map((x) => (x.id === t.id ? { ...x, stats: next } : x)));
   }
 
+  const question = active ? active.questions[active.questions.length - 1] ?? active.name : "";
+
+  // One unified strip: brand + org + build tag on the left, the working
+  // question inline to the right of that (not a separate row), thread
+  // controls and the always-there upload/library placeholders on the far
+  // right. Shared between the "no threads yet" state and the normal view
+  // so branding is never missing.
+  const topBar = (
+    <div className="glass-chrome flex-none border-b border-white/10 h-14 flex items-center gap-3 px-5 relative">
+      <span className="font-semibold tracking-[0.16em] text-xs flex-none">
+        THE <span className="text-orange">LOOM</span>
+      </span>
+      <span className="text-muted text-xs font-light flex-none">{orgName}</span>
+      <span
+        className="font-mono text-[0.55rem] tracking-[0.08em] text-muted/50 flex-none"
+        title="Deployed commit — compare against your latest git push"
+      >
+        build {buildSha}
+      </span>
+
+      {active && (
+        <>
+          <span className="w-px h-5 bg-white/10 flex-none" />
+          <div className="min-w-0 flex-1 flex items-baseline gap-2">
+            <span className="font-mono text-[0.55rem] tracking-[0.12em] text-orange flex-none">
+              V{active.questions.length}
+              {active.state !== "live" ? ` · ${active.state.toUpperCase()}` : ""}
+            </span>
+            <span className="text-[0.95rem] font-light text-text truncate">{question}</span>
+          </div>
+        </>
+      )}
+
+      <div className={`flex-none flex items-center gap-1.5 relative ${active ? "" : "ml-auto"}`}>
+        {active && selectedNodeId && (
+          <button
+            onClick={() => selectNode(null)}
+            title="Clear focus and show every knot at full brightness"
+            className="inline-flex items-center gap-1.5 font-mono text-[0.48rem] tracking-[0.12em] uppercase px-2.5 py-1.5 rounded-full border border-white/15 text-muted hover:text-text hover:border-white/30 transition-colors"
+          >
+            ☀ Light up all
+          </button>
+        )}
+        {active && (
+          <button
+            onClick={() => setLegendOpen((o) => !o)}
+            title="What each knot color means"
+            className={`inline-flex items-center gap-1.5 font-mono text-[0.48rem] tracking-[0.12em] uppercase px-2.5 py-1.5 rounded-full border transition-colors ${
+              legendOpen
+                ? "border-orange/50 text-orange bg-orange/10"
+                : "border-white/15 text-muted hover:text-text hover:border-white/30"
+            }`}
+          >
+            ◆ Legend
+          </button>
+        )}
+
+        {active && (tidyMessage || tidyError) && (
+          <div
+            className={`absolute right-24 top-full mt-2 whitespace-nowrap font-mono text-[0.5rem] tracking-[0.1em] uppercase px-2.5 py-1.5 rounded-full border ${
+              tidyError
+                ? "border-red-500/30 text-red-300 bg-red-500/10"
+                : "border-white/15 text-muted bg-black/40"
+            }`}
+          >
+            {tidyError ?? tidyMessage}
+          </div>
+        )}
+
+        {active && legendOpen && (
+          <div className="absolute right-24 top-full mt-2 w-64 glass-readable border border-white/10 rounded-xl p-3 z-40 shadow-2xl">
+            <div className="flex items-center justify-between mb-2">
+              <span className="font-mono text-[0.5rem] tracking-[0.14em] text-orange uppercase">
+                Knot colors
+              </span>
+              <button
+                onClick={() => setLegendOpen(false)}
+                className="text-muted hover:text-text text-xs leading-none"
+              >
+                ✕
+              </button>
+            </div>
+            <p className="text-[0.62rem] font-light text-muted italic leading-relaxed mb-2">
+              Left edge of each knot shows which technique pulled it.
+            </p>
+            <div className="space-y-1.5 max-h-64 overflow-y-auto">
+              {techniques.map((t) => (
+                <div key={t.id} className="flex items-center gap-2" title={t.plain}>
+                  <span
+                    className="w-2.5 h-2.5 rounded-full flex-none"
+                    style={{ background: techColor(t.key) }}
+                  />
+                  <span className="text-[0.72rem] font-light text-[#dbe7f2] truncate">{t.key}</span>
+                </div>
+              ))}
+              <div className="flex items-center gap-2 pt-1.5 mt-1.5 border-t border-white/10">
+                <span
+                  className="w-2.5 h-2.5 rounded-full flex-none"
+                  style={{ background: techColor("note") }}
+                />
+                <span className="text-[0.72rem] font-light text-[#dbe7f2]">
+                  note — manual knot, no technique
+                </span>
+              </div>
+            </div>
+          </div>
+        )}
+
+        <div className="group relative">
+          <button
+            disabled
+            className="flex items-center gap-1.5 font-mono text-[0.5rem] tracking-[0.1em] uppercase px-2.5 py-1.5 rounded-full border border-white/10 text-muted/70 cursor-not-allowed"
+          >
+            ⇪ Upload context
+          </button>
+          <div className="pointer-events-none absolute right-0 top-8 w-56 rounded-xl border border-white/10 bg-[#0d1420]/95 backdrop-blur-sm p-2.5 opacity-0 group-hover:opacity-100 transition-opacity duration-150 shadow-lg z-20">
+            <span className="block font-mono text-[0.42rem] tracking-[0.1em] text-orange uppercase mb-1">
+              Soon
+            </span>
+            <span className="text-[0.68rem] font-light text-[#dbe7f2] leading-snug">
+              Upload org documents to prime every pull with real context.
+            </span>
+          </div>
+        </div>
+
+        <div className="group relative">
+          <button
+            disabled
+            className="flex items-center gap-1.5 font-mono text-[0.5rem] tracking-[0.1em] uppercase px-2.5 py-1.5 rounded-full border border-white/10 text-muted/70 cursor-not-allowed"
+          >
+            ◈ Library
+          </button>
+          <div className="pointer-events-none absolute right-0 top-8 w-56 rounded-xl border border-white/10 bg-[#0d1420]/95 backdrop-blur-sm p-2.5 opacity-0 group-hover:opacity-100 transition-opacity duration-150 shadow-lg z-20">
+            <span className="block font-mono text-[0.42rem] tracking-[0.1em] text-orange uppercase mb-1">
+              Soon
+            </span>
+            <span className="text-[0.68rem] font-light text-[#dbe7f2] leading-snug">
+              Browse and customize the shared technique knowledge base.
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
   if (!active) {
     return (
-      <div className="p-8 text-muted text-sm font-light">
-        No threads yet. Start one and this canvas fills in.
+      <div className="h-screen flex flex-col">
+        {topBar}
+        <div className="p-8 text-muted text-sm font-light">
+          No threads yet. Start one and this canvas fills in.
+        </div>
       </div>
     );
   }
 
-  const question = active.questions[active.questions.length - 1] ?? active.name;
   const openLoose = selectedNode ? selectedNode.items.length - selectedNode.pulled.length : 0;
 
   async function handlePull(sourceId: string | null) {
@@ -611,104 +762,13 @@ export function ThreadWorkspace({
 
   return (
     <div className="h-screen flex flex-col">
-      <div className="glass-chrome flex-none border-b border-white/10 px-8 py-3 relative">
-        <div className="flex items-center justify-between gap-3 mb-1">
-          <div className="min-w-0">
-            <div className="font-mono text-[0.55rem] tracking-[0.2em] text-orange mb-1">
-              WORKING QUESTION · V{active.questions.length}
-              {active.state !== "live" ? ` · ${active.state.toUpperCase()}` : ""}
-            </div>
-            <div className="text-xl font-light leading-snug truncate">{question}</div>
-          </div>
-          <div className="relative flex-none flex items-center gap-1.5">
-            {selectedNodeId && (
-              <button
-                onClick={() => selectNode(null)}
-                title="Clear focus and show every knot at full brightness"
-                className="inline-flex items-center gap-1.5 font-mono text-[0.48rem] tracking-[0.12em] uppercase px-2.5 py-1.5 rounded-full border border-white/15 text-muted hover:text-text hover:border-white/30 transition-colors"
-              >
-                ☀ Light up all
-              </button>
-            )}
-            <button
-              onClick={() => setLegendOpen((o) => !o)}
-              title="What each knot color means"
-              className={`inline-flex items-center gap-1.5 font-mono text-[0.48rem] tracking-[0.12em] uppercase px-2.5 py-1.5 rounded-full border transition-colors ${
-                legendOpen
-                  ? "border-orange/50 text-orange bg-orange/10"
-                  : "border-white/15 text-muted hover:text-text hover:border-white/30"
-              }`}
-            >
-              ◆ Legend
-            </button>
+      {topBar}
 
-            {(tidyMessage || tidyError) && (
-              <div
-                className={`absolute right-0 top-full mt-2 whitespace-nowrap font-mono text-[0.5rem] tracking-[0.1em] uppercase px-2.5 py-1.5 rounded-full border ${
-                  tidyError
-                    ? "border-red-500/30 text-red-300 bg-red-500/10"
-                    : "border-white/15 text-muted bg-black/40"
-                }`}
-              >
-                {tidyError ?? tidyMessage}
-              </div>
-            )}
-
-            {legendOpen && (
-              <div className="absolute right-0 top-full mt-2 w-64 glass-readable border border-white/10 rounded-xl p-3 z-40 shadow-2xl">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="font-mono text-[0.5rem] tracking-[0.14em] text-orange uppercase">
-                    Knot colors
-                  </span>
-                  <button
-                    onClick={() => setLegendOpen(false)}
-                    className="text-muted hover:text-text text-xs leading-none"
-                  >
-                    ✕
-                  </button>
-                </div>
-                <p className="text-[0.62rem] font-light text-muted italic leading-relaxed mb-2">
-                  Left edge of each knot shows which technique pulled it.
-                </p>
-                <div className="space-y-1.5 max-h-64 overflow-y-auto">
-                  {techniques.map((t) => (
-                    <div key={t.id} className="flex items-center gap-2" title={t.plain}>
-                      <span
-                        className="w-2.5 h-2.5 rounded-full flex-none"
-                        style={{ background: techColor(t.key) }}
-                      />
-                      <span className="text-[0.72rem] font-light text-[#dbe7f2] truncate">{t.key}</span>
-                    </div>
-                  ))}
-                  <div className="flex items-center gap-2 pt-1.5 mt-1.5 border-t border-white/10">
-                    <span
-                      className="w-2.5 h-2.5 rounded-full flex-none"
-                      style={{ background: techColor("note") }}
-                    />
-                    <span className="text-[0.72rem] font-light text-[#dbe7f2]">
-                      note — manual knot, no technique
-                    </span>
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-        {pullError && (
-          <div className="inline-flex items-center gap-2 text-[0.7rem] font-mono text-red-300 bg-red-500/10 border border-red-500/30 rounded-lg px-2.5 py-1">
-            {pullError}
-            <button onClick={() => setPullError(null)} className="text-red-200/70 hover:text-red-100">
-              ✕
-            </button>
-          </div>
-        )}
-      </div>
-
-      <div className="flex flex-1 min-h-0">
+      <div className="flex flex-1 min-h-0 relative">
       <aside
         onMouseEnter={() => setRailHover(true)}
         onMouseLeave={() => setRailHover(false)}
-        className={`glass-chrome flex-none border-r border-white/10 overflow-hidden transition-[width] duration-200 ease-out ${
+        className={`glass-chrome absolute inset-y-0 left-0 z-30 border-r border-white/10 overflow-hidden transition-[width] duration-200 ease-out shadow-2xl ${
           railExpanded ? "w-56 px-2" : "w-14"
         }`}
       >
@@ -772,7 +832,15 @@ export function ThreadWorkspace({
         )}
       </aside>
 
-      <main className="flex-1 min-w-0 flex flex-col">
+      <main className="flex-1 min-w-0 flex flex-col relative ml-14 mr-14">
+        {pullError && (
+          <div className="absolute top-3 left-1/2 -translate-x-1/2 z-20 inline-flex items-center gap-2 text-[0.7rem] font-mono text-red-300 bg-red-500/10 border border-red-500/30 rounded-lg px-2.5 py-1 shadow-lg">
+            {pullError}
+            <button onClick={() => setPullError(null)} className="text-red-200/70 hover:text-red-100">
+              ✕
+            </button>
+          </div>
+        )}
         <div className="flex-1 min-h-0">
           <ThreadCanvas
             nodes={activeNodes}
@@ -796,7 +864,7 @@ export function ThreadWorkspace({
       <aside
         onMouseEnter={() => setInspectorHover(true)}
         onMouseLeave={() => setInspectorHover(false)}
-        className={`glass-readable flex-none border-l border-white/10 overflow-hidden transition-[width] duration-200 ease-out ${
+        className={`glass-readable absolute inset-y-0 right-0 z-30 border-l border-white/10 overflow-hidden transition-[width] duration-200 ease-out shadow-2xl ${
           inspectorExpanded ? "w-80" : "w-14"
         }`}
       >
