@@ -18,7 +18,6 @@ import {
   type NodeMouseHandler,
   type OnNodeDrag,
   type OnNodesChange,
-  type Viewport,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 import type { NodeRow } from "@/lib/types";
@@ -149,39 +148,30 @@ const PORT_STYLE = {
 };
 
 const HOVER_ZOOM_DELAY_MS = 650;
-// Extra dwell time AFTER the zoom lands before the full-content popup opens —
-// a quick pass across the board should just zoom, not throw a modal in your
-// face. Total time-to-popup is ~1.55s of sustained hover.
-const HOVER_DETAIL_DELAY_MS = 900;
 const HOVER_ZOOM_LEVEL = 1.15;
 
 /** Dwell on a knot long enough and the viewport eases in on it — canvas
  * navigation on a large thread otherwise means constant manual pan/zoom.
  * Cancels on early pointer-leave or on drag-start so it never fights a
- * drag in progress. Keeps dwelling and it pops the full content open too.
- * `onBeforeZoom` gets one chance to snapshot the pre-zoom viewport so it can
- * be restored later. */
+ * drag in progress. `onBeforeZoom` gets one chance to snapshot the pre-zoom
+ * viewport so it can be restored later. Opening the full content is a
+ * separate, click-driven action (see onNodeClick in CanvasInner) — hover
+ * only ever zooms, never pops a modal, so passing through is never erratic. */
 function useHoverZoom(
   x: number | undefined,
   y: number | undefined,
   w: number | undefined,
   h: number | undefined,
   dragging: boolean,
-  onBeforeZoom?: () => void,
-  onDetail?: () => void
+  onBeforeZoom?: () => void
 ) {
   const { setCenter, getZoom } = useReactFlow();
   const zoomTimerRef = useRef<number | null>(null);
-  const detailTimerRef = useRef<number | null>(null);
 
   const clear = useCallback(() => {
     if (zoomTimerRef.current != null) {
       window.clearTimeout(zoomTimerRef.current);
       zoomTimerRef.current = null;
-    }
-    if (detailTimerRef.current != null) {
-      window.clearTimeout(detailTimerRef.current);
-      detailTimerRef.current = null;
     }
   }, []);
 
@@ -198,11 +188,8 @@ function useHoverZoom(
         zoom: Math.max(getZoom(), HOVER_ZOOM_LEVEL),
         duration: reduceMotion ? 0 : 450,
       });
-      if (onDetail) {
-        detailTimerRef.current = window.setTimeout(onDetail, HOVER_DETAIL_DELAY_MS);
-      }
     }, HOVER_ZOOM_DELAY_MS);
-  }, [dragging, x, y, w, h, setCenter, getZoom, onBeforeZoom, onDetail]);
+  }, [dragging, x, y, w, h, setCenter, getZoom, onBeforeZoom]);
 
   return { onPointerEnter, onPointerLeave: clear, onPointerDown: clear };
 }
@@ -214,26 +201,17 @@ type KnotData = {
   pulling: boolean;
   onPull: (id: string) => void;
   onAddKnot: (id: string) => void;
-  onOpenDetail: (id: string) => void;
   captureViewport: () => void;
   suggestion: Suggestion;
   label: number;
 };
 
 function KnotNode({ data, positionAbsoluteX, positionAbsoluteY, width, height, dragging }: NodeProps) {
-  const { node: n, dim, selected, pulling, onPull, onAddKnot, onOpenDetail, captureViewport, suggestion, label } =
+  const { node: n, dim, selected, pulling, onPull, onAddKnot, captureViewport, suggestion, label } =
     data as unknown as KnotData;
   const open = n.items.length - n.pulled.length;
   const b = badge(n);
-  const hoverZoom = useHoverZoom(
-    positionAbsoluteX,
-    positionAbsoluteY,
-    width,
-    height,
-    !!dragging,
-    captureViewport,
-    () => onOpenDetail(n.id)
-  );
+  const hoverZoom = useHoverZoom(positionAbsoluteX, positionAbsoluteY, width, height, !!dragging, captureViewport);
 
   return (
     <div
@@ -311,16 +289,7 @@ type QuestionData = {
 function QuestionNode({ data, positionAbsoluteX, positionAbsoluteY, width, height, dragging }: NodeProps) {
   const { question, questionVersion, pulling, onPull, onAddKnot, captureViewport, suggestion } =
     data as unknown as QuestionData;
-  // No onDetail here — the question pill isn't a knot with editable
-  // content, it's just navigation, so sustained hover only ever zooms.
-  const hoverZoom = useHoverZoom(
-    positionAbsoluteX,
-    positionAbsoluteY,
-    width,
-    height,
-    !!dragging,
-    captureViewport
-  );
+  const hoverZoom = useHoverZoom(positionAbsoluteX, positionAbsoluteY, width, height, !!dragging, captureViewport);
   return (
     <div
       onPointerEnter={hoverZoom.onPointerEnter}
@@ -373,26 +342,33 @@ function CanvasInner({
   techniques: Technique[];
 }) {
   const supabase = useMemo(() => createClient(), []);
-  const { getViewport, setViewport, fitView, zoomIn, zoomOut } = useReactFlow();
-  // Snapshot of the viewport just before a hover-zoom kicks in — restored
-  // the moment the pointer lands back on blank canvas, so a quick glance at
-  // a knot doesn't leave you having to manually pan/zoom your way back.
-  const preHoverViewport = useRef<Viewport | null>(null);
+  const { fitView, zoomIn, zoomOut, getZoom, setCenter, screenToFlowPosition } = useReactFlow();
+  const containerRef = useRef<HTMLDivElement>(null);
+  // Snapshot of the *flow-space point* under the container's center, plus
+  // the zoom level, just before a hover-zoom kicks in. Storing a flow
+  // coordinate rather than a raw pixel viewport is what makes the restore
+  // self-correcting if the container resizes in between (e.g. the inspector
+  // panel opening or closing) — setCenter recomputes against whatever the
+  // container measures at restore time instead of replaying stale pixels.
+  const preHoverCenter = useRef<{ x: number; y: number; zoom: number } | null>(null);
   const captureViewport = useCallback(() => {
-    if (preHoverViewport.current == null) {
-      preHoverViewport.current = getViewport();
-    }
-  }, [getViewport]);
+    if (preHoverCenter.current != null) return;
+    const el = containerRef.current;
+    if (!el) return;
+    const rect = el.getBoundingClientRect();
+    const flow = screenToFlowPosition({ x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 });
+    preHoverCenter.current = { x: flow.x, y: flow.y, zoom: getZoom() };
+  }, [screenToFlowPosition, getZoom]);
   const handlePaneHover = useCallback(
     (e: React.MouseEvent) => {
-      if (!preHoverViewport.current) return;
+      if (!preHoverCenter.current) return;
       const target = e.target as HTMLElement;
       if (target.closest(".react-flow__node")) return;
-      const vp = preHoverViewport.current;
-      preHoverViewport.current = null;
-      setViewport(vp, { duration: 400 });
+      const c = preHoverCenter.current;
+      preHoverCenter.current = null;
+      setCenter(c.x, c.y, { zoom: c.zoom, duration: 400 });
     },
-    [setViewport]
+    [setCenter]
   );
   // Position is part of the key, not just id, so a TIDY (which overwrites
   // position_x/position_y on every node in the thread) actually triggers a
@@ -441,7 +417,6 @@ function CanvasInner({
           pulling: pullingId === n.id,
           onPull: () => onPull(n.id),
           onAddKnot: () => onAddKnot(n.id),
-          onOpenDetail: () => onOpenDetail(n.id),
           captureViewport,
           suggestion: suggestFor(n.id, nodes, techniques),
           label: i + 1,
@@ -495,13 +470,12 @@ function CanvasInner({
             pulling: pullingId === n.id,
             onPull: () => onPull(n.id),
             onAddKnot: () => onAddKnot(n.id),
-            onOpenDetail: () => onOpenDetail(n.id),
           },
         };
       })
     );
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedId, nodes, pullingId, onPull, onAddKnot, onOpenDetail]);
+  }, [selectedId, nodes, pullingId, onPull, onAddKnot]);
 
   // A TIDY re-fits the viewport even when positions didn't move (see
   // handleTidy in thread-workspace.tsx) — this is the visible confirmation
@@ -564,16 +538,20 @@ function CanvasInner({
     [supabase]
   );
 
+  // Click both selects (focus/dim the rest of the board) and opens the full
+  // content popup — a click is a deliberate action, unlike a hover pass-by,
+  // so it's the right trigger for a modal.
   const onNodeClick: NodeMouseHandler = useCallback(
     (_, node) => {
       if (node.id === ROOT_ID) return;
       onSelect(node.id);
+      onOpenDetail(node.id);
     },
-    [onSelect]
+    [onSelect, onOpenDetail]
   );
 
   return (
-    <div className="h-full w-full" onMouseMove={handlePaneHover}>
+    <div className="h-full w-full" ref={containerRef} onMouseMove={handlePaneHover}>
       <ReactFlow
         nodes={flowNodes}
         edges={edges}
@@ -589,7 +567,7 @@ function CanvasInner({
         maxZoom={1.5}
       >
         <Background variant={BackgroundVariant.Dots} gap={24} size={1} color="rgba(255,255,255,0.06)" />
-        <Controls showZoom={false} showFitView={false} showInteractive={false}>
+        <Controls showZoom={false} showFitView={false} showInteractive={false} orientation="horizontal">
           <ControlButton onClick={() => zoomIn({ duration: 200 })} title="Zoom in">
             <span className="text-[0.85rem] leading-none">+</span>
           </ControlButton>
