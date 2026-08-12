@@ -7,6 +7,8 @@ export type ThreadSummary = {
   name: string;
   state: ThreadState;
   nodeCount: number;
+  question: string;
+  context: string;
 };
 
 function strandPath(nodeCount: number) {
@@ -34,11 +36,15 @@ export function ThreadRail({
       {threads.map((t) => {
         const active = t.id === activeId;
         const strandColor = t.state === "cut" ? "#93a5b6" : "#f8991d";
+        // The visible label is already the thread's name — the hover title
+        // earns its keep by showing what a name alone can't: the working
+        // question and, if given, the context behind it.
+        const hint = [t.question, t.context].filter(Boolean).join("\n\n");
         return (
           <button
             key={t.id}
             onClick={() => onSelect(t.id)}
-            title={t.name}
+            title={hint || t.name}
             className="group relative flex items-center gap-2 rounded-xl px-2.5 py-2 transition-all duration-300 ease-out text-left"
             style={{
               // "Pulled taut": the active strand steps forward and brightens;

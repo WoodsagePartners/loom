@@ -7,6 +7,7 @@ import {
   Background,
   BackgroundVariant,
   Controls,
+  ControlButton,
   Handle,
   Position,
   applyNodeChanges,
@@ -17,6 +18,7 @@ import {
   type NodeMouseHandler,
   type OnNodeDrag,
   type OnNodesChange,
+  type Viewport,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 import type { NodeRow } from "@/lib/types";
@@ -147,26 +149,39 @@ const PORT_STYLE = {
 };
 
 const HOVER_ZOOM_DELAY_MS = 650;
+// Extra dwell time AFTER the zoom lands before the full-content popup opens —
+// a quick pass across the board should just zoom, not throw a modal in your
+// face. Total time-to-popup is ~1.55s of sustained hover.
+const HOVER_DETAIL_DELAY_MS = 900;
 const HOVER_ZOOM_LEVEL = 1.15;
 
 /** Dwell on a knot long enough and the viewport eases in on it — canvas
  * navigation on a large thread otherwise means constant manual pan/zoom.
  * Cancels on early pointer-leave or on drag-start so it never fights a
- * drag in progress. */
+ * drag in progress. Keeps dwelling and it pops the full content open too.
+ * `onBeforeZoom` gets one chance to snapshot the pre-zoom viewport so it can
+ * be restored later. */
 function useHoverZoom(
   x: number | undefined,
   y: number | undefined,
   w: number | undefined,
   h: number | undefined,
-  dragging: boolean
+  dragging: boolean,
+  onBeforeZoom?: () => void,
+  onDetail?: () => void
 ) {
   const { setCenter, getZoom } = useReactFlow();
-  const timerRef = useRef<number | null>(null);
+  const zoomTimerRef = useRef<number | null>(null);
+  const detailTimerRef = useRef<number | null>(null);
 
   const clear = useCallback(() => {
-    if (timerRef.current != null) {
-      window.clearTimeout(timerRef.current);
-      timerRef.current = null;
+    if (zoomTimerRef.current != null) {
+      window.clearTimeout(zoomTimerRef.current);
+      zoomTimerRef.current = null;
+    }
+    if (detailTimerRef.current != null) {
+      window.clearTimeout(detailTimerRef.current);
+      detailTimerRef.current = null;
     }
   }, []);
 
@@ -177,13 +192,17 @@ function useHoverZoom(
     const reduceMotion =
       typeof window !== "undefined" &&
       window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    timerRef.current = window.setTimeout(() => {
+    zoomTimerRef.current = window.setTimeout(() => {
+      onBeforeZoom?.();
       setCenter(x + width / 2, y + height / 2, {
         zoom: Math.max(getZoom(), HOVER_ZOOM_LEVEL),
         duration: reduceMotion ? 0 : 450,
       });
+      if (onDetail) {
+        detailTimerRef.current = window.setTimeout(onDetail, HOVER_DETAIL_DELAY_MS);
+      }
     }, HOVER_ZOOM_DELAY_MS);
-  }, [dragging, x, y, w, h, setCenter, getZoom]);
+  }, [dragging, x, y, w, h, setCenter, getZoom, onBeforeZoom, onDetail]);
 
   return { onPointerEnter, onPointerLeave: clear, onPointerDown: clear };
 }
@@ -195,16 +214,26 @@ type KnotData = {
   pulling: boolean;
   onPull: (id: string) => void;
   onAddKnot: (id: string) => void;
+  onOpenDetail: (id: string) => void;
+  captureViewport: () => void;
   suggestion: Suggestion;
   label: number;
 };
 
 function KnotNode({ data, positionAbsoluteX, positionAbsoluteY, width, height, dragging }: NodeProps) {
-  const { node: n, dim, selected, pulling, onPull, onAddKnot, suggestion, label } =
+  const { node: n, dim, selected, pulling, onPull, onAddKnot, onOpenDetail, captureViewport, suggestion, label } =
     data as unknown as KnotData;
   const open = n.items.length - n.pulled.length;
   const b = badge(n);
-  const hoverZoom = useHoverZoom(positionAbsoluteX, positionAbsoluteY, width, height, !!dragging);
+  const hoverZoom = useHoverZoom(
+    positionAbsoluteX,
+    positionAbsoluteY,
+    width,
+    height,
+    !!dragging,
+    captureViewport,
+    () => onOpenDetail(n.id)
+  );
 
   return (
     <div
@@ -275,13 +304,23 @@ type QuestionData = {
   pulling: boolean;
   onPull: () => void;
   onAddKnot: () => void;
+  captureViewport: () => void;
   suggestion: Suggestion;
 };
 
 function QuestionNode({ data, positionAbsoluteX, positionAbsoluteY, width, height, dragging }: NodeProps) {
-  const { question, questionVersion, pulling, onPull, onAddKnot, suggestion } =
+  const { question, questionVersion, pulling, onPull, onAddKnot, captureViewport, suggestion } =
     data as unknown as QuestionData;
-  const hoverZoom = useHoverZoom(positionAbsoluteX, positionAbsoluteY, width, height, !!dragging);
+  // No onDetail here — the question pill isn't a knot with editable
+  // content, it's just navigation, so sustained hover only ever zooms.
+  const hoverZoom = useHoverZoom(
+    positionAbsoluteX,
+    positionAbsoluteY,
+    width,
+    height,
+    !!dragging,
+    captureViewport
+  );
   return (
     <div
       onPointerEnter={hoverZoom.onPointerEnter}
@@ -317,6 +356,8 @@ function CanvasInner({
   onPull,
   pullingId,
   onAddKnot,
+  onOpenDetail,
+  fitSignal,
   techniques,
 }: {
   nodes: NodeRow[];
@@ -327,9 +368,32 @@ function CanvasInner({
   onPull: (sourceId: string | null) => void;
   pullingId: string | null;
   onAddKnot: (sourceId: string | null) => void;
+  onOpenDetail: (id: string) => void;
+  fitSignal: number;
   techniques: Technique[];
 }) {
   const supabase = useMemo(() => createClient(), []);
+  const { getViewport, setViewport, fitView, zoomIn, zoomOut } = useReactFlow();
+  // Snapshot of the viewport just before a hover-zoom kicks in — restored
+  // the moment the pointer lands back on blank canvas, so a quick glance at
+  // a knot doesn't leave you having to manually pan/zoom your way back.
+  const preHoverViewport = useRef<Viewport | null>(null);
+  const captureViewport = useCallback(() => {
+    if (preHoverViewport.current == null) {
+      preHoverViewport.current = getViewport();
+    }
+  }, [getViewport]);
+  const handlePaneHover = useCallback(
+    (e: React.MouseEvent) => {
+      if (!preHoverViewport.current) return;
+      const target = e.target as HTMLElement;
+      if (target.closest(".react-flow__node")) return;
+      const vp = preHoverViewport.current;
+      preHoverViewport.current = null;
+      setViewport(vp, { duration: 400 });
+    },
+    [setViewport]
+  );
   // Position is part of the key, not just id, so a TIDY (which overwrites
   // position_x/position_y on every node in the thread) actually triggers a
   // full rebuild instead of silently no-opping because the id list didn't
@@ -354,6 +418,7 @@ function CanvasInner({
         pulling: pullingId === ROOT_ID,
         onPull: () => onPull(null),
         onAddKnot: () => onAddKnot(null),
+        captureViewport,
         suggestion: suggestFor(ROOT_ID, nodes, techniques),
       },
       style: { width: NODE_W },
@@ -376,6 +441,8 @@ function CanvasInner({
           pulling: pullingId === n.id,
           onPull: () => onPull(n.id),
           onAddKnot: () => onAddKnot(n.id),
+          onOpenDetail: () => onOpenDetail(n.id),
+          captureViewport,
           suggestion: suggestFor(n.id, nodes, techniques),
           label: i + 1,
         },
@@ -428,12 +495,21 @@ function CanvasInner({
             pulling: pullingId === n.id,
             onPull: () => onPull(n.id),
             onAddKnot: () => onAddKnot(n.id),
+            onOpenDetail: () => onOpenDetail(n.id),
           },
         };
       })
     );
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedId, nodes, pullingId, onPull, onAddKnot]);
+  }, [selectedId, nodes, pullingId, onPull, onAddKnot, onOpenDetail]);
+
+  // A TIDY re-fits the viewport even when positions didn't move (see
+  // handleTidy in thread-workspace.tsx) — this is the visible confirmation
+  // that the action actually ran, not just a silent no-op.
+  useEffect(() => {
+    if (fitSignal > 0) fitView({ padding: 0.25, duration: 500 });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [fitSignal]);
 
   // The technique library loads asynchronously after mount — once it (or
   // the node set) changes, refresh just the suggestion field in place.
@@ -497,7 +573,7 @@ function CanvasInner({
   );
 
   return (
-    <div className="h-full w-full">
+    <div className="h-full w-full" onMouseMove={handlePaneHover}>
       <ReactFlow
         nodes={flowNodes}
         edges={edges}
@@ -513,7 +589,20 @@ function CanvasInner({
         maxZoom={1.5}
       >
         <Background variant={BackgroundVariant.Dots} gap={24} size={1} color="rgba(255,255,255,0.06)" />
-        <Controls showInteractive={false} />
+        <Controls showZoom={false} showFitView={false} showInteractive={false}>
+          <ControlButton onClick={() => zoomIn({ duration: 200 })} title="Zoom in">
+            <span className="text-[0.85rem] leading-none">+</span>
+          </ControlButton>
+          <ControlButton
+            onClick={() => fitView({ padding: 0.25, duration: 400 })}
+            title="Reframe the whole board"
+          >
+            <span className="block w-2.5 h-2.5 border border-current" />
+          </ControlButton>
+          <ControlButton onClick={() => zoomOut({ duration: 200 })} title="Zoom out">
+            <span className="text-[0.95rem] leading-none">−</span>
+          </ControlButton>
+        </Controls>
       </ReactFlow>
     </div>
   );
@@ -528,6 +617,8 @@ export function ThreadCanvas(props: {
   onPull: (sourceId: string | null) => void;
   pullingId: string | null;
   onAddKnot: (sourceId: string | null) => void;
+  onOpenDetail: (id: string) => void;
+  fitSignal: number;
   techniques: Technique[];
 }) {
   return (

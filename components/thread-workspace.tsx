@@ -194,16 +194,24 @@ export function ThreadWorkspace({
   const railExpanded = railPinned || railHover;
   const inspectorExpanded = inspectorPinned || inspectorHover;
   const [tidyLoading, setTidyLoading] = useState(false);
+  const [tidyMessage, setTidyMessage] = useState<string | null>(null);
+  const [tidyError, setTidyError] = useState<string | null>(null);
+  const [tidyFitSignal, setTidyFitSignal] = useState(0);
   const [legendOpen, setLegendOpen] = useState(false);
   const [addKnotOpen, setAddKnotOpen] = useState(false);
   const [addKnotSourceId, setAddKnotSourceId] = useState<string | null>(null);
   const [addKnotText, setAddKnotText] = useState("");
   const [addKnotSaving, setAddKnotSaving] = useState(false);
   const [addKnotError, setAddKnotError] = useState<string | null>(null);
+  const [detailNodeId, setDetailNodeId] = useState<string | null>(null);
+  const [detailDraft, setDetailDraft] = useState<string[]>([]);
+  const [detailSaving, setDetailSaving] = useState(false);
+  const [detailError, setDetailError] = useState<string | null>(null);
 
   const active = threads.find((t) => t.id === activeId) ?? null;
   const activeNodes = activeId ? nodesState[activeId] ?? [] : [];
   const selectedNode = activeNodes.find((n) => n.id === selectedNodeId) ?? null;
+  const detailNode = detailNodeId ? activeNodes.find((n) => n.id === detailNodeId) ?? null : null;
 
   const rail: ThreadSummary[] = useMemo(
     () =>
@@ -212,6 +220,8 @@ export function ThreadWorkspace({
         name: t.name,
         state: t.state,
         nodeCount: (nodesState[t.id] ?? []).length,
+        question: t.questions[t.questions.length - 1] ?? "",
+        context: t.context ?? "",
       })),
     [threads, nodesState]
   );
@@ -240,19 +250,26 @@ export function ThreadWorkspace({
   async function handleTidy() {
     if (!active || activeNodes.length === 0) return;
     setTidyLoading(true);
+    setTidyError(null);
+    setTidyMessage(null);
     try {
       const layout = layoutThread(activeNodes);
       const supabase = createClient();
-      await Promise.all(
+      let moved = 0;
+      const results = await Promise.all(
         activeNodes.map((n) => {
           const pos = layout[n.id];
           if (!pos) return null;
+          if (pos.x !== n.position_x || pos.y !== n.position_y) moved++;
           return supabase
             .from("nodes")
             .update({ position_x: pos.x, position_y: pos.y })
             .eq("id", n.id);
         })
       );
+      const failed = results.find((r) => r && r.error);
+      if (failed?.error) throw new Error(failed.error.message);
+
       setNodesState((cur) => ({
         ...cur,
         [active.id]: activeNodes.map((n) => {
@@ -260,8 +277,56 @@ export function ThreadWorkspace({
           return pos ? { ...n, position_x: pos.x, position_y: pos.y } : n;
         }),
       }));
+      // Re-fit even when nothing moved — otherwise a board that was
+      // already tidy gives zero visible feedback and looks broken.
+      setTidyFitSignal((s) => s + 1);
+      setTidyMessage(moved > 0 ? `Rearranged ${moved} knot${moved === 1 ? "" : "s"}.` : "Already tidy.");
+    } catch (e) {
+      setTidyError(e instanceof Error ? e.message : "Could not tidy the board.");
     } finally {
       setTidyLoading(false);
+      window.setTimeout(() => setTidyMessage(null), 2600);
+    }
+  }
+
+  // Full content view + inline edit for a knot, opened either by clicking
+  // through a long hover-zoom dwell or (soon) directly. Persists edits back
+  // to Supabase and mirrors them into nodesState.
+  function openDetail(id: string) {
+    const n = activeNodes.find((x) => x.id === id);
+    if (!n) return;
+    setDetailNodeId(id);
+    setDetailDraft(n.items);
+    setDetailError(null);
+  }
+
+  function updateDetailItem(i: number, text: string) {
+    setDetailDraft((cur) => cur.map((t, idx) => (idx === i ? text : t)));
+  }
+
+  async function saveDetail() {
+    if (!active || !detailNodeId) return;
+    setDetailSaving(true);
+    setDetailError(null);
+    try {
+      const supabase = createClient();
+      const { error } = await supabase
+        .from("nodes")
+        .update({ items: detailDraft })
+        .eq("id", detailNodeId);
+      if (error) throw new Error(error.message);
+
+      setNodesState((cur) => ({
+        ...cur,
+        [active.id]: (cur[active.id] ?? []).map((n) =>
+          n.id === detailNodeId ? { ...n, items: detailDraft } : n
+        ),
+      }));
+      setDetailNodeId(null);
+    } catch (e) {
+      setDetailError(e instanceof Error ? e.message : "Could not save changes.");
+    } finally {
+      setDetailSaving(false);
     }
   }
 
@@ -629,6 +694,18 @@ export function ThreadWorkspace({
                 {tidyLoading ? "Tidying…" : "Tidy board"}
               </button>
 
+              {(tidyMessage || tidyError) && (
+                <div
+                  className={`absolute right-0 top-full mt-2 whitespace-nowrap font-mono text-[0.5rem] tracking-[0.1em] uppercase px-2.5 py-1.5 rounded-full border ${
+                    tidyError
+                      ? "border-red-500/30 text-red-300 bg-red-500/10"
+                      : "border-white/15 text-muted bg-black/40"
+                  }`}
+                >
+                  {tidyError ?? tidyMessage}
+                </div>
+              )}
+
               {legendOpen && (
                 <div className="absolute right-0 top-full mt-2 w-64 glass-readable border border-white/10 rounded-xl p-3 z-40 shadow-2xl">
                   <div className="flex items-center justify-between mb-2">
@@ -690,6 +767,8 @@ export function ThreadWorkspace({
             pullingId={pullingId}
             techniques={techniques}
             onAddKnot={openAddKnot}
+            onOpenDetail={openDetail}
+            fitSignal={tidyFitSignal}
           />
         </div>
       </main>
@@ -905,6 +984,68 @@ export function ThreadWorkspace({
                 className="font-mono text-[0.5rem] tracking-[0.1em] uppercase px-3 py-1.5 rounded-full border border-orange/40 text-orange bg-orange/[.08] hover:bg-orange/[.16] disabled:opacity-50 disabled:cursor-wait"
               >
                 {addKnotSaving ? "Saving…" : "Add knot"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {detailNode && (
+        <div
+          className="fixed inset-0 z-40 flex items-center justify-center bg-black/50"
+          onClick={() => setDetailNodeId(null)}
+        >
+          <div
+            className="glass-readable border border-white/10 rounded-2xl p-5 w-[480px] max-h-[80vh] overflow-y-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between mb-1">
+              <span className="font-mono text-[0.6rem] tracking-[0.16em] text-orange uppercase flex items-center gap-2">
+                <span
+                  className="w-2.5 h-2.5 rounded-full flex-none"
+                  style={{ background: techColor(detailNode.tech) }}
+                />
+                K{activeNodes.findIndex((n) => n.id === detailNode.id) + 1} · {detailNode.tech}
+              </span>
+              <button
+                onClick={() => setDetailNodeId(null)}
+                className="text-muted hover:text-text text-sm leading-none"
+              >
+                ✕
+              </button>
+            </div>
+            <p className="font-mono text-[0.44rem] tracking-[0.1em] text-muted uppercase mb-3">
+              {detailNode.state}
+            </p>
+            <div className="space-y-2.5">
+              {detailDraft.map((item, i) => (
+                <div key={i}>
+                  <span className="block font-mono text-[0.42rem] tracking-[0.1em] text-cyan mb-1 uppercase">
+                    {detailNode.pulled.includes(i) ? "Pulled" : "Loose"} · Item {i + 1}
+                  </span>
+                  <textarea
+                    value={item}
+                    onChange={(e) => updateDetailItem(i, e.target.value)}
+                    rows={3}
+                    className="w-full bg-black/30 border border-white/10 rounded-lg text-text text-[0.8rem] font-light p-2.5 outline-none focus:border-cyan/50"
+                  />
+                </div>
+              ))}
+            </div>
+            {detailError && <p className="mt-2 text-[0.68rem] text-red-300">{detailError}</p>}
+            <div className="flex items-center gap-1.5 mt-3 justify-end">
+              <button
+                onClick={() => setDetailNodeId(null)}
+                className="font-mono text-[0.5rem] tracking-[0.1em] uppercase px-3 py-1.5 rounded-full border border-white/15 text-muted hover:text-text hover:border-white/30"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={saveDetail}
+                disabled={detailSaving}
+                className="font-mono text-[0.5rem] tracking-[0.1em] uppercase px-3 py-1.5 rounded-full border border-cyan/40 text-cyan bg-cyan/[.08] hover:bg-cyan/[.16] disabled:opacity-50 disabled:cursor-wait"
+              >
+                {detailSaving ? "Saving…" : "Save"}
               </button>
             </div>
           </div>
