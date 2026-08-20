@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { ThreadWorkspace } from "@/components/thread-workspace";
-import type { NodeRow, ThreadRow } from "@/lib/types";
+import type { EdgeRow, NodeRow, ThreadRow } from "@/lib/types";
 
 export default async function DashboardPage() {
   const supabase = await createClient();
@@ -44,6 +44,22 @@ export default async function DashboardPage() {
     }
   }
 
+  // Secondary DAG edges — anything beyond a knot's one primary parent_id.
+  // Empty on every thread until a "combine" feature actually writes to this
+  // table, but the fetch is wired up now so the canvas is ready the day it
+  // does. See lib/layout.ts secondaryEdges().
+  const edgesByThread: Record<string, EdgeRow[]> = {};
+  if (threadIds.length > 0) {
+    const { data: edgeRows } = await supabase
+      .from("node_edges")
+      .select("id, thread_id, from_node_id, to_node_id, relation, created_at")
+      .in("thread_id", threadIds);
+
+    for (const e of (edgeRows ?? []) as unknown as EdgeRow[]) {
+      (edgesByThread[e.thread_id] ??= []).push(e);
+    }
+  }
+
   // Vercel sets this automatically at build time for every deployment — no
   // config needed. Shown in the corner so a stale-looking browser can be
   // diagnosed by eye: if this doesn't match the commit you just pushed,
@@ -57,6 +73,7 @@ export default async function DashboardPage() {
       buildSha={buildSha}
       threads={threads}
       nodesByThread={nodesByThread}
+      edgesByThread={edgesByThread}
     />
   );
 }

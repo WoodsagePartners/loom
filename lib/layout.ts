@@ -1,4 +1,4 @@
-import type { NodeRow } from "./types";
+import type { EdgeRow, NodeRow } from "./types";
 
 export const ROOT_ID = "__root__";
 // Widened alongside the larger knot fonts (was 220, then 240, then 260) —
@@ -60,6 +60,23 @@ export function layoutThread(nodes: NodeRow[]): Record<string, Point> {
     };
   }
   return out;
+}
+
+/**
+ * Every stored edge that ISN'T already implied by a knot's primary
+ * parent_id — the extra "also informed by" links a synthesis knot carries
+ * on top of its one primary parent. These never affect depth/row layout
+ * (that's still driven by parent_id alone, so the board stays a clean
+ * tree skeleton); they're drawn as secondary wires on top of it. Once a
+ * knot has two or more of these pointing in, the board is a true DAG, not
+ * just a tree — this is the seam where that shows up.
+ */
+export function secondaryEdges(nodes: NodeRow[], edges: EdgeRow[]): EdgeRow[] {
+  const byId = new Map(nodes.map((n) => [n.id, n]));
+  return edges.filter((e) => {
+    const target = byId.get(e.to_node_id);
+    return !target || target.parent_id !== e.from_node_id;
+  });
 }
 
 /** Ancestor chain from the question down to (and including) `id`. */

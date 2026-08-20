@@ -29,3 +29,17 @@ export type NodeRow = {
   position_y: number | null;
   created_at: string;
 };
+
+// A knot's primary lineage still lives on parent_id (one parent, drives the
+// tree layout). node_edges generalizes that into a real DAG: any additional
+// "also informed by" links — e.g. a synthesis knot that combines two prior
+// lines of inquiry — live here as extra rows, without disturbing the single
+// parent_id every existing knot already has. See lib/layout.ts.
+export type EdgeRow = {
+  id: string;
+  thread_id: string;
+  from_node_id: string;
+  to_node_id: string;
+  relation: string;
+  created_at: string;
+};

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import type { NodeRow, ThreadRow } from "@/lib/types";
+import type { EdgeRow, NodeRow, ThreadRow } from "@/lib/types";
 import { techColor, type Technique } from "@/lib/techniques";
 import { ThreadRail, type ThreadSummary } from "@/components/thread-rail";
 import { ThreadCanvas } from "@/components/thread-canvas";
@@ -161,16 +161,23 @@ export function ThreadWorkspace({
   buildSha,
   threads,
   nodesByThread,
+  edgesByThread,
 }: {
   orgId: string;
   orgName: string;
   buildSha: string;
   threads: ThreadRow[];
   nodesByThread: Record<string, NodeRow[]>;
+  edgesByThread: Record<string, EdgeRow[]>;
 }) {
   const [activeId, setActiveId] = useState<string | null>(threads[0]?.id ?? null);
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
   const [nodesState, setNodesState] = useState<Record<string, NodeRow[]>>(nodesByThread);
+  // Secondary DAG edges (anything beyond a knot's one parent_id) — read-only
+  // for now, nothing writes into node_edges yet. Kept as state, not a plain
+  // derived value, so a future "combine" action has somewhere to append to
+  // without a full page reload.
+  const [edgesState] = useState<Record<string, EdgeRow[]>>(edgesByThread);
   const [techniques, setTechniques] = useState<Technique[]>([]);
   const [pullingId, setPullingId] = useState<string | null>(null);
 
@@ -227,6 +234,7 @@ export function ThreadWorkspace({
 
   const active = threads.find((t) => t.id === activeId) ?? null;
   const activeNodes = activeId ? nodesState[activeId] ?? [] : [];
+  const activeEdges = activeId ? edgesState[activeId] ?? [] : [];
   const selectedNode = activeNodes.find((n) => n.id === selectedNodeId) ?? null;
   const detailNode = detailNodeId ? activeNodes.find((n) => n.id === detailNodeId) ?? null : null;
 
@@ -861,6 +869,7 @@ export function ThreadWorkspace({
         <div className="flex-1 min-h-0">
           <ThreadCanvas
             nodes={activeNodes}
+            edges={activeEdges}
             question={question}
             questionVersion={active.questions.length}
             selectedId={selectedNodeId}

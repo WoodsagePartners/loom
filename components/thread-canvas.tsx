@@ -19,8 +19,8 @@ import {
   type OnNodesChange,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
-import type { NodeRow } from "@/lib/types";
-import { layoutThread, pathTo, ROOT_ID, NODE_W, NODE_H } from "@/lib/layout";
+import type { EdgeRow, NodeRow } from "@/lib/types";
+import { layoutThread, pathTo, secondaryEdges, ROOT_ID, NODE_W, NODE_H } from "@/lib/layout";
 import { createClient } from "@/lib/supabase/client";
 import { pickTechnique, explainSuggestion, techColor, type Technique } from "@/lib/techniques";
 
@@ -264,6 +264,7 @@ const nodeTypes = { knot: KnotNode, question: QuestionNode };
 
 function CanvasInner({
   nodes,
+  edgeRows,
   question,
   questionVersion,
   selectedId,
@@ -279,6 +280,7 @@ function CanvasInner({
   techniques,
 }: {
   nodes: NodeRow[];
+  edgeRows: EdgeRow[];
   question: string;
   questionVersion: number;
   selectedId: string | null;
@@ -477,7 +479,7 @@ function CanvasInner({
 
   const edges: Edge[] = useMemo(() => {
     const focusPath = selectedId ? pathTo(nodes, selectedId) : null;
-    return nodes.map((n) => {
+    const primary: Edge[] = nodes.map((n) => {
       const source = n.parent_id ?? ROOT_ID;
       const onPath = focusPath ? focusPath.has(n.id) : false;
       const dim = !!focusPath && !onPath;
@@ -495,7 +497,26 @@ function CanvasInner({
         },
       };
     });
-  }, [nodes, selectedId]);
+
+    // Secondary wires — a knot with more than its one primary parent (the
+    // eventual "combine two lines of inquiry" case). Dashed and cyan so
+    // they read as a distinct kind of connection from the primary weave,
+    // never affect layout, and are simply absent until something writes
+    // extra rows into node_edges.
+    const secondary: Edge[] = secondaryEdges(nodes, edgeRows).map((e) => ({
+      id: `se-${e.id}`,
+      source: e.from_node_id,
+      target: e.to_node_id,
+      style: {
+        stroke: "#42e8e0",
+        strokeWidth: 1.5,
+        strokeDasharray: "4 3",
+        opacity: 0.55,
+      },
+    }));
+
+    return [...primary, ...secondary];
+  }, [nodes, edgeRows, selectedId]);
 
   const onNodesChange: OnNodesChange = useCallback(
     (changes) => setFlowNodes((nds) => applyNodeChanges(changes, nds)),
@@ -591,6 +612,7 @@ function CanvasInner({
 
 export function ThreadCanvas(props: {
   nodes: NodeRow[];
+  edges: EdgeRow[];
   question: string;
   questionVersion: number;
   selectedId: string | null;
@@ -605,9 +627,10 @@ export function ThreadCanvas(props: {
   onNodeMoved: (id: string, x: number, y: number) => void;
   techniques: Technique[];
 }) {
+  const { edges, ...rest } = props;
   return (
     <ReactFlowProvider>
-      <CanvasInner {...props} />
+      <CanvasInner {...rest} edgeRows={edges} />
     </ReactFlowProvider>
   );
 }
