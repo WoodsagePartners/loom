@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useT } from "@/lib/i18n";
+import { NEXT_COOKIE } from "@/lib/workspaces";
 import { LangToggle } from "@/components/lang-toggle";
 
 const INPUT =
@@ -14,8 +15,24 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [signingUp, setSigningUp] = useState(false);
   const [needsConfirm, setNeedsConfirm] = useState(false);
+  const [resetSent, setResetSent] = useState(false);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
+
+  async function forgot() {
+    const cleanEmail = email.trim().toLowerCase();
+    if (!cleanEmail) return setError(t("Enter your email above first.", "Geben Sie zuerst oben Ihre E-Mail ein."));
+    setBusy(true);
+    setError("");
+    // The callback sends people to /reset-password once the link is verified.
+    document.cookie = `${NEXT_COOKIE}=/reset-password; path=/; max-age=3600; samesite=lax`;
+    const { error } = await createClient().auth.resetPasswordForEmail(cleanEmail, {
+      redirectTo: `${window.location.origin}/auth/callback`,
+    });
+    setBusy(false);
+    if (error) setError(error.message);
+    else setResetSent(true);
+  }
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -55,7 +72,12 @@ export default function LoginPage() {
           )}
         </p>
 
-        {needsConfirm ? (
+        {resetSent ? (
+          <p className="text-sm font-light">
+            {t("If an account exists for", "Falls ein Konto existiert für")} <b className="font-normal text-text">{email}</b>,{" "}
+            {t("a reset link is on its way. Check spam if it doesn't show up in a minute.", "ist ein Link zum Zurücksetzen unterwegs. Prüfen Sie ggf. den Spam-Ordner.")}
+          </p>
+        ) : needsConfirm ? (
           <p className="text-sm font-light">
             {t("Account created for", "Konto erstellt für")} <b className="font-normal text-text">{email}</b>.{" "}
             {t("Check your email to confirm, then sign in.", "Bitte bestätigen Sie Ihre E-Mail und melden Sie sich dann an.")}
@@ -102,6 +124,11 @@ export default function LoginPage() {
                   ? t("CREATE ACCOUNT", "KONTO ERSTELLEN")
                   : t("SIGN IN", "ANMELDEN")}
             </button>
+            {!signingUp && (
+              <button type="button" onClick={forgot} disabled={busy} className="w-full text-center text-[0.7rem] text-muted font-light hover:text-text">
+                {t("Forgot your password?", "Passwort vergessen?")}
+              </button>
+            )}
             <button
               type="button"
               onClick={() => {
