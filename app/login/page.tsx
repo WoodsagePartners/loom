@@ -1,143 +1,93 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { useT } from "@/lib/i18n";
+import { LangToggle } from "@/components/lang-toggle";
 
-type Mode = "link" | "password";
+const INPUT =
+  "w-full bg-black/30 border border-white/10 rounded-xl text-text text-sm font-light px-3 py-2.5 outline-none focus:border-orange/50";
 
 export default function LoginPage() {
-  const [mode, setMode] = useState<Mode>("link");
+  const t = useT();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [signingUp, setSigningUp] = useState(false);
-  const [sent, setSent] = useState(false);
+  const [needsConfirm, setNeedsConfirm] = useState(false);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
-  const router = useRouter();
 
-  async function sendLink(e: React.FormEvent) {
+  async function submit(e: React.FormEvent) {
     e.preventDefault();
     setBusy(true);
     setError("");
     const supabase = createClient();
-    const { error } = await supabase.auth.signInWithOtp({
-      email,
-      options: { emailRedirectTo: `${window.location.origin}/auth/callback` },
-    });
-    setBusy(false);
-    if (error) setError(error.message);
-    else setSent(true);
-  }
-
-  async function withPassword(e: React.FormEvent) {
-    e.preventDefault();
-    setBusy(true);
-    setError("");
-    const supabase = createClient();
+    const cleanEmail = email.trim().toLowerCase();
 
     if (signingUp) {
-      const { data, error } = await supabase.auth.signUp({ email, password });
+      const { data, error } = await supabase.auth.signUp({ email: cleanEmail, password });
       setBusy(false);
-      if (error) {
-        setError(error.message);
-        return;
-      }
-      // "Confirm email" is on by default in Supabase — if it's still on,
-      // signUp succeeds but there's no session yet, same deliverability
-      // wall as the magic link. If it's off, session comes back immediately.
-      if (data.session) router.push("/onboarding");
-      else setSent(true);
+      if (error) return setError(error.message);
+      if (data.session) window.location.assign("/auth/continue");
+      else setNeedsConfirm(true); // only if "Confirm email" is still on in Supabase
       return;
     }
 
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    const { error } = await supabase.auth.signInWithPassword({ email: cleanEmail, password });
     setBusy(false);
-    if (error) setError(error.message);
-    else router.push("/dashboard");
+    if (error) setError(t("Wrong email or password.", "E-Mail oder Passwort ist falsch."));
+    else window.location.assign("/auth/continue");
   }
 
   return (
     <main className="min-h-screen flex items-center justify-center p-6">
       <div className="glass rounded-3xl w-full max-w-sm p-8">
-        <div className="font-semibold tracking-[0.16em] text-xs mb-1">
-          THE <span className="text-orange">LOOM</span>
+        <div className="flex items-start justify-between mb-1">
+          <div className="font-semibold tracking-[0.16em] text-xs">
+            THE <span className="text-orange">LOOM</span>
+          </div>
+          <LangToggle />
         </div>
         <p className="text-muted text-sm font-light mb-6">
-          Keep a line of inquiry alive when the facilitator is not in the room.
+          {t(
+            "Map how work really gets done — then find the knots worth untying.",
+            "Zeigen Sie, wie Arbeit wirklich abläuft — und finden Sie die Knoten, die sich zu lösen lohnen."
+          )}
         </p>
 
-        <div className="flex gap-1 mb-5 font-mono text-[0.55rem] tracking-wider">
-          {(["link", "password"] as Mode[]).map((m) => (
-            <button
-              key={m}
-              onClick={() => {
-                setMode(m);
-                setError("");
-                setSent(false);
-              }}
-              className={`px-3 py-1.5 rounded-full border transition-colors ${
-                mode === m
-                  ? "border-orange/50 text-orange bg-orange/10"
-                  : "border-white/10 text-muted"
-              }`}
-            >
-              {m === "link" ? "MAGIC LINK" : "PASSWORD"}
-            </button>
-          ))}
-        </div>
-
-        {mode === "link" ? (
-          sent ? (
-            <p className="text-sm font-light">
-              Check <b className="font-normal text-text">{email}</b> for a sign-in link. Not
-              there in a minute — check spam.
-            </p>
-          ) : (
-            <form onSubmit={sendLink} className="space-y-3">
-              <input
-                type="email"
-                required
-                placeholder="you@company.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="w-full bg-black/30 border border-white/10 rounded-xl text-text text-sm font-light px-3 py-2.5 outline-none focus:border-orange/50"
-              />
-              {error && <p className="text-xs text-red-300">{error}</p>}
-              <button
-                type="submit"
-                disabled={busy}
-                className="w-full rounded-full text-white text-xs font-mono tracking-wider py-2.5"
-                style={{ background: "linear-gradient(135deg, rgba(248,153,29,.9), rgba(194,87,27,.85))" }}
-              >
-                {busy ? "SENDING…" : "SEND SIGN-IN LINK"}
-              </button>
-            </form>
-          )
-        ) : sent ? (
+        {needsConfirm ? (
           <p className="text-sm font-light">
-            Account created for <b className="font-normal text-text">{email}</b>. Confirm your
-            email to finish, or turn off "Confirm email" in Supabase Auth settings to skip that
-            step entirely.
+            {t("Account created for", "Konto erstellt für")} <b className="font-normal text-text">{email}</b>.{" "}
+            {t("Check your email to confirm, then sign in.", "Bitte bestätigen Sie Ihre E-Mail und melden Sie sich dann an.")}
           </p>
         ) : (
-          <form onSubmit={withPassword} className="space-y-3">
+          <form onSubmit={submit} className="space-y-3">
+            {signingUp && (
+              <p className="text-[0.7rem] text-muted font-light">
+                {t(
+                  "Invited by a teammate? Create your account with the same email address the invite was sent to.",
+                  "Von einem Teammitglied eingeladen? Erstellen Sie Ihr Konto mit derselben E-Mail-Adresse, an die die Einladung ging."
+                )}
+              </p>
+            )}
             <input
               type="email"
               required
+              autoComplete="email"
               placeholder="you@company.com"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full bg-black/30 border border-white/10 rounded-xl text-text text-sm font-light px-3 py-2.5 outline-none focus:border-orange/50"
+              className={INPUT}
             />
             <input
               type="password"
               required
-              minLength={6}
-              placeholder="password"
+              minLength={8}
+              autoComplete={signingUp ? "new-password" : "current-password"}
+              placeholder={t("password (8+ characters)", "Passwort (mind. 8 Zeichen)")}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full bg-black/30 border border-white/10 rounded-xl text-text text-sm font-light px-3 py-2.5 outline-none focus:border-orange/50"
+              className={INPUT}
             />
             {error && <p className="text-xs text-red-300">{error}</p>}
             <button
@@ -146,14 +96,23 @@ export default function LoginPage() {
               className="w-full rounded-full text-white text-xs font-mono tracking-wider py-2.5"
               style={{ background: "linear-gradient(135deg, rgba(248,153,29,.9), rgba(194,87,27,.85))" }}
             >
-              {busy ? "WORKING…" : signingUp ? "CREATE ACCOUNT" : "SIGN IN"}
+              {busy
+                ? t("WORKING…", "BITTE WARTEN…")
+                : signingUp
+                  ? t("CREATE ACCOUNT", "KONTO ERSTELLEN")
+                  : t("SIGN IN", "ANMELDEN")}
             </button>
             <button
               type="button"
-              onClick={() => setSigningUp((s) => !s)}
+              onClick={() => {
+                setSigningUp((s) => !s);
+                setError("");
+              }}
               className="w-full text-center text-[0.7rem] text-muted font-light"
             >
-              {signingUp ? "Have an account? Sign in" : "No account yet? Create one"}
+              {signingUp
+                ? t("Have an account? Sign in", "Schon ein Konto? Anmelden")
+                : t("No account yet? Create one", "Noch kein Konto? Erstellen")}
             </button>
           </form>
         )}

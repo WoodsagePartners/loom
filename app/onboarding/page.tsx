@@ -53,6 +53,12 @@ export default function OnboardingPage() {
       setError(memErr.message);
       return;
     }
+    // Make the brand-new workspace the active one (a user may own several).
+    await fetch("/api/workspace/switch", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ orgId: org.id }),
+    });
     router.push("/dashboard");
   }
 

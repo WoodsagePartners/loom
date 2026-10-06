@@ -5,6 +5,10 @@ import type { EdgeRow, NodeRow, ThreadRow } from "@/lib/types";
 import { techColor, type Technique } from "@/lib/techniques";
 import { ThreadRail, type ThreadSummary } from "@/components/thread-rail";
 import { ThreadCanvas } from "@/components/thread-canvas";
+import { ProcessDesigner } from "@/components/process-designer";
+import { LangToggle } from "@/components/lang-toggle";
+import { WorkspaceSwitcher } from "@/components/workspace-switcher";
+import type { Workspace, WorkspaceRole } from "@/lib/workspaces";
 import { createClient } from "@/lib/supabase/client";
 import { ROOT_ID, pathTo, layoutThread } from "@/lib/layout";
 
@@ -158,6 +162,8 @@ function CreativeCandidateCard({
 export function ThreadWorkspace({
   orgId,
   orgName,
+  workspaces,
+  role,
   buildSha,
   threads,
   nodesByThread,
@@ -165,6 +171,8 @@ export function ThreadWorkspace({
 }: {
   orgId: string;
   orgName: string;
+  workspaces: Workspace[];
+  role: WorkspaceRole;
   buildSha: string;
   threads: ThreadRow[];
   nodesByThread: Record<string, NodeRow[]>;
@@ -222,6 +230,7 @@ export function ThreadWorkspace({
   const [tidyError, setTidyError] = useState<string | null>(null);
   const [tidyFitSignal, setTidyFitSignal] = useState(0);
   const [legendOpen, setLegendOpen] = useState(false);
+  const [view, setView] = useState<"process" | "inquiry">("process");
   const [addKnotOpen, setAddKnotOpen] = useState(false);
   const [addKnotSourceId, setAddKnotSourceId] = useState<string | null>(null);
   const [addKnotText, setAddKnotText] = useState("");
@@ -460,7 +469,7 @@ export function ThreadWorkspace({
           THE <span className="text-orange">LOOM</span>
         </span>
         <span className="text-muted/40 text-xs">|</span>
-        <span className="text-muted text-xs font-light uppercase tracking-[0.04em]">{orgName}</span>
+        <WorkspaceSwitcher orgId={orgId} orgName={orgName} workspaces={workspaces} role={role} />
       </div>
       <span
         className="font-mono text-[0.55rem] tracking-[0.08em] text-muted/40 flex-none"
@@ -487,6 +496,22 @@ export function ThreadWorkspace({
       )}
 
       <div className={`flex-none flex items-center gap-1.5 relative ${active ? "" : "ml-auto"}`}>
+        {active && (
+          <div className="flex font-mono text-[0.5rem] tracking-[0.12em] mr-2">
+            {(["process", "inquiry"] as const).map((v) => (
+              <button
+                key={v}
+                onClick={() => setView(v)}
+                className={`px-3 py-1.5 border first:rounded-l-full last:rounded-r-full transition-colors ${
+                  view === v ? "border-orange/50 text-orange bg-orange/10" : "border-white/10 text-muted"
+                }`}
+              >
+                {v === "process" ? "PROCESS" : "INQUIRY"}
+              </button>
+            ))}
+          </div>
+        )}
+        <LangToggle className="mr-2" />
         {active && selectedNodeId && (
           <button
             onClick={() => selectNode(null)}
@@ -857,7 +882,7 @@ export function ThreadWorkspace({
         )}
       </aside>
 
-      <main className="flex-1 min-w-0 flex flex-col relative ml-14 mr-14">
+      <main className={`flex-1 min-w-0 flex flex-col relative ml-14 ${view === "inquiry" ? "mr-14" : ""}`}>
         {pullError && (
           <div className="absolute top-3 left-1/2 -translate-x-1/2 z-20 inline-flex items-center gap-2 text-[0.7rem] font-mono text-red-300 bg-red-500/10 border border-red-500/30 rounded-lg px-2.5 py-1 shadow-lg">
             {pullError}
@@ -866,6 +891,11 @@ export function ThreadWorkspace({
             </button>
           </div>
         )}
+        {view === "process" ? (
+          <div className="flex-1 min-h-0">
+            <ProcessDesigner key={active.id} orgId={orgId} threadId={active.id} />
+          </div>
+        ) : (
         <div className="flex-1 min-h-0">
           <ThreadCanvas
             nodes={activeNodes}
@@ -885,8 +915,10 @@ export function ThreadWorkspace({
             onNodeMoved={handleNodeMoved}
           />
         </div>
+        )}
       </main>
 
+      {view === "inquiry" && (
       <aside
         onMouseEnter={() => setInspectorHover(true)}
         onMouseLeave={() => setInspectorHover(false)}
@@ -1009,6 +1041,7 @@ export function ThreadWorkspace({
           </div>
         )}
       </aside>
+      )}
       </div>
 
       {creativeOpen && (

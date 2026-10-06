@@ -1,6 +1,8 @@
 import { redirect } from "next/navigation";
+import { cookies } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
 import { ThreadWorkspace } from "@/components/thread-workspace";
+import { ACTIVE_ORG_COOKIE, type Workspace, type WorkspaceRole } from "@/lib/workspaces";
 import type { EdgeRow, NodeRow, ThreadRow } from "@/lib/types";
 
 export default async function DashboardPage() {
@@ -17,8 +19,20 @@ export default async function DashboardPage() {
 
   if (!memberships || memberships.length === 0) redirect("/onboarding");
 
-  const orgId = memberships[0].org_id;
-  const orgName = (memberships[0] as any).orgs?.name ?? "Workspace";
+  const workspaces: Workspace[] = memberships
+    .map((m: any) => ({
+      id: m.org_id as string,
+      name: (m.orgs?.name as string | undefined) ?? "Workspace",
+      role: m.role as WorkspaceRole,
+    }))
+    .sort((a, b) => a.name.localeCompare(b.name));
+
+  // The cookie is only a preference — it's honored only if it matches a
+  // membership this user really has (RLS enforces the real boundary).
+  const preferred = (await cookies()).get(ACTIVE_ORG_COOKIE)?.value;
+  const active = workspaces.find((w) => w.id === preferred) ?? workspaces[0];
+  const orgId = active.id;
+  const orgName = active.name;
 
   const { data: threadRows } = await supabase
     .from("threads")
@@ -26,7 +40,24 @@ export default async function DashboardPage() {
     .eq("org_id", orgId)
     .order("touched_at", { ascending: false });
 
-  const threads = (threadRows ?? []) as unknown as ThreadRow[];
+  let threads = (threadRows ?? []) as unknown as ThreadRow[];
+
+  // A brand-new workspace should never land on an empty screen: seed one
+  // thread so the process map is ready to fill in on first visit.
+  if (threads.length === 0) {
+    const { data: seeded } = await supabase
+      .from("threads")
+      .insert({
+        org_id: orgId,
+        name: "Our process",
+        context: "Map how this work really gets done today, step by step, and who does each step.",
+        questions: ["Where does this process slow down, and what could change?"],
+        created_by: user.id,
+      })
+      .select("id, name, state, step, context, questions, touched_at")
+      .single();
+    if (seeded) threads = [seeded as unknown as ThreadRow];
+  }
   const threadIds = threads.map((t) => t.id);
 
   const nodesByThread: Record<string, NodeRow[]> = {};
@@ -68,7 +99,10 @@ export default async function DashboardPage() {
 
   return (
     <ThreadWorkspace
+      key={orgId}
       orgId={orgId}
+      workspaces={workspaces}
+      role={active.role}
       orgName={orgName}
       buildSha={buildSha}
       threads={threads}
