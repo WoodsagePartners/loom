@@ -2,6 +2,8 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { useT } from "@/lib/i18n";
+import { useConfirm } from "@/components/confirm";
 import type { WorkspaceRole } from "@/lib/workspaces";
 
 type Member = {
@@ -31,6 +33,8 @@ export function TeamPanel({
   role: WorkspaceRole;
   onClose: () => void;
 }) {
+  const t = useT();
+  const [ask, confirmDialog] = useConfirm();
   const supabase = createClient();
   const canManage = role === "owner" || role === "admin";
 
@@ -88,7 +92,7 @@ export function TeamPanel({
     if (err) {
       setError(
         err.code === "23505"
-          ? "That person already has an open invite. Copy their link below, or revoke it first."
+          ? t("That person already has an open invite. Copy their link below, or revoke it first.", "Für diese Person gibt es bereits eine offene Einladung. Kopieren Sie den Link unten oder widerrufen Sie ihn zuerst.")
           : err.message
       );
       return;
@@ -122,13 +126,13 @@ export function TeamPanel({
       .eq("id", membershipId)
       .select("id");
     if (err) setError(err.message);
-    else if (!data || data.length === 0) setError("You don't have permission to change that role.");
+    else if (!data || data.length === 0) setError(t("You don't have permission to change that role.", "Sie dürfen diese Rolle nicht ändern."));
     load();
   }
 
   async function remove(m: Member) {
     const self = m.user_id === me;
-    if (!window.confirm(self ? "Leave this workspace?" : `Remove ${m.email} from this workspace?`)) return;
+    if (!(await ask(self ? t("Leave this workspace?", "Diesen Arbeitsbereich verlassen?") : t(`Remove ${m.email} from this workspace?`, `${m.email} aus diesem Arbeitsbereich entfernen?`), { confirmLabel: self ? t("LEAVE", "VERLASSEN") : t("REMOVE", "ENTFERNEN") }))) return;
     setError(null);
     const { data, error: err } = await supabase
       .from("memberships")
@@ -137,7 +141,7 @@ export function TeamPanel({
       .select("id");
     if (err) setError(err.message);
     else if (!data || data.length === 0)
-      setError("Couldn't remove that member. A workspace must keep at least one owner.");
+      setError(t("Couldn't remove that member. A workspace must keep at least one owner.", "Mitglied konnte nicht entfernt werden. Ein Arbeitsbereich braucht mindestens einen Eigentümer."));
     else if (self) {
       window.location.href = "/dashboard";
       return;
@@ -151,17 +155,19 @@ export function TeamPanel({
     m.user_id === me || role === "owner" || (role === "admin" && m.role !== "owner");
 
   return (
+    <>
+    {confirmDialog}
     <div
-      className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 p-4"
+      className="fixed inset-0 z-[60] flex items-center justify-center bg-black/25 backdrop-blur-[3px] p-4"
       onMouseDown={(e) => e.target === e.currentTarget && onClose()}
     >
-      <div className="w-full max-w-xl max-h-[85vh] overflow-y-auto rounded-lg border border-white/10 bg-[#0b1020] p-6 text-sm">
+      <div className="w-full max-w-xl max-h-[85vh] quiet-scroll overflow-y-auto glass glass-bright glass-clear rounded-2xl p-6 text-sm" style={{ background: "var(--tint-solid)" }}>
         <div className="flex items-start justify-between mb-5">
           <div>
-            <div className="text-[0.6rem] tracking-[0.14em] text-muted/60">TEAM</div>
+            <div className="text-[0.8rem] tracking-[0.14em] text-muted/60">{t("TEAM", "TEAM")}</div>
             <div className="text-base font-semibold">{orgName}</div>
           </div>
-          <button onClick={onClose} className="text-muted hover:text-white text-lg leading-none" aria-label="Close">
+          <button onClick={onClose} className="text-muted hover:text-white text-lg leading-none" aria-label={t("Close", "Schließen")}>
             ×
           </button>
         </div>
@@ -172,33 +178,33 @@ export function TeamPanel({
           </div>
         )}
 
-        <div className="text-[0.6rem] tracking-[0.12em] text-muted/60 mb-2">MEMBERS</div>
+        <div className="text-[0.8rem] tracking-[0.12em] text-muted/60 mb-2">{t("MEMBERS", "MITGLIEDER")}</div>
         <ul className="mb-6 divide-y divide-white/5">
           {members.map((m) => (
             <li key={m.membership_id} className="flex items-center gap-3 py-2">
               <span className="flex-1 truncate text-xs">
                 {m.email}
-                {m.user_id === me && <span className="text-muted/60"> (you)</span>}
+                {m.user_id === me && <span className="text-muted/60"> {t("(you)", "(Sie)")}</span>}
               </span>
               {canEditRole(m) ? (
                 <select
                   value={m.role}
                   onChange={(e) => changeRole(m.membership_id, e.target.value as WorkspaceRole)}
-                  className="bg-transparent border border-white/10 rounded px-1.5 py-1 text-[0.65rem] tracking-[0.08em]"
+                  className="bg-transparent border border-white/10 rounded px-1.5 py-1 text-[0.8rem] tracking-[0.08em]"
                 >
-                  <option value="member" className="bg-[#0b1020]">MEMBER</option>
-                  <option value="admin" className="bg-[#0b1020]">ADMIN</option>
-                  {role === "owner" && <option value="owner" className="bg-[#0b1020]">OWNER</option>}
+                  <option value="member" className="bg-[#0b1020]">{t("MEMBER", "MITGLIED")}</option>
+                  <option value="admin" className="bg-[#0b1020]">{t("ADMIN", "ADMIN")}</option>
+                  {role === "owner" && <option value="owner" className="bg-[#0b1020]">{t("OWNER", "EIGENTÜMER")}</option>}
                 </select>
               ) : (
-                <span className="text-[0.65rem] tracking-[0.08em] text-muted">{m.role.toUpperCase()}</span>
+                <span className="text-[0.8rem] tracking-[0.08em] text-muted">{({ owner: t("OWNER", "EIGENTÜMER"), admin: t("ADMIN", "ADMIN"), member: t("MEMBER", "MITGLIED") })[m.role]}</span>
               )}
               {canRemove(m) && (
                 <button
                   onClick={() => remove(m)}
-                  className="text-[0.65rem] text-muted hover:text-red-300"
+                  className="text-[0.8rem] text-muted hover:text-red-300"
                 >
-                  {m.user_id === me ? "Leave" : "Remove"}
+                  {m.user_id === me ? t("Leave", "Verlassen") : t("Remove", "Entfernen")}
                 </button>
               )}
             </li>
@@ -207,41 +213,43 @@ export function TeamPanel({
 
         {canManage ? (
           <>
-            <div className="text-[0.6rem] tracking-[0.12em] text-muted/60 mb-2">INVITE A TEAMMATE</div>
+            <div className="text-[0.8rem] tracking-[0.12em] text-muted/60 mb-2">{t("INVITE A TEAMMATE", "KOLLEGEN EINLADEN")}</div>
             <form onSubmit={sendInvite} className="flex gap-2 mb-2">
               <input
                 type="email"
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="name@company.com"
+                placeholder={t("name@company.com", "name@firma.de")}
                 className="flex-1 bg-transparent border border-white/10 rounded px-2.5 py-1.5 text-xs outline-none focus:border-orange"
               />
               <select
                 value={inviteRole}
                 onChange={(e) => setInviteRole(e.target.value as WorkspaceRole)}
-                className="bg-transparent border border-white/10 rounded px-1.5 text-[0.65rem] tracking-[0.08em]"
+                className="bg-transparent border border-white/10 rounded px-1.5 text-[0.8rem] tracking-[0.08em]"
               >
-                <option value="member" className="bg-[#0b1020]">MEMBER</option>
-                <option value="admin" className="bg-[#0b1020]">ADMIN</option>
-                {role === "owner" && <option value="owner" className="bg-[#0b1020]">OWNER</option>}
+                <option value="member" className="bg-[#0b1020]">{t("MEMBER", "MITGLIED")}</option>
+                <option value="admin" className="bg-[#0b1020]">{t("ADMIN", "ADMIN")}</option>
+                {role === "owner" && <option value="owner" className="bg-[#0b1020]">{t("OWNER", "EIGENTÜMER")}</option>}
               </select>
               <button
                 type="submit"
                 disabled={busy}
                 className="rounded bg-orange px-3 text-xs font-semibold text-black disabled:opacity-50"
               >
-                INVITE
+                {t("INVITE", "EINLADEN")}
               </button>
             </form>
-            <p className="text-[0.65rem] text-muted/60 mb-4">
-              Creates a private link tied to that email address. Send it however you like — it only works for the
-              person signed in with that email, and expires in 14 days.
+            <p className="text-[0.8rem] text-muted/60 mb-4">
+              {t(
+                "Creates a private link tied to that email address. Send it however you like — it only works for the person signed in with that email, and expires in 14 days.",
+                "Erzeugt einen privaten Link, der an diese E-Mail-Adresse gebunden ist. Senden Sie ihn, wie Sie möchten – er funktioniert nur für die Person, die mit dieser E-Mail angemeldet ist, und läuft nach 14 Tagen ab."
+              )}
             </p>
 
             {invites.length > 0 && (
               <>
-                <div className="text-[0.6rem] tracking-[0.12em] text-muted/60 mb-2">PENDING</div>
+                <div className="text-[0.8rem] tracking-[0.12em] text-muted/60 mb-2">{t("PENDING", "AUSSTEHEND")}</div>
                 <ul className="divide-y divide-white/5">
                   {invites.map((i) => (
                     <li key={i.id} className="flex items-center gap-3 py-2">
@@ -250,12 +258,12 @@ export function TeamPanel({
                       </span>
                       <button
                         onClick={() => copy(link(i.token), i.token)}
-                        className="text-[0.65rem] text-orange hover:underline"
+                        className="text-[0.8rem] text-orange hover:underline"
                       >
-                        {copied === i.token ? "Copied" : "Copy link"}
+                        {copied === i.token ? t("Copied", "Kopiert") : t("Copy link", "Link kopieren")}
                       </button>
-                      <button onClick={() => revoke(i.id)} className="text-[0.65rem] text-muted hover:text-red-300">
-                        Revoke
+                      <button onClick={() => revoke(i.id)} className="text-[0.8rem] text-muted hover:text-red-300">
+                        {t("Revoke", "Widerrufen")}
                       </button>
                     </li>
                   ))}
@@ -264,9 +272,10 @@ export function TeamPanel({
             )}
           </>
         ) : (
-          <p className="text-xs text-muted/70">Only workspace owners and admins can invite teammates.</p>
+          <p className="text-xs text-muted/70">{t("Only workspace owners and admins can invite teammates.", "Nur Eigentümer und Admins des Arbeitsbereichs können Kollegen einladen.")}</p>
         )}
       </div>
     </div>
+    </>
   );
 }

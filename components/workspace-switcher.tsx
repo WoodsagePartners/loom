@@ -3,7 +3,8 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { Workspace, WorkspaceRole } from "@/lib/workspaces";
-import { TeamPanel } from "@/components/team-panel";
+import { createClient } from "@/lib/supabase/client";
+import { useT } from "@/lib/i18n";
 
 const ROLE_LABEL: Record<WorkspaceRole, string> = {
   owner: "OWNER",
@@ -23,8 +24,13 @@ export function WorkspaceSwitcher({
   role: WorkspaceRole;
 }) {
   const router = useRouter();
+  const t = useT();
   const [open, setOpen] = useState(false);
-  const [teamOpen, setTeamOpen] = useState(false);
+  const [renaming, setRenaming] = useState(false);
+  const [draft, setDraft] = useState(orgName);
+  const [renameErr, setRenameErr] = useState<string | null>(null);
+  const sb = useRef(createClient()).current;
+  const canRename = role === "owner" || role === "admin";
   const [switching, setSwitching] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
@@ -43,6 +49,16 @@ export function WorkspaceSwitcher({
       document.removeEventListener("keydown", onKey);
     };
   }, [open]);
+
+  async function commitRename() {
+    const name = draft.trim();
+    if (!name || name === orgName) return setRenaming(false);
+    const { error } = await sb.from("orgs").update({ name }).eq("id", orgId);
+    if (error) return setRenameErr(error.message);
+    setRenaming(false);
+    setRenameErr(null);
+    router.refresh();
+  }
 
   async function switchTo(id: string) {
     if (id === orgId || switching) return;
@@ -63,24 +79,53 @@ export function WorkspaceSwitcher({
   }
 
   return (
-    <div className="relative" ref={ref}>
+    <div className="relative flex items-center gap-1.5" ref={ref}>
+      {renaming ? (
+        <div className="flex items-center gap-1.5">
+          <b className="font-semibold uppercase tracking-[0.06em] text-[0.74rem] text-muted">{t("Workspace:", "Workspace:")}</b>
+          <input
+            autoFocus
+            value={draft}
+            onChange={(e) => setDraft(e.target.value)}
+            onBlur={commitRename}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") commitRename();
+              if (e.key === "Escape") { setRenaming(false); setRenameErr(null); }
+            }}
+            className="bg-black/25 border border-orange/40 rounded-md text-[0.82rem] px-2 py-0.5 outline-none w-48"
+          />
+          {renameErr && <span className="text-[0.72rem] text-red-300">{renameErr}</span>}
+        </div>
+      ) : (
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
-        className="flex items-center gap-1.5 text-muted hover:text-white text-xs font-light uppercase tracking-[0.04em] transition-colors"
+        className="flex items-center gap-1.5 text-muted hover:text-text text-xs font-normal transition-colors"
         aria-haspopup="menu"
         aria-expanded={open}
       >
-        <span>{orgName}</span>
-        <span className="text-[0.55rem]">{open ? "▴" : "▾"}</span>
+        <span className="text-[0.82rem]"><b className="font-semibold uppercase tracking-[0.06em] text-[0.74rem] mr-1">{t("Workspace:", "Workspace:")}</b>{orgName}</span>
+        <span className="text-[0.74rem]">{open ? "▴" : "▾"}</span>
       </button>
+      )}
+      {canRename && !renaming && (
+        <button
+          type="button"
+          onClick={() => { setDraft(orgName); setRenaming(true); setOpen(false); }}
+          title={t("Rename workspace", "Arbeitsbereich umbenennen")}
+          className="text-muted/50 hover:text-orange text-[0.8rem] leading-none"
+        >
+          ✎
+        </button>
+      )}
 
       {open && (
         <div
           role="menu"
-          className="absolute left-0 top-full mt-2 w-72 z-50 rounded-md border border-white/10 bg-[#0b1020] shadow-xl py-1"
+          className="absolute left-0 top-full mt-2 w-72 z-50 glass glass-bright glass-clear rounded-xl p-1.5"
+          style={{ background: "var(--tint-solid)" }}
         >
-          <div className="px-3 py-1.5 text-[0.6rem] tracking-[0.12em] text-muted/60">WORKSPACES</div>
+          <div className="px-2.5 pt-1.5 pb-1 text-[0.66rem] font-mono tracking-[0.14em] text-muted/70">{t("WORKSPACES", "ARBEITSBEREICHE")}</div>
           {workspaces.map((w) => (
             <button
               key={w.id}
@@ -88,38 +133,31 @@ export function WorkspaceSwitcher({
               role="menuitem"
               disabled={switching}
               onClick={() => switchTo(w.id)}
-              className="w-full flex items-center gap-2 px-3 py-2 text-left text-xs hover:bg-white/5 disabled:opacity-50"
+              className={`w-full flex items-center gap-2 px-2.5 py-2 text-left text-[0.82rem] rounded-lg hover:bg-white/10 disabled:opacity-50 ${w.id === orgId ? "bg-white/[0.06]" : ""}`}
             >
-              <span className="w-3 text-orange">{w.id === orgId ? "✓" : ""}</span>
+              <span className="w-3 text-orange text-xs">{w.id === orgId ? "✓" : ""}</span>
               <span className="flex-1 truncate">{w.name}</span>
-              <span className="text-[0.55rem] tracking-[0.1em] text-muted/60">{ROLE_LABEL[w.role]}</span>
+              <span className="text-[0.68rem] text-muted/70">{({ owner: t("Owner", "Eigentümer"), admin: t("Admin", "Admin"), member: t("Member", "Mitglied") })[w.role]}</span>
             </button>
           ))}
-          <div className="my-1 border-t border-white/10" />
+          <div className="my-1.5 border-t border-white/10" />
           <button
             type="button"
             role="menuitem"
             onClick={() => router.push("/onboarding")}
-            className="w-full px-3 py-2 text-left text-xs hover:bg-white/5"
+            className="w-full px-2.5 py-2 text-left text-[0.82rem] rounded-lg text-muted hover:text-text hover:bg-white/10"
           >
-            + New workspace
+            {t("+ New workspace", "+ Neuer Arbeitsbereich")}
           </button>
           <button
             type="button"
             role="menuitem"
-            onClick={() => {
-              setOpen(false);
-              setTeamOpen(true);
-            }}
-            className="w-full px-3 py-2 text-left text-xs hover:bg-white/5"
+            onClick={() => router.push("/workspaces")}
+            className="w-full px-2.5 py-2 text-left text-[0.82rem] rounded-lg text-muted hover:text-text hover:bg-white/10"
           >
-            Team &amp; invites
+            {t("All workspaces…", "Alle Arbeitsbereiche…")}
           </button>
         </div>
-      )}
-
-      {teamOpen && (
-        <TeamPanel orgId={orgId} orgName={orgName} role={role} onClose={() => setTeamOpen(false)} />
       )}
     </div>
   );

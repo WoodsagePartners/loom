@@ -21,5 +21,5 @@ export async function GET(request: Request) {
   }
 
   const { data: memberships } = await supabase.from("memberships").select("org_id").eq("user_id", user.id);
-  return NextResponse.redirect(`${origin}${memberships && memberships.length > 0 ? "/dashboard" : "/onboarding"}`);
+  return NextResponse.redirect(`${origin}${memberships && memberships.length > 1 ? "/workspaces" : memberships && memberships.length === 1 ? "/dashboard" : "/onboarding"}`);
 }

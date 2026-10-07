@@ -6,7 +6,7 @@ import { useT } from "@/lib/i18n";
 import { LangToggle } from "@/components/lang-toggle";
 
 const INPUT =
-  "w-full bg-black/30 border border-white/10 rounded-xl text-text text-sm font-light px-3 py-2.5 outline-none focus:border-orange/50";
+  "w-full bg-black/30 border border-white/10 rounded-xl text-text text-sm font-normal px-3 py-2.5 outline-none focus:border-orange/50";
 
 export default function ResetPasswordPage() {
   const t = useT();
@@ -36,7 +36,7 @@ export default function ResetPasswordPage() {
           </div>
           <LangToggle />
         </div>
-        <p className="text-muted text-sm font-light mb-6">{t("Choose a new password.", "Wählen Sie ein neues Passwort.")}</p>
+        <p className="text-muted text-sm font-normal mb-6">{t("Choose a new password.", "Wählen Sie ein neues Passwort.")}</p>
         <form onSubmit={submit} className="space-y-3">
           <input
             type="password"

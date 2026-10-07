@@ -6,11 +6,11 @@ import type { ActorKind, ActorRow, Disposition, StepRow } from "@/lib/types";
 import { useT } from "@/lib/i18n";
 
 // ---- layout constants (fixed so arrows can be computed without measuring) --
-const LABEL_W = 176;
-const COL_W = 196;
-const CARD_W = 164;
-const CARD_H = 68;
-const LANE_H = 104;
+const LABEL_W = 196;
+const COL_W = 216;
+const CARD_W = 184;
+const CARD_H = 80;
+const LANE_H = 116;
 const PAD_X = 16;
 
 const ACTOR_COLORS = ["#60a5fa", "#f8991d", "#5eead4", "#c084fc", "#f472b6", "#a3e635", "#fb923c", "#22d3ee"];
@@ -55,7 +55,7 @@ function Field({
   const [v, setV] = useState(value);
   useEffect(() => setV(value), [value]);
   const cls =
-    "w-full bg-black/30 border border-white/10 rounded-lg text-text text-xs font-light px-2.5 py-2 outline-none focus:border-orange/50";
+    "w-full bg-black/30 border border-white/10 rounded-lg text-text text-xs font-normal px-2.5 py-2 outline-none focus:border-orange/50";
   const commit = () => v !== value && onCommit(v);
   return multiline ? (
     <textarea
@@ -80,7 +80,7 @@ function Field({
 }
 
 const Label = ({ children }: { children: React.ReactNode }) => (
-  <div className="font-mono text-[0.5rem] tracking-[0.14em] text-muted/70 uppercase mb-1 mt-3">{children}</div>
+  <div className="font-mono text-[0.74rem] tracking-[0.14em] text-muted/70 uppercase mb-1 mt-3">{children}</div>
 );
 
 export function ProcessDesigner({ orgId, threadId }: { orgId: string; threadId: string }) {
@@ -283,7 +283,7 @@ export function ProcessDesigner({ orgId, threadId }: { orgId: string; threadId: 
   const doneCount = progress.filter((p) => p.done).length;
 
   const selectCls =
-    "w-full bg-black/30 border border-white/10 rounded-lg text-text text-xs font-light px-2.5 py-2 outline-none focus:border-orange/50";
+    "w-full bg-black/30 border border-white/10 rounded-lg text-text text-xs font-normal px-2.5 py-2 outline-none focus:border-orange/50";
 
   const actorOptions = (
     <>
@@ -296,14 +296,14 @@ export function ProcessDesigner({ orgId, threadId }: { orgId: string; threadId: 
     </>
   );
 
-  if (!loaded) return <div className="p-8 text-muted text-sm font-light">{t("Loading…", "Lädt…")}</div>;
+  if (!loaded) return <div className="p-8 text-muted text-sm font-normal">{t("Loading…", "Lädt…")}</div>;
 
   return (
     <div className="h-full flex min-h-0">
       {/* ------------------------------------------------------ canvas ---- */}
       <div className="flex-1 min-w-0 flex flex-col">
         <div className="flex-none flex flex-wrap items-center gap-3 px-5 py-3 border-b border-white/10">
-          <div className="flex font-mono text-[0.55rem] tracking-wider">
+          <div className="flex font-mono text-[0.74rem] tracking-wider">
             {(["as-is", "to-be"] as const).map((m) => (
               <button
                 key={m}
@@ -316,7 +316,7 @@ export function ProcessDesigner({ orgId, threadId }: { orgId: string; threadId: 
               </button>
             ))}
           </div>
-          <div className="flex items-center gap-3 font-mono text-[0.55rem] tracking-wider text-muted ml-auto">
+          <div className="flex items-center gap-3 font-mono text-[0.74rem] tracking-wider text-muted ml-auto">
             <span>
               <b className="text-text font-normal">{fmt(tally.total)}</b> {t("h/mo mapped", "Std./Monat erfasst")}
             </span>
@@ -330,7 +330,7 @@ export function ProcessDesigner({ orgId, threadId }: { orgId: string; threadId: 
         </div>
 
         {error && (
-          <div className="mx-5 mt-3 text-[0.7rem] font-mono text-red-300 bg-red-500/10 border border-red-500/30 rounded-lg px-2.5 py-1.5 flex justify-between">
+          <div className="mx-5 mt-3 text-[0.88rem] font-mono text-red-300 bg-red-500/10 border border-red-500/30 rounded-lg px-2.5 py-1.5 flex justify-between">
             {error}
             <button onClick={() => setError(null)}>✕</button>
           </div>
@@ -338,7 +338,7 @@ export function ProcessDesigner({ orgId, threadId }: { orgId: string; threadId: 
 
         <div className="flex-1 min-h-0 overflow-auto p-5">
           {steps.length === 0 ? (
-            <div className="h-full flex items-center justify-center text-center text-muted text-sm font-light max-w-md mx-auto">
+            <div className="h-full flex items-center justify-center text-center text-muted text-sm font-normal max-w-md mx-auto">
               <div>
                 <div className="text-text text-base mb-2">
                   {t("Your process map starts here.", "Hier beginnt Ihre Prozesslandkarte.")}
@@ -361,7 +361,7 @@ export function ProcessDesigner({ orgId, threadId }: { orgId: string; threadId: 
                     <span style={{ color: l.color }} className="text-xs">
                       {l.kind ? KIND_GLYPH[l.kind] : "○"}
                     </span>
-                    <span className="text-xs font-light truncate">{l.name}</span>
+                    <span className="text-xs font-normal truncate">{l.name}</span>
                   </div>
                 </div>
               ))}
@@ -417,12 +417,12 @@ export function ProcessDesigner({ orgId, threadId }: { orgId: string; threadId: 
                     }}
                   >
                     <div className="flex items-start gap-1.5">
-                      <span className="font-mono text-[0.5rem] text-muted/60 mt-0.5">{idx + 1}</span>
-                      <span className={`text-[0.72rem] leading-tight font-light line-clamp-2 ${ghost ? "line-through" : ""}`}>
+                      <span className="font-mono text-[0.74rem] text-muted/60 mt-0.5">{idx + 1}</span>
+                      <span className={`text-[0.88rem] leading-tight font-normal line-clamp-2 ${ghost ? "line-through" : ""}`}>
                         {s.title}
                       </span>
                     </div>
-                    <div className="absolute left-2.5 right-2.5 bottom-1.5 flex items-center justify-between font-mono text-[0.48rem] tracking-wide">
+                    <div className="absolute left-2.5 right-2.5 bottom-1.5 flex items-center justify-between font-mono text-[0.72rem] tracking-wide">
                       <span style={{ color: c }}>
                         {DISPOSITIONS.find((d) => d.key === s.disposition)?.[t("en", "de") as "en" | "de"].toUpperCase()}
                       </span>
@@ -434,7 +434,7 @@ export function ProcessDesigner({ orgId, threadId }: { orgId: string; threadId: 
                             : ""}
                       </span>
                     </div>
-                    {s.pain && <span className="absolute -top-1.5 -right-1.5 text-[0.7rem]" title={s.pain}>⚑</span>}
+                    {s.pain && <span className="absolute -top-1.5 -right-1.5 text-[0.88rem]" title={s.pain}>⚑</span>}
                   </button>
                 );
               })}
@@ -447,7 +447,7 @@ export function ProcessDesigner({ orgId, threadId }: { orgId: string; threadId: 
       <aside className="flex-none w-80 border-l border-white/10 glass-readable overflow-y-auto p-4">
         {selected ? (
           <div>
-            <button onClick={() => setSelectedId(null)} className="font-mono text-[0.5rem] tracking-[0.12em] text-muted hover:text-text mb-2">
+            <button onClick={() => setSelectedId(null)} className="font-mono text-[0.74rem] tracking-[0.12em] text-muted hover:text-text mb-2">
               ← {t("BACK", "ZURÜCK")}
             </button>
 
@@ -481,7 +481,7 @@ export function ProcessDesigner({ orgId, threadId }: { orgId: string; threadId: 
                 <button
                   key={d.key}
                   onClick={() => patch(selected.id, { disposition: d.key })}
-                  className="font-mono text-[0.5rem] tracking-wider px-2.5 py-1.5 rounded-full border transition-colors"
+                  className="font-mono text-[0.74rem] tracking-wider px-2.5 py-1.5 rounded-full border transition-colors"
                   style={{
                     borderColor: selected.disposition === d.key ? d.color : "rgba(255,255,255,0.1)",
                     color: selected.disposition === d.key ? d.color : "#94a3b8",
@@ -516,14 +516,14 @@ export function ProcessDesigner({ orgId, threadId }: { orgId: string; threadId: 
             </div>
 
             <div className="flex gap-2 mt-5">
-              <button onClick={() => move(selected.id, -1)} className="flex-1 rounded-full border border-white/10 py-1.5 font-mono text-[0.5rem] tracking-wider text-muted hover:text-text">
+              <button onClick={() => move(selected.id, -1)} className="flex-1 rounded-full border border-white/10 py-1.5 font-mono text-[0.74rem] tracking-wider text-muted hover:text-text">
                 ← {t("EARLIER", "FRÜHER")}
               </button>
-              <button onClick={() => move(selected.id, 1)} className="flex-1 rounded-full border border-white/10 py-1.5 font-mono text-[0.5rem] tracking-wider text-muted hover:text-text">
+              <button onClick={() => move(selected.id, 1)} className="flex-1 rounded-full border border-white/10 py-1.5 font-mono text-[0.74rem] tracking-wider text-muted hover:text-text">
                 {t("LATER", "SPÄTER")} →
               </button>
             </div>
-            <button onClick={() => removeStep(selected.id)} className="mt-3 w-full text-center text-[0.65rem] text-muted hover:text-red-300">
+            <button onClick={() => removeStep(selected.id)} className="mt-3 w-full text-center text-[0.8rem] text-muted hover:text-red-300">
               {t("Delete step", "Schritt löschen")}
             </button>
           </div>
@@ -532,18 +532,18 @@ export function ProcessDesigner({ orgId, threadId }: { orgId: string; threadId: 
             {/* guided checklist */}
             <div className="rounded-xl border border-orange/30 bg-orange/5 p-3 mb-4">
               <div className="flex items-center justify-between mb-2">
-                <span className="font-mono text-[0.5rem] tracking-[0.14em] text-orange">{t("GETTING STARTED", "ERSTE SCHRITTE")}</span>
-                <span className="font-mono text-[0.5rem] text-muted">{doneCount}/{progress.length}</span>
+                <span className="font-mono text-[0.74rem] tracking-[0.14em] text-orange">{t("GETTING STARTED", "ERSTE SCHRITTE")}</span>
+                <span className="font-mono text-[0.74rem] text-muted">{doneCount}/{progress.length}</span>
               </div>
               <ul className="space-y-1.5">
                 {progress.map((p) => (
-                  <li key={p.en} className={`flex gap-2 text-[0.7rem] font-light ${p.done ? "text-muted/60 line-through" : "text-text"}`}>
+                  <li key={p.en} className={`flex gap-2 text-[0.88rem] font-normal ${p.done ? "text-muted/60 line-through" : "text-text"}`}>
                     <span style={{ color: p.done ? "#5eead4" : "#f8991d" }}>{p.done ? "✓" : "○"}</span>
                     {t(p.en, p.de)}
                   </li>
                 ))}
               </ul>
-              <p className="text-[0.65rem] text-muted/70 font-light mt-2">
+              <p className="text-[0.8rem] text-muted/70 font-normal mt-2">
                 {t("Take your time — everything saves as you go, and your teammates can add to it.", "Nehmen Sie sich Zeit — alles wird automatisch gespeichert, und Ihr Team kann ergänzen.")}
               </p>
             </div>
@@ -551,7 +551,7 @@ export function ProcessDesigner({ orgId, threadId }: { orgId: string; threadId: 
             {steps.length === 0 && actors.length === 0 && (
               <button
                 onClick={loadExample}
-                className="w-full mb-4 rounded-xl border border-dashed border-white/20 py-2.5 text-[0.7rem] font-light text-muted hover:text-text hover:border-orange/40"
+                className="w-full mb-4 rounded-xl border border-dashed border-white/20 py-2.5 text-[0.88rem] font-normal text-muted hover:text-text hover:border-orange/40"
               >
                 {t("Not sure where to begin? Load an example (order to delivery) and edit it", "Unsicher, wo Sie anfangen sollen? Beispiel laden (Auftrag bis Auslieferung) und anpassen")}
               </button>
@@ -560,10 +560,10 @@ export function ProcessDesigner({ orgId, threadId }: { orgId: string; threadId: 
             <Label>{t("Who is involved", "Wer ist beteiligt")}</Label>
             <ul className="space-y-1 mb-2">
               {actors.map((a, i) => (
-                <li key={a.id} className="flex items-center gap-2 text-xs font-light group">
+                <li key={a.id} className="flex items-center gap-2 text-xs font-normal group">
                   <span style={{ color: a.color ?? ACTOR_COLORS[i % ACTOR_COLORS.length] }}>{KIND_GLYPH[a.kind]}</span>
                   <span className="flex-1 truncate">{a.name}</span>
-                  <button onClick={() => removeActor(a.id)} className="text-muted/50 hover:text-red-300 text-[0.65rem] opacity-0 group-hover:opacity-100">✕</button>
+                  <button onClick={() => removeActor(a.id)} className="text-muted/50 hover:text-red-300 text-[0.8rem] opacity-0 group-hover:opacity-100">✕</button>
                 </li>
               ))}
             </ul>
@@ -578,7 +578,7 @@ export function ProcessDesigner({ orgId, threadId }: { orgId: string; threadId: 
                 value={newActor}
                 onChange={(e) => setNewActor(e.target.value)}
                 placeholder={t("Name", "Name")}
-                className="flex-1 min-w-0 bg-black/30 border border-white/10 rounded-lg text-xs font-light px-2.5 py-2 outline-none focus:border-orange/50"
+                className="flex-1 min-w-0 bg-black/30 border border-white/10 rounded-lg text-xs font-normal px-2.5 py-2 outline-none focus:border-orange/50"
               />
               <select
                 value={newKind}
@@ -598,7 +598,7 @@ export function ProcessDesigner({ orgId, threadId }: { orgId: string; threadId: 
                   <button
                     key={s.name}
                     onClick={() => addActor(t(s.name, s.de), s.kind)}
-                    className="text-[0.62rem] font-light px-2 py-1 rounded-full border border-white/10 text-muted hover:text-text hover:border-orange/40"
+                    className="text-[0.8rem] font-normal px-2 py-1 rounded-full border border-white/10 text-muted hover:text-text hover:border-orange/40"
                   >
                     + {t(s.name, s.de)}
                   </button>
@@ -618,11 +618,11 @@ export function ProcessDesigner({ orgId, threadId }: { orgId: string; threadId: 
                 value={newStep}
                 onChange={(e) => setNewStep(e.target.value)}
                 placeholder={t("e.g. Receive customer order", "z. B. Kundenauftrag erfassen")}
-                className="flex-1 min-w-0 bg-black/30 border border-white/10 rounded-lg text-xs font-light px-2.5 py-2 outline-none focus:border-orange/50"
+                className="flex-1 min-w-0 bg-black/30 border border-white/10 rounded-lg text-xs font-normal px-2.5 py-2 outline-none focus:border-orange/50"
               />
               <button className="rounded-lg bg-orange text-black text-xs font-semibold px-3">+</button>
             </form>
-            <p className="text-[0.62rem] text-muted/60 font-light mt-1.5">
+            <p className="text-[0.8rem] text-muted/60 font-normal mt-1.5">
               {t("New steps go at the end, in the same lane as the step before.", "Neue Schritte kommen ans Ende, in dieselbe Bahn wie der vorherige Schritt.")}
             </p>
           </div>

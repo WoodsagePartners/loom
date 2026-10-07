@@ -7,7 +7,7 @@ import { NEXT_COOKIE } from "@/lib/workspaces";
 import { LangToggle } from "@/components/lang-toggle";
 
 const INPUT =
-  "w-full bg-black/30 border border-white/10 rounded-xl text-text text-sm font-light px-3 py-2.5 outline-none focus:border-orange/50";
+  "w-full bg-black/30 border border-white/10 rounded-xl text-text text-sm font-normal px-3 py-2.5 outline-none focus:border-orange/50";
 
 export default function LoginPage() {
   const t = useT();
@@ -16,6 +16,7 @@ export default function LoginPage() {
   const [signingUp, setSigningUp] = useState(false);
   const [needsConfirm, setNeedsConfirm] = useState(false);
   const [resetSent, setResetSent] = useState(false);
+  const [resetting, setResetting] = useState(false);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
 
@@ -36,6 +37,7 @@ export default function LoginPage() {
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
+    if (resetting) return forgot();
     setBusy(true);
     setError("");
     const supabase = createClient();
@@ -65,7 +67,7 @@ export default function LoginPage() {
           </div>
           <LangToggle />
         </div>
-        <p className="text-muted text-sm font-light mb-6">
+        <p className="text-muted text-sm font-normal mb-6">
           {t(
             "Map how work really gets done — then find the knots worth untying.",
             "Zeigen Sie, wie Arbeit wirklich abläuft — und finden Sie die Knoten, die sich zu lösen lohnen."
@@ -73,19 +75,24 @@ export default function LoginPage() {
         </p>
 
         {resetSent ? (
-          <p className="text-sm font-light">
+          <p className="text-sm font-normal">
             {t("If an account exists for", "Falls ein Konto existiert für")} <b className="font-normal text-text">{email}</b>,{" "}
             {t("a reset link is on its way. Check spam if it doesn't show up in a minute.", "ist ein Link zum Zurücksetzen unterwegs. Prüfen Sie ggf. den Spam-Ordner.")}
           </p>
         ) : needsConfirm ? (
-          <p className="text-sm font-light">
+          <p className="text-sm font-normal">
             {t("Account created for", "Konto erstellt für")} <b className="font-normal text-text">{email}</b>.{" "}
             {t("Check your email to confirm, then sign in.", "Bitte bestätigen Sie Ihre E-Mail und melden Sie sich dann an.")}
           </p>
         ) : (
           <form onSubmit={submit} className="space-y-3">
+            {resetting && (
+              <p className="text-[0.88rem] text-muted font-normal">
+                {t("Enter your email and we'll send you a link to choose a new password.", "Geben Sie Ihre E-Mail ein – wir senden Ihnen einen Link, um ein neues Passwort zu wählen.")}
+              </p>
+            )}
             {signingUp && (
-              <p className="text-[0.7rem] text-muted font-light">
+              <p className="text-[0.88rem] text-muted font-normal">
                 {t(
                   "Invited by a teammate? Create your account with the same email address the invite was sent to.",
                   "Von einem Teammitglied eingeladen? Erstellen Sie Ihr Konto mit derselben E-Mail-Adresse, an die die Einladung ging."
@@ -101,6 +108,7 @@ export default function LoginPage() {
               onChange={(e) => setEmail(e.target.value)}
               className={INPUT}
             />
+            {!resetting && (
             <input
               type="password"
               required
@@ -111,6 +119,7 @@ export default function LoginPage() {
               onChange={(e) => setPassword(e.target.value)}
               className={INPUT}
             />
+            )}
             {error && <p className="text-xs text-red-300">{error}</p>}
             <button
               type="submit"
@@ -120,27 +129,39 @@ export default function LoginPage() {
             >
               {busy
                 ? t("WORKING…", "BITTE WARTEN…")
-                : signingUp
+                : resetting
+                  ? t("SEND RESET LINK", "LINK SENDEN")
+                  : signingUp
                   ? t("CREATE ACCOUNT", "KONTO ERSTELLEN")
                   : t("SIGN IN", "ANMELDEN")}
             </button>
             {!signingUp && (
-              <button type="button" onClick={forgot} disabled={busy} className="w-full text-center text-[0.7rem] text-muted font-light hover:text-text">
-                {t("Forgot your password?", "Passwort vergessen?")}
+              <button
+                type="button"
+                onClick={() => {
+                  setResetting((r) => !r);
+                  setError("");
+                }}
+                disabled={busy}
+                className="w-full text-center text-[0.88rem] text-muted font-normal hover:text-text"
+              >
+                {resetting ? t("Back to sign in", "Zurück zur Anmeldung") : t("Forgot your password?", "Passwort vergessen?")}
               </button>
             )}
+            {!resetting && (
             <button
               type="button"
               onClick={() => {
                 setSigningUp((s) => !s);
                 setError("");
               }}
-              className="w-full text-center text-[0.7rem] text-muted font-light"
+              className="w-full text-center text-[0.88rem] text-muted font-normal"
             >
               {signingUp
                 ? t("Have an account? Sign in", "Schon ein Konto? Anmelden")
                 : t("No account yet? Create one", "Noch kein Konto? Erstellen")}
             </button>
+            )}
           </form>
         )}
       </div>

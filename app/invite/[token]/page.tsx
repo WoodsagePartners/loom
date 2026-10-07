@@ -48,8 +48,8 @@ export default function InvitePage({ params }: { params: Promise<{ token: string
         {error ? (
           <>
             <h1 className="text-lg font-medium mb-2">This invite didn&apos;t work</h1>
-            <p className="text-sm font-light text-red-300 mb-5">{error}</p>
-            <p className="text-muted text-xs font-light mb-4">
+            <p className="text-sm font-normal text-red-300 mb-5">{error}</p>
+            <p className="text-muted text-xs font-normal mb-4">
               Invites only work for the email address they were sent to, once, within 14 days. Ask
               your workspace owner for a fresh one, or sign in with the invited address.
             </p>
@@ -61,7 +61,7 @@ export default function InvitePage({ params }: { params: Promise<{ token: string
             </button>
           </>
         ) : (
-          <p className="text-sm font-light text-muted">Joining the workspace…</p>
+          <p className="text-sm font-normal text-muted">Joining the workspace…</p>
         )}
       </div>
     </main>

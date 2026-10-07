@@ -67,7 +67,7 @@ export function ThreadRail({
             </svg>
             <span className="text-xs font-light truncate text-text max-w-[9rem]">{t.name}</span>
             {t.state !== "live" && (
-              <span className="ml-auto font-mono text-[0.44rem] tracking-[0.1em] text-muted uppercase flex-none">
+              <span className="ml-auto font-mono text-[0.72rem] tracking-[0.1em] text-muted uppercase flex-none">
                 {t.state}
               </span>
             )}

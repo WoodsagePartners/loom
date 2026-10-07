@@ -54,7 +54,7 @@ const GLYPH: Record<string, string> = {
 function PullButton({ onClick, pulling, label }: { onClick: () => void; pulling: boolean; label: string }) {
   return (
     <button
-      className="nodrag nopan mt-2.5 inline-flex items-center gap-2 font-mono text-[0.9rem] tracking-[0.04em] uppercase px-3.5 py-2 rounded-full border border-orange/40 text-orange bg-orange/[.08] hover:bg-orange/[.16] disabled:opacity-50 disabled:cursor-wait transition-colors"
+      className="nodrag nopan mt-2.5 inline-flex items-center gap-2 font-mono text-[0.97rem] tracking-[0.04em] uppercase px-3.5 py-2 rounded-full border border-orange/40 text-orange bg-orange/[.08] hover:bg-orange/[.16] disabled:opacity-50 disabled:cursor-wait transition-colors"
       onClick={(e) => {
         e.stopPropagation();
         onClick();
@@ -70,7 +70,7 @@ function PullButton({ onClick, pulling, label }: { onClick: () => void; pulling:
 function AddKnotButton({ onClick }: { onClick: () => void }) {
   return (
     <button
-      className="nodrag nopan mt-2.5 inline-flex items-center gap-2 font-mono text-[0.9rem] tracking-[0.04em] uppercase px-3.5 py-2 rounded-full border border-white/15 text-muted hover:text-text hover:border-white/30 transition-colors"
+      className="nodrag nopan mt-2.5 inline-flex items-center gap-2 font-mono text-[0.97rem] tracking-[0.04em] uppercase px-3.5 py-2 rounded-full border border-white/15 text-muted hover:text-text hover:border-white/30 transition-colors"
       onClick={(e) => {
         e.stopPropagation();
         onClick();
@@ -126,14 +126,14 @@ function SuggestionIcon({ suggestion }: { suggestion: Suggestion }) {
   if (!suggestion) return null;
   return (
     <div className="nodrag nopan group absolute -left-2 -top-2 z-10">
-      <div className="w-5 h-5 rounded-full border border-gold/50 bg-gold/15 grid place-items-center text-[0.7rem] text-gold cursor-help">
+      <div className="w-5 h-5 rounded-full border border-gold/50 bg-gold/15 grid place-items-center text-[0.88rem] text-gold cursor-help">
         ✦
       </div>
       <div className="pointer-events-none absolute left-0 top-6 w-56 rounded-xl border border-gold/30 bg-[#0d1420]/95 backdrop-blur-sm p-2.5 opacity-0 group-hover:opacity-100 transition-opacity duration-150 shadow-lg z-20">
-        <div className="font-mono text-[0.6rem] tracking-[0.1em] text-gold uppercase mb-1">
+        <div className="font-mono text-[0.8rem] tracking-[0.1em] text-gold uppercase mb-1">
           Suggested · {suggestion.key}
         </div>
-        <div className="text-[0.78rem] font-light text-[#dbe7f2] leading-snug">{suggestion.why}</div>
+        <div className="text-[0.88rem] font-light text-[#dbe7f2] leading-snug">{suggestion.why}</div>
       </div>
     </div>
   );
@@ -193,7 +193,7 @@ function KnotNode({ data }: NodeProps) {
       <SuggestionIcon suggestion={suggestion} />
 
       <div className="flex items-center justify-between gap-2 mb-2.5">
-        <span className="font-mono text-[0.95rem] tracking-[0.04em] uppercase text-[#a8d4ff]">
+        <span className="font-mono text-[1.02rem] tracking-[0.04em] uppercase text-[#a8d4ff]">
           <span className="text-muted">K{label} · </span>
           {n.tech}
         </span>
@@ -213,7 +213,7 @@ function KnotNode({ data }: NodeProps) {
       </div>
       {b && (
         <span
-          className={`inline-block mt-2.5 font-mono text-[0.75rem] tracking-[0.04em] px-2 py-0.5 rounded-lg border ${b.cls}`}
+          className={`inline-block mt-2.5 font-mono text-[0.88rem] tracking-[0.04em] px-2 py-0.5 rounded-lg border ${b.cls}`}
         >
           {b.label}
         </span>
@@ -246,7 +246,7 @@ function QuestionNode({ data }: NodeProps) {
     >
       <Handle type="source" position={Position.Right} style={PORT_STYLE} />
       <SuggestionIcon suggestion={suggestion} />
-      <span className="font-mono text-[0.8rem] tracking-[0.12em] text-orange">
+      <span className="font-mono text-[0.87rem] tracking-[0.12em] text-orange">
         WORKING QUESTION · V{questionVersion}
       </span>
       <span className="text-[1.25rem] font-light text-text text-center leading-snug line-clamp-2">
@@ -590,20 +590,20 @@ function CanvasInner({
         style={{ left: dockLeft }}
       >
         <ControlButton onClick={() => zoomIn({ duration: 200 })} title="Zoom in">
-          <span className="text-[0.85rem] leading-none">+</span>
+          <span className="text-[0.92rem] leading-none">+</span>
         </ControlButton>
         <ControlButton onClick={() => fitView({ padding: 0.12, duration: 400 })} title="Reframe the whole board">
           <span className="block w-2.5 h-2.5 border border-current" />
         </ControlButton>
         <ControlButton onClick={() => zoomOut({ duration: 200 })} title="Zoom out">
-          <span className="text-[0.95rem] leading-none">−</span>
+          <span className="text-[1.02rem] leading-none">−</span>
         </ControlButton>
         <ControlButton
           onClick={onTidy}
           disabled={tidyLoading}
           title="Tidy board — reset every knot to a clean auto-layout"
         >
-          <span className={`text-[0.85rem] leading-none ${tidyLoading ? "animate-spin" : ""}`}>⟲</span>
+          <span className={`text-[0.92rem] leading-none ${tidyLoading ? "animate-spin" : ""}`}>⟲</span>
         </ControlButton>
       </div>
     </div>
