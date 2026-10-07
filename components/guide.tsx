@@ -190,8 +190,8 @@ export function Guide({ onClose }: { onClose: () => void }) {
   }, []);
 
   return (
-    <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/30 backdrop-blur-[3px] p-4" onMouseDown={(e) => e.target === e.currentTarget && close()}>
-      <div className="w-full max-w-md glass glass-bright glass-clear rounded-2xl p-6" role="dialog" aria-label={t("How Loom works", "So funktioniert Loom")}>
+    <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/55 backdrop-blur-[4px] p-4" onMouseDown={(e) => e.target === e.currentTarget && close()}>
+      <div className="w-full max-w-md glass glass-bright glass-clear rounded-2xl p-6" style={{ background: "var(--tint-solid)" }} role="dialog" aria-label={t("How Loom works", "So funktioniert Loom")}>
         <div className="flex items-center justify-between mb-5">
           <div className="font-mono text-[0.66rem] tracking-[0.16em] text-muted/80">
             {t("HOW LOOM WORKS", "SO FUNKTIONIERT LOOM")} · {i + 1}/{CARDS.length}

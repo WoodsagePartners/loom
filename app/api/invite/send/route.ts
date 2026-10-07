@@ -45,7 +45,7 @@ export async function POST(req: Request) {
         help: "Questions? Just reply to this email.",
       };
 
-  const logo = `${origin}/struinova-logo.png`;
+  const logo = `${origin}/Struinova-Logo.png`;
   const html = `<!doctype html><html><body style="margin:0;background:#f3f1ee;font-family:-apple-system,Segoe UI,Helvetica,Arial,sans-serif;color:#1d1f25">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f3f1ee;padding:32px 12px"><tr><td align="center">
 <table role="presentation" width="560" cellpadding="0" cellspacing="0" style="max-width:560px;width:100%;background:#ffffff;border-radius:14px;overflow:hidden">
