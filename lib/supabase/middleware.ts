@@ -56,6 +56,8 @@ export async function updateSession(request: NextRequest) {
     const url = request.nextUrl.clone();
     url.pathname = "/login";
     url.search = "";
+    // Invite links open the login screen in "create your account" mode.
+    if (path.startsWith("/invite/")) url.searchParams.set("invite", "1");
     const redirect = NextResponse.redirect(url);
     // Remember where they were headed (e.g. an invite link) so sign-in can
     // bring them back. Cookie, not a query param: it survives the magic-link

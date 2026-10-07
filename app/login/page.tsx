@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useT } from "@/lib/i18n";
 import { NEXT_COOKIE } from "@/lib/workspaces";
@@ -20,6 +20,15 @@ export default function LoginPage() {
   const [remember, setRemember] = useState(true);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
+  const [invited, setInvited] = useState(false);
+
+  // Arriving from an invite link: open straight on "create your account".
+  useEffect(() => {
+    if (new URLSearchParams(window.location.search).get("invite") === "1") {
+      setInvited(true);
+      setSigningUp(true);
+    }
+  }, []);
 
   async function forgot() {
     const cleanEmail = email.trim().toLowerCase();
@@ -105,7 +114,18 @@ export default function LoginPage() {
                 {t("Enter your email and we'll send you a link to choose a new password.", "Geben Sie Ihre E-Mail ein – wir senden Ihnen einen Link, um ein neues Passwort zu wählen.")}
               </p>
             )}
-            {signingUp && (
+            {invited && signingUp && (
+              <div className="rounded-xl border border-orange/30 bg-orange/10 px-3 py-2.5 text-[0.88rem] font-normal">
+                <div className="text-text mb-0.5">{t("You've been invited to a workspace.", "Sie wurden in einen Arbeitsbereich eingeladen.")}</div>
+                <div className="text-muted">
+                  {t(
+                    "Enter the email address the invitation was sent to and choose a password — you'll join right after.",
+                    "Geben Sie die E-Mail-Adresse ein, an die die Einladung ging, und wählen Sie ein Passwort – danach sind Sie direkt dabei."
+                  )}
+                </div>
+              </div>
+            )}
+            {signingUp && !invited && (
               <p className="text-[0.88rem] text-muted font-normal">
                 {t(
                   "Invited by a teammate? Create your account with the same email address the invite was sent to.",
@@ -178,7 +198,7 @@ export default function LoginPage() {
               className="w-full text-center text-[0.88rem] text-muted font-normal"
             >
               {signingUp
-                ? t("Have an account? Sign in", "Schon ein Konto? Anmelden")
+                ? t("Already have an account? Sign in", "Schon ein Konto? Anmelden")
                 : t("No account yet? Create one", "Noch kein Konto? Erstellen")}
             </button>
             )}
