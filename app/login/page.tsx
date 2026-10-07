@@ -17,6 +17,7 @@ export default function LoginPage() {
   const [needsConfirm, setNeedsConfirm] = useState(false);
   const [resetSent, setResetSent] = useState(false);
   const [resetting, setResetting] = useState(false);
+  const [remember, setRemember] = useState(true);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
 
@@ -35,6 +36,13 @@ export default function LoginPage() {
     else setResetSent(true);
   }
 
+  // Unchecked = sign-in ends when the browser closes (see lib/supabase/middleware.ts).
+  function applyRemember() {
+    if (remember) document.cookie = "loom_session_only=; path=/; max-age=0; samesite=lax";
+    else document.cookie = "loom_session_only=1; path=/; max-age=31536000; samesite=lax";
+    document.cookie = "loom_alive=1; path=/; samesite=lax";
+  }
+
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     if (resetting) return forgot();
@@ -47,7 +55,10 @@ export default function LoginPage() {
       const { data, error } = await supabase.auth.signUp({ email: cleanEmail, password });
       setBusy(false);
       if (error) return setError(error.message);
-      if (data.session) window.location.assign("/auth/continue");
+      if (data.session) {
+        applyRemember();
+        window.location.assign("/auth/continue");
+      }
       else setNeedsConfirm(true); // only if "Confirm email" is still on in Supabase
       return;
     }
@@ -55,7 +66,10 @@ export default function LoginPage() {
     const { error } = await supabase.auth.signInWithPassword({ email: cleanEmail, password });
     setBusy(false);
     if (error) setError(t("Wrong email or password.", "E-Mail oder Passwort ist falsch."));
-    else window.location.assign("/auth/continue");
+    else {
+      applyRemember();
+      window.location.assign("/auth/continue");
+    }
   }
 
   return (
@@ -119,6 +133,12 @@ export default function LoginPage() {
               onChange={(e) => setPassword(e.target.value)}
               className={INPUT}
             />
+            )}
+            {!resetting && (
+              <label className="flex items-center gap-2 text-[0.88rem] text-muted font-normal cursor-pointer select-none">
+                <input type="checkbox" checked={remember} onChange={(e) => setRemember(e.target.checked)} className="accent-orange" />
+                {t("Keep me signed in", "Angemeldet bleiben")}
+              </label>
             )}
             {error && <p className="text-xs text-red-300">{error}</p>}
             <button

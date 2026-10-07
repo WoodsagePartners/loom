@@ -29,6 +29,7 @@ import {
   type OnNodesChange,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
+import { toPng } from "html-to-image";
 import {
   LANE_H,
   LANE_LABEL_W,
@@ -51,6 +52,7 @@ import {
   type NodeType,
   type EdgePatch,
   FRICTIONS,
+  WEIGHTS,
   CHANNELS,
   WAIT_UNITS,
   waitParts,
@@ -86,7 +88,7 @@ type EdgeData = {
   onLabel: (id: string, label: string) => void;
   onKind: (id: string, kind: EdgeKind) => void;
   onSelect: (id: string) => void;
-  smarts: Pick<FlowEdge, "payload" | "channel" | "wait_minutes" | "friction" | "note">;
+  smarts: Pick<FlowEdge, "payload" | "channel" | "wait_minutes" | "friction" | "weight" | "note">;
   onSmarts: (id: string, patch: EdgePatch) => void;
   dim: boolean;
 };
@@ -100,7 +102,7 @@ const HANDLES: { id: string; pos: Position }[] = [
 ];
 
 const TYPE_SHORT: Record<NodeType, [string, string]> = {
-  start: ["Start", "Start"],
+  start: ["Start", "Beginn"],
   action: ["Action", "Aktion"],
   decision: ["Decide", "Wahl"],
   wait: ["Wait", "Warten"],
@@ -119,7 +121,7 @@ const FlowNodeView = memo(function FlowNodeView({ data, selected, dragging, posi
   const { node, actor, actors, editing } = data;
   const info = nodeTypeInfo(node.type);
   const tx = useTx();
-  const wave = Math.min(1500, Math.max(0, node.x * 0.8)); // left → right sweep when the language changes
+  const wave = Math.min(4200, Math.max(0, node.x * 2.2)); // left → right sweep when the language changes
   const [hoverNode, setHoverNode] = useState(false);
   const [plusVis, setPlusVis] = useState(false);
   const plusTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -466,6 +468,21 @@ function SmartsEditor({ id, data }: { id: string; data: EdgeData }) {
         </div>
       </div>
       <div>
+        <div className={SM_LABEL}>{t("How much travels here", "Wie viel läuft hier durch")}</div>
+        <div className="flex gap-1">
+          {WEIGHTS.map((w) => (
+            <button
+              key={w.key}
+              type="button"
+              onClick={() => data.onSmarts(id, { weight: s.weight === w.key ? null : w.key })}
+              className={`flex-1 rounded-full border py-0.5 text-[0.68rem] transition-colors ${s.weight === w.key ? "border-orange text-orange bg-orange/15" : "border-white/20 text-text/75"}`}
+            >
+              {t(w.en, w.de)}
+            </button>
+          ))}
+        </div>
+      </div>
+      <div>
         <div className={SM_LABEL}>{t("Note", "Notiz")}</div>
         <textarea rows={3} value={note} onChange={(e) => setNote(e.target.value)} onBlur={() => note.trim() !== (s.note ?? "") && data.onSmarts(id, { note: note.trim() || null })} placeholder={t("What happens here, and what goes wrong?", "Was passiert hier – und was geht schief?")} className={SM_FIELD + " resize-none"} />
       </div>
@@ -546,7 +563,7 @@ const FlowEdgeView = memo(function FlowEdgeView(props: EdgeProps<RFEdge>) {
         id={id}
         path={path}
         markerEnd={markerEnd}
-        style={{ stroke, strokeWidth: selected ? 2.8 : 1.9, filter: selected ? `drop-shadow(0 0 5px ${stroke})` : undefined, strokeDasharray: kindInfo.dash, strokeLinecap: kindInfo.dash ? "round" : "butt", opacity: data?.dim ? 0.12 : 1, transition: "opacity .35s ease" }}
+        style={{ stroke, strokeWidth: (WEIGHTS.find((w) => w.key === sm?.weight)?.px ?? 1.9) + (selected ? 0.9 : 0), filter: selected ? `drop-shadow(0 0 5px ${stroke})` : undefined, strokeDasharray: kindInfo.dash, strokeLinecap: kindInfo.dash ? "round" : "butt", opacity: data?.dim ? 0.12 : 1, transition: "opacity .35s ease" }}
       />
       <EdgeLabelRenderer>
         <div
@@ -654,9 +671,9 @@ export type CanvasProps = {
   onMoveNode: (id: string, x: number, laneId: string, yOffset: number) => void;
   onPatchNode: (id: string, patch: Partial<FlowNode>) => string | null;
   onDeleteNodes: (ids: string[]) => void;
-  onConnect: (from: string, to: string, sourceHandle: string | null, targetHandle: string | null) => void;
+  onConnect: (from: string, to: string, sourceHandle: string | null, targetHandle: string | null) => Promise<string | null | void> | void;
   onPatchEdge: (id: string, patch: EdgePatch) => void;
-  onNotice: (msg: string) => void;
+  onNotice: (msg: string, kind?: "error" | "info") => void;
   canUndo: boolean;
   canRedo: boolean;
   onUndo: () => void;
@@ -664,6 +681,7 @@ export type CanvasProps = {
   onDeleteEdges: (ids: string[]) => void;
   focus: Focus | null;
   onFocusToggle: (nodeId: string) => void;
+  processName?: string;
 };
 
 function Inner(props: CanvasProps) {
@@ -683,6 +701,41 @@ function Inner(props: CanvasProps) {
   useEffect(() => {
     try { setGrid(localStorage.getItem("loom_grid") === "1"); } catch {}
   }, []);
+
+  // Export the whole map (not just what is on screen) as a sharp PNG: lanes, steps and lines.
+  const [exporting, setExporting] = useState(false);
+  async function exportPng() {
+    const el = document.querySelector(".react-flow__viewport") as HTMLElement | null;
+    if (!el || props.lanes.length === 0 || exporting) return;
+    setExporting(true);
+    props.onNotice(t("One second… downloading for you", "Einen Moment … der Download wird vorbereitet"), "info");
+    // let the toast paint before the heavy image work blocks the main thread
+    await new Promise((r) => setTimeout(r, 120));
+    try {
+      const maxRight = props.nodes.reduce((m, n) => Math.max(m, n.x + NODE_W), LANE_LABEL_W + NODE_W);
+      const w = Math.min(LANE_W, Math.round(maxRight + 120));
+      const h = props.lanes.length * LANE_H;
+      const dataUrl = await toPng(el, {
+        backgroundColor: theme === "light" ? "#eef2f7" : "#0a1119",
+        width: w,
+        height: h,
+        pixelRatio: 2,
+        cacheBust: true,
+        fontEmbedCSS: "", // skip fetching cross-origin web-font CSS (it logs errors and slows the export)
+        style: { width: `${w}px`, height: `${h}px`, transform: "translate(0px, 0px) scale(1)" },
+      });
+      const base = (props.processName || "process").trim().replace(/[^\p{L}\p{N}]+/gu, "-").replace(/^-|-$/g, "").toLowerCase() || "process";
+      const a = document.createElement("a");
+      a.download = `loom-${base}.png`;
+      a.href = dataUrl;
+      a.click();
+    } catch {
+      props.onNotice(t("Could not export the image. Please try again.", "Das Bild konnte nicht exportiert werden. Bitte erneut versuchen."));
+    } finally {
+      setExporting(false);
+    }
+  }
+
   const toggleGrid = () =>
     setGrid((g) => {
       try { localStorage.setItem("loom_grid", g ? "0" : "1"); } catch {}
@@ -766,7 +819,7 @@ function Inner(props: CanvasProps) {
           onLabel: (id, label) => propsRef.current.onPatchEdge(id, { label: label || null }),
           onKind: (id, kind) => propsRef.current.onPatchEdge(id, { kind }),
           onSelect: (id) => setSelEdge(id),
-          smarts: { payload: e.payload ?? null, channel: e.channel ?? null, wait_minutes: e.wait_minutes ?? null, friction: e.friction ?? null, note: e.note ?? null },
+          smarts: { payload: e.payload ?? null, channel: e.channel ?? null, wait_minutes: e.wait_minutes ?? null, friction: e.friction ?? null, weight: e.weight ?? null, note: e.note ?? null },
           onSmarts: (id, patch) => propsRef.current.onPatchEdge(id, patch),
           dim: !!focus && !focus.selecting && !(focus.ids.has(e.from_node_id) && focus.ids.has(e.to_node_id)),
         },
@@ -803,7 +856,7 @@ function Inner(props: CanvasProps) {
   );
 
   const onConnect = useCallback((c: Connection) => {
-    if (c.source && c.target) propsRef.current.onConnect(c.source, c.target, c.sourceHandle, c.targetHandle);
+    if (c.source && c.target) Promise.resolve(propsRef.current.onConnect(c.source, c.target, c.sourceHandle, c.targetHandle)).then((eid) => eid && setSelEdge(eid));
   }, []);
 
   const onNodeDragStop = useCallback(
@@ -846,7 +899,7 @@ function Inner(props: CanvasProps) {
     const id = await propsRef.current.onAddNode(pd.x, pd.laneId, pd.yOffset, label.trim());
     if (id) {
       pendingSelect.current = id;
-      if (pd.fromId) propsRef.current.onConnect(pd.fromId, id, "r", "l");
+      if (pd.fromId) Promise.resolve(propsRef.current.onConnect(pd.fromId, id, "r", "l")).then((eid) => eid && setSelEdge(eid));
     }
   };
 
@@ -928,11 +981,7 @@ function Inner(props: CanvasProps) {
         ) : (
           <Background key="dots" variant={BackgroundVariant.Dots} gap={28} size={1.2} color={theme === "light" ? "rgba(15,23,42,0.16)" : "rgba(255,255,255,0.07)"} />
         )}
-        <Controls showInteractive={false} position="bottom-right">
-          <ControlButton onClick={toggleGrid} title={t("Toggle grid", "Raster ein/aus")} aria-label={t("Toggle grid", "Raster ein/aus")} style={{ opacity: grid ? 1 : 0.6 }}>
-            <span style={{ fontSize: 14, lineHeight: 1 }}>▦</span>
-          </ControlButton>
-        </Controls>
+        <Controls showInteractive={false} position="bottom-right" />
         {lanes.length > 0 && (
           <Panel position="top-left" style={{ margin: 0, left: LANE_LABEL_W + 40, top: 12 }}>
             <div className="flex items-center gap-2">
@@ -959,10 +1008,28 @@ function Inner(props: CanvasProps) {
                 {b.g}
               </button>
             ))}
+            <button
+              onClick={toggleGrid}
+              title={t("Toggle grid", "Raster ein/aus")}
+              aria-label={t("Toggle grid", "Raster ein/aus")}
+              className="glass rounded-full w-8 h-8 text-[0.95rem] leading-none text-text/80 hover:text-orange transition-colors"
+              style={{ opacity: grid ? 1 : 0.6 }}
+            >
+              ▦
+            </button>
+            <button
+              onClick={exportPng}
+              disabled={exporting || lanes.length === 0}
+              title={t("Export as image (PNG)", "Als Bild exportieren (PNG)")}
+              aria-label={t("Export as image (PNG)", "Als Bild exportieren (PNG)")}
+              className="glass rounded-full w-8 h-8 text-[0.95rem] leading-none text-text/80 hover:text-orange disabled:opacity-40 transition-colors"
+            >
+              {exporting ? "…" : "⤓"}
+            </button>
             </div>
           </Panel>
         )}
-        <Panel position="bottom-right" style={{ margin: 0, right: 15, bottom: 156 }}>
+        <Panel position="bottom-right" style={{ margin: 0, right: 15, bottom: 104 }}>
           <button
             onClick={() => zoomTo(1, { duration: 200 })}
             title={t("Zoom level — click for 100%", "Zoomstufe – Klick für 100 %")}

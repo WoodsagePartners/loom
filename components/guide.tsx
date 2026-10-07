@@ -97,7 +97,7 @@ const CARDS: Card[] = [
   },
   {
     term: ["Line details", "Linien-Details"],
-    what: ["Click a line’s label (or the line) to record what moves across it, how it moves, the typical wait, how much friction it causes, and a note.", "Klicken Sie auf die Beschriftung einer Linie (oder die Linie), um zu erfassen, was übergeben wird, auf welchem Weg, die typische Wartezeit, die Reibung und eine Notiz."],
+    what: ["Draw a line and its details card opens right away; click a line’s label (or the line) any time to record what moves across it, how it moves, the typical wait, how much friction it causes, and a note.", "Sobald Sie eine Linie zeichnen, öffnet sich ihre Detailkarte; per Klick auf die Beschriftung (oder die Linie) erfassen Sie jederzeit, was übergeben wird, auf welchem Weg, die typische Wartezeit, die Reibung und eine Notiz."],
     why: ["Hand-offs are where time and errors hide. A few facts per line show where to start improving — and give the AI what it needs to suggest fixes.", "Übergaben sind der Ort, an dem Zeit und Fehler versickern. Wenige Fakten pro Linie zeigen, wo die Verbesserung beginnt – und geben der KI, was sie für Vorschläge braucht."],
     art: (
       <div className="flex gap-1.5">
@@ -108,16 +108,46 @@ const CARDS: Card[] = [
     ),
   },
   {
+    term: ["Line weight", "Linienstärke"],
+    what: ["In the line details card, “How much travels here” makes a line thin (Occasional), medium (Regular) or thick (Main route). Click the same choice again to clear it.", "In der Detailkarte der Linie macht „Wie viel läuft hier durch“ eine Linie dünn (Gelegentlich), mittel (Regelmäßig) oder dick (Hauptweg). Dieselbe Auswahl erneut anklicken hebt sie auf."],
+    why: ["Thickness shows where the work really flows — a thick line into a painful hand-off is the first thing to fix.", "Die Dicke zeigt, wo die Arbeit wirklich fließt – eine dicke Linie in eine schmerzhafte Übergabe ist das Erste, was man angeht."],
+    art: (
+      <svg width="64" height="30" aria-hidden>
+        {[1.1, 2.6, 5].map((w, i) => (
+          <line key={i} x1="4" x2="60" y1={5 + i * 10} y2={5 + i * 10} stroke="#f8991d" strokeWidth={w} strokeLinecap="round" />
+        ))}
+      </svg>
+    ),
+  },
+  {
     term: ["Hover for details", "Mit der Maus Details sehen"],
     what: ["Rest the pointer on any step or line label and a small card shows its details — type, owner, description, and for lines what moves, wait and friction.", "Fahren Sie mit der Maus über einen Schritt oder eine Linien-Beschriftung – eine kleine Karte zeigt Details: Typ, Zuständigkeit, Beschreibung und bei Linien Übergabe, Wartezeit und Reibung."],
     why: ["You can read the whole map at a glance without opening anything — ideal when walking someone through a process.", "So lesen Sie die ganze Karte auf einen Blick, ohne etwas zu öffnen – ideal, um jemandem einen Prozess zu erklären."],
     art: <span className="text-3xl text-orange">☝</span>,
   },
   {
+    term: ["Copy a process or lane", "Prozess oder Bahn kopieren"],
+    what: ["Hover a process in the left menu and click ⧉. Loom makes a “(copy)” with all its lanes, steps and lines and opens it. Plans and phases are not copied. Lanes copy too: hover a lane and click ⧉ — its steps and the lines between them come along (not the Start step).", "Fahren Sie im linken Menü über einen Prozess und klicken Sie auf ⧉. Loom legt eine „(Kopie)“ mit allen Bahnen, Schritten und Linien an und öffnet sie. Pläne und Phasen werden nicht mitkopiert. Auch Bahnen lassen sich kopieren: über die Bahn fahren und auf ⧉ klicken – ihre Schritte und die Linien dazwischen kommen mit (nicht der Beginn-Schritt)."],
+    why: ["Try a “what if” or a to-be version without touching the original — and compare the two side by side.", "So probieren Sie ein „Was wäre wenn“ oder einen Soll-Zustand aus, ohne das Original anzutasten – und vergleichen beide."],
+    art: <span className="text-3xl text-orange">⧉</span>,
+  },
+  {
+    term: ["About this workspace", "Über diesen Arbeitsbereich"],
+    what: ["Owners and admins can open the workspace menu at the top and choose “About this workspace…”. Say what the workspace is for and what you are looking for — any hunch about where it hurts.", "Eigentümer und Admins öffnen oben das Arbeitsbereich-Menü und wählen „Über diesen Arbeitsbereich…“. Beschreiben Sie, wofür er gedacht ist und wonach Sie suchen – auch eine Ahnung, wo es hakt."],
+    why: ["It gives everyone, and later the AI helper, the context to suggest where to look first.", "So haben alle – und später die KI – den Kontext, um zu sagen, wo man zuerst hinschauen sollte."],
+    art: <span className="text-3xl text-orange">✎</span>,
+  },
+  {
+    term: ["Share & switch language", "Teilen & Sprache wechseln"],
+    what: ["The ⤓ button saves the current process as a PNG picture, ready for a slide or an email. The EN / DE toggle switches the whole app — and your own step and lane names are translated too.", "Die Schaltfläche ⤓ speichert den aktuellen Prozess als PNG-Bild, bereit für Folie oder E-Mail. Mit EN / DE wechseln Sie die ganze Oberfläche – auch Ihre eigenen Schritt- und Bahnnamen werden übersetzt."],
+    why: ["A map people can drop into a meeting, in the language the room speaks, gets used.", "Eine Karte, die man in ein Meeting mitnehmen kann, in der Sprache des Raums, wird auch genutzt."],
+    art: <span className="text-3xl text-orange">⤓</span>,
+  },
+  {
     term: ["Shortcuts & undo", "Tastenkürzel & Rückgängig"],
     what: [
-      "Ctrl/Cmd+Z undoes, Ctrl/Cmd+Shift+Z (or Ctrl+Y) redoes — or use the ↶ ↷ buttons beside + STEP. Delete removes the selected step or line. Double-click a lane to add a step. Covered: adding, moving, editing and deleting steps and lines, including their details (the last 60 changes). Not covered: lanes, roles and plans — deleting those asks you to confirm instead — and a deleted step comes back without its plan-phase membership.",
-      "Strg/Cmd+Z macht rückgängig, Strg/Cmd+Umschalt+Z (oder Strg+Y) wiederholt – oder nutzen Sie die Schaltflächen ↶ ↷ neben + SCHRITT. Entf löscht den gewählten Schritt oder die Linie. Doppelklick auf eine Bahn fügt einen Schritt hinzu. Abgedeckt: Hinzufügen, Verschieben, Bearbeiten und Löschen von Schritten und Linien samt Details (die letzten 60 Änderungen). Nicht abgedeckt: Bahnen, Rollen und Pläne – dort fragt Loom vor dem Löschen nach – und ein gelöschter Schritt kehrt ohne seine Phasenzuordnung zurück.",
+      "Ctrl/Cmd+Z undoes, Ctrl/Cmd+Shift+Z (or Ctrl+Y) redoes — or use the ↶ ↷ buttons beside + STEP. The ▦ button shows a grid to line things up. Delete removes the selected step or line. Double-click a lane to add a step. Covered: adding, moving, editing and deleting steps and lines, including their details (the last 60 changes). Not covered: copying a process or lane, lanes, roles and plans — deleting those asks you to confirm instead — and a deleted step comes back without its plan-phase membership.",
+      "Strg/Cmd+Z macht rückgängig, Strg/Cmd+Umschalt+Z (oder Strg+Y) wiederholt – oder nutzen Sie die Schaltflächen ↶ ↷ neben + SCHRITT. Die Schaltfläche ▦ blendet ein Raster zum Ausrichten ein. Entf löscht den gewählten Schritt oder die Linie. Doppelklick auf eine Bahn fügt einen Schritt hinzu. Abgedeckt: Hinzufügen, Verschieben, Bearbeiten und Löschen von Schritten und Linien samt Details (die letzten 60 Änderungen). Nicht abgedeckt: Kopieren von Prozessen und Bahnen, Bahnen, Rollen und Pläne – dort fragt Loom vor dem Löschen nach – und ein gelöschter Schritt kehrt ohne seine Phasenzuordnung zurück.",
     ],
     why: [
       "Mapping is trial and error. Undo makes it safe to experiment, so people try things instead of freezing.",

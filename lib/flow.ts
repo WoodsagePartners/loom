@@ -102,10 +102,18 @@ export type FlowEdge = {
   channel?: string | null;
   wait_minutes?: number | null;
   friction?: Friction | null;
+  weight?: Weight | null;
   note?: string | null;
 };
 export type Friction = "none" | "some" | "painful";
-export type EdgePatch = Partial<Pick<FlowEdge, "label" | "kind" | "color" | "payload" | "channel" | "wait_minutes" | "friction" | "note">>;
+// how much work travels a line — drawn as line thickness (a light Sankey view)
+export type Weight = "light" | "medium" | "heavy";
+export const WEIGHTS: { key: Weight; en: string; de: string; px: number }[] = [
+  { key: "light", en: "Occasional", de: "Gelegentlich", px: 1.1 },
+  { key: "medium", en: "Regular", de: "Regelmäßig", px: 2.6 },
+  { key: "heavy", en: "Main route", de: "Hauptweg", px: 5 },
+];
+export type EdgePatch = Partial<Pick<FlowEdge, "label" | "kind" | "color" | "payload" | "channel" | "wait_minutes" | "friction" | "weight" | "note">>;
 export const FRICTIONS: { key: Friction; en: string; de: string; color: string }[] = [
   { key: "none", en: "None", de: "Keine", color: "#4ade80" },
   { key: "some", en: "Some", de: "Etwas", color: "#fbbf24" },
@@ -146,7 +154,7 @@ export const ACTOR_KINDS: { key: ActorKind; en: string; de: string; hint: string
 
 // ---- node types: what happens on a node ----------------------------------
 export const NODE_TYPES: { key: NodeType; en: string; de: string; glyph: string; hint: string; hintDe: string }[] = [
-  { key: "start", en: "Start", de: "Start", glyph: "▶", hint: "What kicks the process off", hintDe: "Was den Prozess auslöst" },
+  { key: "start", en: "Start", de: "Beginn", glyph: "▶", hint: "What kicks the process off", hintDe: "Was den Prozess auslöst" },
   { key: "action", en: "Action", de: "Aktion", glyph: "■", hint: "Someone or something does work", hintDe: "Jemand oder etwas leistet Arbeit" },
   { key: "decision", en: "Decision", de: "Entscheidung", glyph: "◆", hint: "A branch: two or more ways out", hintDe: "Eine Verzweigung mit mehreren Wegen" },
   { key: "wait", en: "Wait / Handoff", de: "Warten / Übergabe", glyph: "◔", hint: "Work sits idle or changes hands", hintDe: "Arbeit liegt still oder wechselt den Besitzer" },

@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import type { Workspace, WorkspaceRole } from "@/lib/workspaces";
 import { createClient } from "@/lib/supabase/client";
 import { useT } from "@/lib/i18n";
+import { WorkspaceDetails } from "@/components/workspace-details";
 
 const ROLE_LABEL: Record<WorkspaceRole, string> = {
   owner: "OWNER",
@@ -32,6 +33,7 @@ export function WorkspaceSwitcher({
   const sb = useRef(createClient()).current;
   const canRename = role === "owner" || role === "admin";
   const [switching, setSwitching] = useState(false);
+  const [details, setDetails] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -82,7 +84,7 @@ export function WorkspaceSwitcher({
     <div className="relative flex items-center gap-1.5" ref={ref}>
       {renaming ? (
         <div className="flex items-center gap-1.5">
-          <b className="font-semibold uppercase tracking-[0.06em] text-[0.74rem] text-muted">{t("Workspace:", "Workspace:")}</b>
+          <b className="font-medium uppercase tracking-[0.12em] text-[0.78rem] text-text/90">{t("Workspace:", "Arbeitsbereich:")}</b>
           <input
             autoFocus
             value={draft}
@@ -104,7 +106,7 @@ export function WorkspaceSwitcher({
         aria-haspopup="menu"
         aria-expanded={open}
       >
-        <span className="text-[0.82rem]"><b className="font-semibold uppercase tracking-[0.06em] text-[0.74rem] mr-1">{t("Workspace:", "Workspace:")}</b>{orgName}</span>
+        <span className="text-[0.82rem]"><b className="font-medium uppercase tracking-[0.12em] text-[0.78rem] text-text/90 mr-1.5">{t("Workspace:", "Arbeitsbereich:")}</b>{orgName}</span>
         <span className="text-[0.74rem]">{open ? "▴" : "▾"}</span>
       </button>
       )}
@@ -141,6 +143,16 @@ export function WorkspaceSwitcher({
             </button>
           ))}
           <div className="my-1.5 border-t border-white/10" />
+          {canRename && (
+            <button
+              type="button"
+              role="menuitem"
+              onClick={() => { setOpen(false); setDetails(true); }}
+              className="w-full px-2.5 py-2 text-left text-[0.82rem] rounded-lg text-muted hover:text-text hover:bg-white/10"
+            >
+              {t("About this workspace…", "Über diesen Arbeitsbereich…")}
+            </button>
+          )}
           <button
             type="button"
             role="menuitem"
@@ -159,6 +171,7 @@ export function WorkspaceSwitcher({
           </button>
         </div>
       )}
+    {details && <WorkspaceDetails orgId={orgId} onClose={() => setDetails(false)} />}
     </div>
   );
 }

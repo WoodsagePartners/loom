@@ -28,10 +28,12 @@ type Props = {
   onCreateWorkflow: (name: string, color?: string) => void;
   onPatchWorkflow: (id: string, patch: Partial<Workflow>) => void;
   onDeleteWorkflow: (id: string) => void;
+  onDuplicateWorkflow: (id: string) => void;
   onAddLane: (name: string, color?: string) => void;
   onPatchLane: (id: string, patch: Partial<Lane>) => void;
   onMoveLane: (id: string, dir: -1 | 1) => void;
   onDeleteLane: (id: string) => void;
+  onDuplicateLane: (id: string) => void;
   onAddActor: (a: { name: string; kind: ActorKind; role: string }) => void;
   onPatchActor: (id: string, patch: Partial<Actor>) => void;
   onDeleteActor: (id: string) => void;
@@ -265,7 +267,17 @@ export function LeftNav(p: Props) {
                       onClick={() => p.onSelectWorkflow(w.id)}
                     >
                       <span className="w-2.5 h-2.5 rounded-full flex-none" style={{ background: w.color ?? NEUTRAL }} />
-                      <span title={tx(w.name)} className="flex-1 truncate text-[0.76rem] ink-text" style={{ color: soft(w.color) }}><Tx text={w.name} d={wi * 70} /></span>
+                      <span title={tx(w.name)} className="flex-1 truncate text-[0.76rem] ink-text" style={{ color: soft(w.color) }}><Tx text={w.name} d={wi * 160} /></span>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          p.onDuplicateWorkflow(w.id);
+                        }}
+                        className="text-muted/50 hover:text-orange text-xs opacity-0 group-hover:opacity-100"
+                        title={t("Duplicate process", "Prozess duplizieren")}
+                      >
+                        ⧉
+                      </button>
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
@@ -299,9 +311,14 @@ export function LeftNav(p: Props) {
                           className={FIELD + " mt-2 resize-none"}
                         />
                         <Swatches value={w.color} onPick={(c) => p.onPatchWorkflow(w.id, { color: c })} />
-                        <button onClick={() => p.onDeleteWorkflow(w.id)} className="text-[0.72rem] text-muted hover:text-red-300">
-                          {t("Delete process", "Prozess löschen")}
-                        </button>
+                        <div className="flex items-center gap-4">
+                          <button onClick={() => p.onDuplicateWorkflow(w.id)} className="text-[0.72rem] text-muted hover:text-orange">
+                            {t("Duplicate process", "Prozess duplizieren")}
+                          </button>
+                          <button onClick={() => p.onDeleteWorkflow(w.id)} className="text-[0.72rem] text-muted hover:text-red-300">
+                            {t("Delete process", "Prozess löschen")}
+                          </button>
+                        </div>
                       </div>
                     )}
                   </div>
@@ -333,10 +350,11 @@ export function LeftNav(p: Props) {
                   <div key={l.id}>
                     <div className={`${rowCls} cursor-pointer ${isLens("lane", l.id) ? "bg-white/10" : ""}`} onClick={() => p.onLens(isLens("lane", l.id) ? null : { kind: "lane", id: l.id })}>
                       <span className="w-1.5 h-5 rounded-sm flex-none" style={{ background: l.color ?? NEUTRAL }} />
-                      <span title={tx(l.name)} className="flex-1 truncate text-[0.76rem] ink-text" style={{ color: soft(l.color) }}><Tx text={l.name} d={80 + i * 70} /></span>
+                      <span title={tx(l.name)} className="flex-1 truncate text-[0.76rem] ink-text" style={{ color: soft(l.color) }}><Tx text={l.name} d={160 + i * 160} /></span>
                       <span className="flex gap-0.5 opacity-0 group-hover:opacity-100 text-muted/70" onClick={(e) => e.stopPropagation()}>
                         <button disabled={i === 0} onClick={() => p.onMoveLane(l.id, -1)} className="px-1 hover:text-text disabled:opacity-30" title={t("Move up", "Nach oben")}>↑</button>
                         <button disabled={i === p.lanes.length - 1} onClick={() => p.onMoveLane(l.id, 1)} className="px-1 hover:text-text disabled:opacity-30" title={t("Move down", "Nach unten")}>↓</button>
+                        <button onClick={() => p.onDuplicateLane(l.id)} className="px-1 hover:text-orange" title={t("Duplicate lane", "Bahn duplizieren")}>⧉</button>
                         <button onClick={() => setEditing(editing === l.id ? null : l.id)} className="px-1 hover:text-text" title={t("Edit", "Bearbeiten")}>✎</button>
                       </span>
                     </div>
@@ -422,7 +440,7 @@ export function LeftNav(p: Props) {
                     <div className={`${rowCls} cursor-pointer ${isLens("actor", a.id) ? "bg-white/10" : ""}`} onClick={() => p.onLens(isLens("actor", a.id) ? null : { kind: "actor", id: a.id })}>
                       <ShapeIcon kind={a.kind} color={a.color ?? NEUTRAL} size={26} />
                       <span className="flex-1 min-w-0">
-                        <span title={tx(a.name)} className="block truncate text-[0.76rem] ink-text" style={{ color: soft(a.color) }}><Tx text={a.name} d={160 + ai * 70} /></span>
+                        <span title={tx(a.name)} className="block truncate text-[0.76rem] ink-text" style={{ color: soft(a.color) }}><Tx text={a.name} d={320 + ai * 160} /></span>
                       </span>
                       <button onClick={(e) => { e.stopPropagation(); setEditing(editing === a.id ? null : a.id); }} className="text-muted/50 hover:text-text text-xs opacity-0 group-hover:opacity-100" title={t("Edit", "Bearbeiten")}>✎</button>
                     </div>
@@ -472,7 +490,7 @@ export function LeftNav(p: Props) {
                   <div key={r.id}>
                     <div className={`${rowCls} cursor-pointer ${isLens("roadmap", r.id) ? "bg-white/10" : ""}`} onClick={() => p.onLens(isLens("roadmap", r.id) ? null : { kind: "roadmap", id: r.id })}>
                       <span className="w-2 h-2 rotate-45 flex-none" style={{ background: r.color ?? NEUTRAL }} />
-                      <span title={tx(r.name)} className="flex-1 truncate text-[0.76rem] ink-text" style={{ color: soft(r.color) }}><Tx text={r.name} d={240 + ri * 70} /></span>
+                      <span title={tx(r.name)} className="flex-1 truncate text-[0.76rem] ink-text" style={{ color: soft(r.color) }}><Tx text={r.name} d={480 + ri * 160} /></span>
                       <span className="flex gap-0.5 opacity-0 group-hover:opacity-100 text-muted/70" onClick={(e) => e.stopPropagation()}>
                         <button onClick={() => { setOpen((o) => ({ ...o, roadmaps: true })); setAdding((a) => (a === `phase:${r.id}` ? null : `phase:${r.id}`)); }} onMouseDown={(e) => e.preventDefault()} className="px-1 hover:text-text" title={t("Add phase", "Phase hinzufügen")}>+</button>
                         <button onClick={() => setEditing(editing === r.id ? null : r.id)} className="px-1 hover:text-text" title={t("Edit", "Bearbeiten")}>✎</button>
@@ -492,7 +510,7 @@ export function LeftNav(p: Props) {
                           onClick={() => p.onLens(isLens("phase", ph.id) ? null : { kind: "phase", id: ph.id })}
                         >
                           <span className="w-1.5 h-4 rounded-sm flex-none" style={{ background: ph.color ?? NEUTRAL }} />
-                          <span title={tx(ph.name)} className="flex-1 truncate text-[0.72rem] ink-text" style={{ color: soft(ph.color) }}><Tx text={ph.name} d={280 + pi * 70} /></span>
+                          <span title={tx(ph.name)} className="flex-1 truncate text-[0.72rem] ink-text" style={{ color: soft(ph.color) }}><Tx text={ph.name} d={560 + pi * 160} /></span>
                           <span className="font-mono text-[0.62rem] text-muted/60">{p.phaseCounts[ph.id] ?? 0}</span>
                           <button onClick={(e) => { e.stopPropagation(); setEditing(editing === ph.id ? null : ph.id); }} className="text-muted/50 hover:text-text text-xs opacity-0 group-hover:opacity-100" title={t("Edit", "Bearbeiten")}>✎</button>
                         </div>

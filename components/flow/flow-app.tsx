@@ -27,6 +27,8 @@ import type { Workspace, WorkspaceRole } from "@/lib/workspaces";
 import { WorkspaceSwitcher } from "@/components/workspace-switcher";
 import { LangToggle } from "@/components/lang-toggle";
 import { LeftNav } from "@/components/flow/left-nav";
+import { MoreMenu } from "@/components/more-menu";
+import { CtaBanner } from "@/components/flow/cta-banner";
 import { WorkflowCanvas } from "@/components/flow/workflow-canvas";
 import { TeamPanel } from "@/components/team-panel";
 import { AccountMenu, AccountModal } from "@/components/account";
@@ -82,7 +84,7 @@ export function FlowApp({
   const [dotOpen, setDotOpen] = useState(false);
   const [activeId, setActiveId] = useState<string | null>(initial.workflows[0]?.id ?? null);
   const [ask, confirmDialog] = useConfirm();
-  const [toast, setToast] = useState<string | null>(null);
+  const [toast, setToast] = useState<{ msg: string; kind: "error" | "info" } | null>(null);
   const [teamOpen, setTeamOpen] = useState(false);
   const [accountOpen, setAccountOpen] = useState(false);
   const [guideOpen, setGuideOpen] = useState(false);
@@ -110,10 +112,41 @@ export function FlowApp({
     } catch {}
   };
 
-  const fail = useCallback((msg: string) => setToast(msg), []);
+  // Save confirmation: one quiet "Saved" after a burst of edits settles — never per keystroke or drag.
+  const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const lastSavedToast = useRef(0);
+  const hadError = useRef(false);
+  const fail = useCallback((msg: string, kind: "error" | "info" = "error") => {
+    if (kind === "error") hadError.current = true;
+    setToast({ msg, kind });
+  }, []);
+  // Loom is built for a big screen: a gentle, one-time heads-up on small ones.
+  useEffect(() => {
+    let seen = false;
+    try {
+      seen = sessionStorage.getItem("loom_desktop_note") === "1";
+    } catch {}
+    if (seen || window.innerWidth >= 1000) return;
+    try {
+      sessionStorage.setItem("loom_desktop_note", "1");
+    } catch {}
+    const id = setTimeout(() => fail(t("Loom works best on a desktop or laptop screen.", "Loom funktioniert am besten auf einem Desktop- oder Laptop-Bildschirm."), "info"), 1500);
+    return () => clearTimeout(id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  const noteEdit = () => {
+    hadError.current = false;
+    if (saveTimer.current) clearTimeout(saveTimer.current);
+    saveTimer.current = setTimeout(() => {
+      if (hadError.current || Date.now() - lastSavedToast.current < 15000) return;
+      lastSavedToast.current = Date.now();
+      setToast({ msg: t("All changes saved ✓", "Alle Änderungen gespeichert ✓"), kind: "info" });
+    }, 2500);
+  };
+  useEffect(() => () => { if (saveTimer.current) clearTimeout(saveTimer.current); }, []);
   useEffect(() => {
     if (!toast) return;
-    const id = setTimeout(() => setToast(null), 5000);
+    const id = setTimeout(() => setToast(null), toast.kind === "info" ? Math.max(2800, toast.msg.length * 90) : 5000);
     return () => clearTimeout(id);
   }, [toast]);
 
@@ -171,6 +204,7 @@ export function FlowApp({
   });
   // call BEFORE a change; changes within 0.7s (e.g. add step + its line) share one undo step
   const record = () => {
+    noteEdit();
     const h = hist.current;
     const now = Date.now();
     if (now - h.last > 700) {
@@ -280,7 +314,7 @@ export function FlowApp({
     if (lErr || !lane) return fail(lErr?.message ?? t("Could not create the first lane.", "Die erste Bahn konnte nicht angelegt werden."));
     const { data: start } = await sb
       .from("flow_nodes")
-      .insert({ workflow_id: wf.id, lane_id: lane.id, type: "start", label: t("Start", "Start"), x: MIN_X, y_offset: (LANE_H - NODE_H) / 2 })
+      .insert({ workflow_id: wf.id, lane_id: lane.id, type: "start", label: t("Start", "Beginn"), x: MIN_X, y_offset: (LANE_H - NODE_H) / 2 })
       .select("*")
       .single();
     setWorkflows((p) => [...p, wf as Workflow]);
@@ -296,6 +330,49 @@ export function FlowApp({
       fail(error.message);
       reload();
     }
+  }
+
+  async function duplicateWorkflow(id: string) {
+    const src = workflows.find((x) => x.id === id);
+    if (!src) return;
+    fail(t("Copying… one second.", "Wird kopiert … einen Moment."), "info");
+    const { id: _w, ...wfRest } = src as Workflow & Record<string, unknown>;
+    const { data: wf, error } = await sb
+      .from("workflows")
+      .insert({ ...wfRest, name: `${src.name} ${t("(copy)", "(Kopie)")}` })
+      .select("*")
+      .single();
+    if (error || !wf) return fail(error?.message ?? t("Could not copy the process.", "Der Prozess konnte nicht kopiert werden."));
+    const laneMap: Record<string, string> = {};
+    const nodeMap: Record<string, string> = {};
+    const srcLanes = lanes.filter((l) => l.workflow_id === id);
+    for (const l of srcLanes) {
+      const { id: oldId, ...rest } = l as Lane & Record<string, unknown>;
+      const { data, error: e } = await sb.from("lanes").insert({ ...rest, workflow_id: wf.id }).select("id").single();
+      if (e || !data) return fail(e?.message ?? t("Copy stopped at the lanes.", "Kopie bei den Bahnen abgebrochen."));
+      laneMap[oldId] = data.id;
+    }
+    for (const n of nodes.filter((x) => x.workflow_id === id)) {
+      const { id: oldId, ...rest } = n as FlowNode & Record<string, unknown>;
+      const { data, error: e } = await sb
+        .from("flow_nodes")
+        .insert({ ...rest, workflow_id: wf.id, lane_id: n.lane_id ? laneMap[n.lane_id] ?? null : null })
+        .select("id")
+        .single();
+      if (e || !data) return fail(e?.message ?? t("Copy stopped at the steps.", "Kopie bei den Schritten abgebrochen."));
+      nodeMap[oldId] = data.id;
+    }
+    for (const ed of edges.filter((x) => x.workflow_id === id)) {
+      const { id: _e, ...rest } = ed as FlowEdge & Record<string, unknown>;
+      if (!nodeMap[ed.from_node_id] || !nodeMap[ed.to_node_id]) continue;
+      const { error: e } = await sb
+        .from("flow_edges")
+        .insert({ ...rest, workflow_id: wf.id, from_node_id: nodeMap[ed.from_node_id], to_node_id: nodeMap[ed.to_node_id] });
+      if (e) return fail(e.message);
+    }
+    await reload();
+    select(wf.id);
+    fail(t("Copied. Plans aren't included.", "Kopiert. Pläne sind nicht enthalten."), "info");
   }
 
   async function deleteWorkflow(id: string) {
@@ -320,6 +397,37 @@ export function FlowApp({
       .single();
     if (error || !data) return fail(error?.message ?? t("Could not add the lane.", "Die Bahn konnte nicht hinzugefügt werden."));
     setLanes((p) => [...p, data as Lane]);
+  }
+
+  async function duplicateLane(id: string) {
+    const src = lanes.find((l) => l.id === id);
+    if (!src || !activeId) return;
+    fail(t("Copying… one second.", "Wird kopiert … einen Moment."), "info");
+    const position = wfLanes.reduce((m, l) => Math.max(m, l.position), -1) + 1;
+    const { id: _l, ...laneRest } = src as Lane & Record<string, unknown>;
+    const { data: lane, error } = await sb
+      .from("lanes")
+      .insert({ ...laneRest, name: `${src.name} ${t("(copy)", "(Kopie)")}`, position })
+      .select("id")
+      .single();
+    if (error || !lane) return fail(error?.message ?? t("Could not copy the lane.", "Die Bahn konnte nicht kopiert werden."));
+    const nodeMap: Record<string, string> = {};
+    // the Start step is one per process, so it stays behind
+    for (const n of nodes.filter((x) => x.lane_id === id && x.type !== "start")) {
+      const { id: oldId, ...rest } = n as FlowNode & Record<string, unknown>;
+      const { data, error: e } = await sb.from("flow_nodes").insert({ ...rest, lane_id: lane.id }).select("id").single();
+      if (e || !data) return fail(e?.message ?? t("Copy stopped at the steps.", "Kopie bei den Schritten abgebrochen."));
+      nodeMap[oldId] = data.id;
+    }
+    for (const ed of edges.filter((x) => nodeMap[x.from_node_id] && nodeMap[x.to_node_id])) {
+      const { id: _e, ...rest } = ed as FlowEdge & Record<string, unknown>;
+      const { error: e } = await sb
+        .from("flow_edges")
+        .insert({ ...rest, from_node_id: nodeMap[ed.from_node_id], to_node_id: nodeMap[ed.to_node_id] });
+      if (e) return fail(e.message);
+    }
+    await reload();
+    fail(t("Lane copied below. Lines between lanes aren't copied.", "Bahn unten kopiert. Linien zwischen Bahnen werden nicht kopiert."), "info");
   }
 
   async function patchLane(id: string, patch: Partial<Lane>) {
@@ -445,16 +553,20 @@ export function FlowApp({
   }
 
   // ---------------------------------------------------------------- edges --
-  async function connect(from: string, to: string, sourceHandle: string | null, targetHandle: string | null) {
-    if (!activeId) return;
+  async function connect(from: string, to: string, sourceHandle: string | null, targetHandle: string | null): Promise<string | null> {
+    if (!activeId) return null;
     record();
     const { data, error } = await sb
       .from("flow_edges")
       .insert({ workflow_id: activeId, from_node_id: from, to_node_id: to, source_handle: sourceHandle, target_handle: targetHandle })
       .select("*")
       .single();
-    if (error || !data) return fail(error?.message ?? t("Could not connect those steps.", "Die Schritte konnten nicht verbunden werden."));
+    if (error || !data) {
+      fail(error?.message ?? t("Could not connect those steps.", "Die Schritte konnten nicht verbunden werden."));
+      return null;
+    }
     setEdges((p) => [...p, data as FlowEdge]);
+    return (data as FlowEdge).id;
   }
 
   async function patchEdge(id: string, patch: EdgePatch) {
@@ -631,15 +743,16 @@ export function FlowApp({
     {confirmDialog}
     <div className="h-screen flex flex-col">
       <div className="glass-chrome flex-none border-b border-white/10 h-[4.25rem] flex items-center gap-3 pl-5 pr-8 relative z-40">
-        <span className="font-semibold tracking-[0.16em] text-sm">
-          THE <span className="text-orange">LOOM</span>
+        <span className="flex items-center gap-2 font-semibold tracking-[0.16em] text-sm">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/loom-mark.svg" alt="" width={28} height={28} className="rounded-lg" />
+          <span>THE <span className="text-orange">LOOM</span></span>
         </span>
         <span className="text-muted/40">|</span>
         <WorkspaceSwitcher orgId={orgId} orgName={orgName} workspaces={workspaces} role={role} />
+        <CtaBanner />
         <div className="ml-auto flex items-center gap-3">
-          <button onClick={() => setGuideOpen(true)} className="text-[0.74rem] tracking-[0.1em] uppercase text-muted hover:text-orange transition-colors" title={t("How Loom works", "So funktioniert Loom")}>
-            ? {t("Help", "Hilfe")}
-          </button>
+          <MoreMenu onHelp={() => setGuideOpen(true)} />
           {peers.length > 1 && (
             <>
               <PresenceStack peers={peers} meId={profile.id} />
@@ -661,10 +774,12 @@ export function FlowApp({
           onCreateWorkflow={createWorkflow}
           onPatchWorkflow={patchWorkflow}
           onDeleteWorkflow={deleteWorkflow}
+          onDuplicateWorkflow={duplicateWorkflow}
           onAddLane={addLane}
           onPatchLane={patchLane}
           onMoveLane={moveLane}
           onDeleteLane={deleteLane}
+          onDuplicateLane={duplicateLane}
           onAddActor={addActor}
           onPatchActor={patchActor}
           onDeleteActor={deleteActor}
@@ -689,6 +804,7 @@ export function FlowApp({
           {active ? (
             <WorkflowCanvas
               key={active.id}
+              processName={active.name}
               lanes={wfLanes}
               nodes={wfNodes}
               edges={wfEdges}
@@ -816,9 +932,13 @@ export function FlowApp({
           )}
 
           {toast && (
-            <div className="absolute top-4 left-1/2 -translate-x-1/2 z-50 inline-flex items-center gap-3 text-[0.85rem] glass text-red-200 !border-red-400/50 rounded-xl px-4 py-2">
-              {toast}
-              <button onClick={() => setToast(null)} className="text-red-200/70 hover:text-red-100">✕</button>
+            <div
+              role="status"
+              aria-live="polite"
+              className={`absolute bottom-5 left-1/2 -translate-x-1/2 z-50 inline-flex items-center gap-2.5 text-[0.72rem] font-light tracking-wide glass rounded-full px-3.5 py-1.5 ${toast.kind === "error" ? "text-red-200/90 !border-red-400/30" : "text-text/75 !border-white/10"}`}
+            >
+              {toast.msg}
+              <button onClick={() => setToast(null)} className="opacity-60 hover:opacity-100">✕</button>
             </div>
           )}
         </main>

@@ -196,10 +196,10 @@ body > * {
 
 /* Language swap: user content fades in one item at a time (delay set inline). */
 @keyframes txSwap {
-  from { opacity: 0; filter: blur(7px); }
+  from { opacity: 0; filter: blur(10px); }
   to { opacity: 1; filter: blur(0); }
 }
-.tx-swap { animation: txSwap 0.55s ease both; }
+.tx-swap { animation: txSwap 1s ease both; }
 @media (prefers-reduced-motion: reduce) {
   .tx-swap { animation: none; }
 }
@@ -357,3 +357,21 @@ select option { background: var(--tint-solid); color: rgb(var(--c-text)); }
 /* r 1791375970 */
 /* r 1791376114 */
 /* r 1791377639 */
+/* r 1791379254 */
+/* r 1791380005 */
+/* r 1791380174 */
+/* r 1791380487 */
+/* r 1791380662 */
+/* r 1791380845 */
+/* r 1791380894 */
+/* r 1791381706 */
+/* r 1791382172 */
+/* r 1791382605 */
+/* r 1791382828 */
+/* r 1791382987 */
+/* r 1791383305 */
+/* r 1791383501 */
+/* r 1791383526 */
+/* r 1791383695 */
+
+/* r 1791350000 */

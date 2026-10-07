@@ -6,6 +6,23 @@ type CookieToSet = { name: string; value: string; options: CookieOptions };
 // Refreshes the Supabase auth session on every request so server components
 // always see a valid, non-expired user. Called from middleware.ts.
 export async function updateSession(request: NextRequest) {
+  // "Keep me signed in" unchecked: login sets loom_session_only (persistent) and
+  // loom_alive (a session cookie that vanishes when the browser closes). If the
+  // flag is there but the session cookie is gone, the browser was restarted, so
+  // the sign-in is dropped.
+  const staleAuth: string[] = [];
+  if (request.cookies.get("loom_session_only")?.value === "1" && !request.cookies.get("loom_alive")) {
+    for (const c of request.cookies.getAll()) {
+      if (c.name.startsWith("sb-")) {
+        staleAuth.push(c.name);
+        request.cookies.delete(c.name);
+      }
+    }
+  }
+  const expire = <T extends NextResponse>(res: T): T => {
+    staleAuth.forEach((n) => res.cookies.set(n, "", { path: "/", maxAge: 0 }));
+    return res;
+  };
   let response = NextResponse.next({ request });
 
   const supabase = createServerClient(
@@ -34,7 +51,7 @@ export async function updateSession(request: NextRequest) {
   const path = request.nextUrl.pathname;
   // /auth/callback must stay reachable while signed out — it is the page that
   // turns a magic-link code into a session.
-  const isPublic = path.startsWith("/login") || path.startsWith("/auth/");
+  const isPublic = path.startsWith("/login") || path.startsWith("/auth/") || ["/privacy", "/terms", "/processor"].includes(path);
   if (!user && !isPublic) {
     const url = request.nextUrl.clone();
     url.pathname = "/login";
@@ -46,8 +63,8 @@ export async function updateSession(request: NextRequest) {
     if (path !== "/" && path !== "/dashboard") {
       redirect.cookies.set("loom_next", path, { path: "/", httpOnly: true, sameSite: "lax", maxAge: 3600 });
     }
-    return redirect;
+    return expire(redirect);
   }
 
-  return response;
+  return expire(response);
 }

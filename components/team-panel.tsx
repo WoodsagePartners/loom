@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
-import { useT } from "@/lib/i18n";
+import { useT, useLang } from "@/lib/i18n";
 import { useConfirm } from "@/components/confirm";
 import type { WorkspaceRole } from "@/lib/workspaces";
 
@@ -41,6 +41,8 @@ export function TeamPanel({
   const [me, setMe] = useState<string | null>(null);
   const [members, setMembers] = useState<Member[]>([]);
   const [invites, setInvites] = useState<Invite[]>([]);
+  const lang = useLang();
+  const [note, setNote] = useState<string | null>(null);
   const [email, setEmail] = useState("");
   const [inviteRole, setInviteRole] = useState<WorkspaceRole>("member");
   const [busy, setBusy] = useState(false);
@@ -86,7 +88,7 @@ export function TeamPanel({
     const { data, error: err } = await supabase
       .from("invites")
       .insert({ org_id: orgId, email: email.trim().toLowerCase(), role: inviteRole, invited_by: me })
-      .select("token")
+      .select("id, token")
       .single();
     setBusy(false);
     if (err) {
@@ -98,8 +100,24 @@ export function TeamPanel({
       return;
     }
     setEmail("");
-    if (data?.token) await copy(link(data.token), data.token);
+    if (data?.id) await emailInvite(data.id);
     load();
+  }
+
+  async function emailInvite(id: string) {
+    setNote(null);
+    try {
+      const r = await fetch("/api/invite/send", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ inviteId: id, lang }),
+      });
+      const j = await r.json().catch(() => ({}));
+      if (!r.ok) throw new Error(j?.error || "send failed");
+      setNote(t("Invitation emailed.", "Einladung per E-Mail gesendet."));
+    } catch (e) {
+      setError(t("Saved, but the email didn't go out — use Copy link. ", "Gespeichert, aber die E-Mail ging nicht raus – nutzen Sie „Link kopieren“. ") + (e instanceof Error ? e.message : ""));
+    }
   }
 
   async function copy(text: string, key: string) {
@@ -176,6 +194,10 @@ export function TeamPanel({
           <div className="mb-4 rounded border border-red-400/30 bg-red-500/10 px-3 py-2 text-xs text-red-200">
             {error}
           </div>
+        )}
+
+        {note && !error && (
+          <div className="mb-4 rounded border border-green-400/30 bg-green-500/10 px-3 py-2 text-xs text-green-200">{note}</div>
         )}
 
         <div className="text-[0.8rem] tracking-[0.12em] text-muted/60 mb-2">{t("MEMBERS", "MITGLIEDER")}</div>
@@ -256,6 +278,9 @@ export function TeamPanel({
                       <span className="flex-1 truncate text-xs">
                         {i.email} <span className="text-muted/60">· {i.role}</span>
                       </span>
+                      <button onClick={() => emailInvite(i.id)} className="text-[0.8rem] text-orange hover:underline">
+                        {t("Resend email", "E-Mail erneut senden")}
+                      </button>
                       <button
                         onClick={() => copy(link(i.token), i.token)}
                         className="text-[0.8rem] text-orange hover:underline"
