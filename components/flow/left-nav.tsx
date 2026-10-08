@@ -263,17 +263,17 @@ export function LeftNav(p: Props) {
                 {p.workflows.map((w, wi) => (
                   <div key={w.id}>
                     <div
-                      className={`${rowCls} cursor-pointer ${w.id === p.activeWorkflowId ? "bg-orange/10" : ""}`}
+                      className={`group flex items-center gap-2 pl-8 pr-3 py-px leading-tight hover:bg-white/5 cursor-pointer ${w.id === p.activeWorkflowId ? "bg-orange/10" : ""}`}
                       onClick={() => p.onSelectWorkflow(w.id)}
                     >
-                      <span className="w-2.5 h-2.5 rounded-full flex-none" style={{ background: w.color ?? NEUTRAL }} />
-                      <span title={tx(w.name)} className="flex-1 truncate text-[0.76rem] ink-text" style={{ color: soft(w.color) }}><Tx text={w.name} d={wi * 160} /></span>
+                      <span className="w-2 h-2 rounded-full flex-none" style={{ background: w.color ?? NEUTRAL }} />
+                      <span title={tx(w.name)} className="flex-1 truncate text-[0.72rem] ink-text" style={{ color: soft(w.color) }}><Tx text={w.name} d={wi * 160} /></span>
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
                           p.onDuplicateWorkflow(w.id);
                         }}
-                        className="text-muted/50 hover:text-orange text-xs opacity-0 group-hover:opacity-100"
+                        className="hidden group-hover:block px-0.5 text-muted/50 hover:text-orange text-xs"
                         title={t("Duplicate process", "Prozess duplizieren")}
                       >
                         ⧉
@@ -283,7 +283,7 @@ export function LeftNav(p: Props) {
                           e.stopPropagation();
                           setEditing(editing === w.id ? null : w.id);
                         }}
-                        className="text-muted/50 hover:text-text text-xs opacity-0 group-hover:opacity-100"
+                        className="hidden group-hover:block px-0.5 text-muted/50 hover:text-text text-xs"
                         title={t("Edit", "Bearbeiten")}
                       >
                         ✎
@@ -437,12 +437,12 @@ export function LeftNav(p: Props) {
                 )}
                 {p.actors.map((a, ai) => (
                   <div key={a.id}>
-                    <div className={`${rowCls} cursor-pointer ${isLens("actor", a.id) ? "bg-white/10" : ""}`} onClick={() => p.onLens(isLens("actor", a.id) ? null : { kind: "actor", id: a.id })}>
-                      <ShapeIcon kind={a.kind} color={a.color ?? NEUTRAL} size={26} />
+                    <div className={`group flex items-center gap-2 pl-8 pr-3 py-px leading-tight hover:bg-white/5 cursor-pointer ${isLens("actor", a.id) ? "bg-white/10" : ""}`} onClick={() => p.onLens(isLens("actor", a.id) ? null : { kind: "actor", id: a.id })}>
+                      <ShapeIcon kind={a.kind} color={a.color ?? NEUTRAL} size={16} />
                       <span className="flex-1 min-w-0">
-                        <span title={tx(a.name)} className="block truncate text-[0.76rem] ink-text" style={{ color: soft(a.color) }}><Tx text={a.name} d={320 + ai * 160} /></span>
+                        <span title={tx(a.name)} className="block truncate text-[0.72rem] ink-text" style={{ color: soft(a.color) }}><Tx text={a.name} d={320 + ai * 160} /></span>
                       </span>
-                      <button onClick={(e) => { e.stopPropagation(); setEditing(editing === a.id ? null : a.id); }} className="text-muted/50 hover:text-text text-xs opacity-0 group-hover:opacity-100" title={t("Edit", "Bearbeiten")}>✎</button>
+                      <button onClick={(e) => { e.stopPropagation(); setEditing(editing === a.id ? null : a.id); }} className="hidden group-hover:block px-0.5 text-muted/50 hover:text-text text-xs" title={t("Edit", "Bearbeiten")}>✎</button>
                     </div>
                     {editing === a.id && (
                       <div className="pl-8 pr-3 pb-3 bg-white/[0.03]">
