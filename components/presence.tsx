@@ -64,7 +64,7 @@ export function PresenceStack({ peers, meId }: { peers: Peer[]; meId: string }) 
   const label = sorted.map((p) => (p.name || p.email) + (p.id === meId ? ` (${t("you", "Sie")})` : "")).join(", ");
   return (
     <div className="flex items-center" title={`${t("Online now", "Jetzt online")}: ${label}`}>
-      <div className="flex -space-x-2">
+      <div className="flex items-center gap-2">
         {shown.map((p) => (
           <span key={p.id} className="inline-flex flex-none rounded-full" style={{ boxShadow: "0 0 0 2px var(--tint-solid)" }}>
             <Avatar p={p} size={26} online />

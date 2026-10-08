@@ -49,6 +49,26 @@ const Brace = ({ c }: { c: string }) => (
   </svg>
 );
 
+function PlanArt() {
+  const tr = useT();
+  return (
+      <div className="w-44 rounded-md border border-white/15 bg-white/[0.04] py-1.5 text-left text-[0.7rem]">
+        <div className="flex items-center gap-2 px-2.5 py-0.5">
+          <span className="w-2 h-2 rotate-45 flex-none" style={{ background: PALETTE[0] }} />
+          <span className="flex-1" style={{ color: PALETTE[0] }}>{tr("Fix billing", "Abrechnung verbessern")}</span>
+          <span className="text-[0.55rem] font-mono tracking-wider text-muted/70">PLAN</span>
+        </div>
+        {[[tr("Quick wins", "Schnelle Erfolge"), PALETTE[2], tr("3 steps", "3 Schritte")], [tr("Bigger fixes", "Größere Anpassungen"), PALETTE[5], tr("5 steps", "5 Schritte")]].map(([n, c, k]) => (
+          <div key={n} className="flex items-center gap-2 pl-6 pr-2.5 py-0.5">
+            <span className="w-1.5 h-3.5 rounded-sm flex-none" style={{ background: c }} />
+            <span className="flex-1" style={{ color: c }}>{n}</span>
+            <span className="text-[0.58rem] font-mono text-muted/60">{k}</span>
+          </div>
+        ))}
+      </div>
+  );
+}
+
 const CARDS: Card[] = [
   {
     term: ["Process", "Prozess"],
@@ -102,22 +122,7 @@ const CARDS: Card[] = [
     term: ["Plan & Phase", "Plan & Phase"],
     what: ["A plan is one improvement effort. Phases split it into stages — say “Quick wins”, then “Bigger fixes” — by grouping the steps that belong together.", "Ein Plan ist ein Verbesserungsvorhaben. Phasen teilen es in Etappen – etwa „Schnelle Erfolge“, dann „Größere Anpassungen“ – indem Sie zusammengehörige Schritte bündeln."],
     why: ["It turns “everything is broken” into a sequence: which steps to improve first, which later, and who is involved.", "So wird aus „alles ist kaputt“ eine Reihenfolge: welche Schritte zuerst, welche später und wer beteiligt ist."],
-    art: (
-      <div className="w-44 rounded-md border border-white/15 bg-white/[0.04] py-1.5 text-left text-[0.7rem]">
-        <div className="flex items-center gap-2 px-2.5 py-0.5">
-          <span className="w-2 h-2 rotate-45 flex-none" style={{ background: PALETTE[0] }} />
-          <span className="flex-1" style={{ color: PALETTE[0] }}>Fix billing</span>
-          <span className="text-[0.55rem] font-mono tracking-wider text-muted/70">PLAN</span>
-        </div>
-        {[["Quick wins", PALETTE[2], "3 steps"], ["Bigger fixes", PALETTE[5], "5 steps"]].map(([n, c, k]) => (
-          <div key={n} className="flex items-center gap-2 pl-6 pr-2.5 py-0.5">
-            <span className="w-1.5 h-3.5 rounded-sm flex-none" style={{ background: c }} />
-            <span className="flex-1" style={{ color: c }}>{n}</span>
-            <span className="text-[0.58rem] font-mono text-muted/60">{k}</span>
-          </div>
-        ))}
-      </div>
-    ),
+    art: <PlanArt />,
   },
   {
     term: ["Focus", "Fokus"],

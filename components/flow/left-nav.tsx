@@ -175,7 +175,7 @@ function AddRow({ placeholder, onSubmit, onCancel, colorSeed }: { placeholder: s
         onKeyDown={(e) => e.key === "Escape" && onCancel()}
         onBlur={() => !v && onCancel()}
         placeholder={placeholder}
-        className={FIELD}
+        className={FIELD + " !text-[0.72rem] !py-0.5"}
       />
       <Swatches value={color} onPick={setColor} />
     </form>

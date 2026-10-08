@@ -90,7 +90,7 @@ type EdgeData = {
   onColor: (id: string, color: string | null) => void;
   onLabel: (id: string, label: string) => void;
   onKind: (id: string, kind: EdgeKind) => void;
-  onSelect: (id: string) => void;
+  onSelect: (id: string | null) => void;
   onDelete: (id: string) => void;
   smarts: Pick<FlowEdge, "payload" | "channel" | "wait_minutes" | "friction" | "weight" | "note">;
   onSmarts: (id: string, patch: EdgePatch) => void;
@@ -251,6 +251,7 @@ const FlowNodeView = memo(function FlowNodeView({ data, selected, dragging, posi
         setHoverNode(false);
         plusOff();
       }}
+      onMouseDownCapture={() => { if (hoverTimer.current) clearTimeout(hoverTimer.current); setHoverNode(false); }}
       onDoubleClick={(e) => {
         e.stopPropagation();
         data.onStartEdit(node.id);
@@ -372,7 +373,7 @@ const FlowNodeView = memo(function FlowNodeView({ data, selected, dragging, posi
         <button
           onMouseEnter={plusOn}
           onMouseLeave={plusOff}
-          onClick={() => data.onAddNext(node.id)}
+          onClick={() => { setHoverNode(false); data.onAddNext(node.id); }}
           title={t("Add the next step", "Nächsten Schritt hinzufügen")}
           className="nodrag nopan w-7 h-7 rounded-full border border-orange/60 bg-orange/15 text-orange text-lg leading-none flex items-center justify-center hover:bg-orange/30 transition-colors"
         >
@@ -669,6 +670,7 @@ const FlowEdgeView = memo(function FlowEdgeView(props: EdgeProps<RFEdge>) {
             if (edgeTimer.current) clearTimeout(edgeTimer.current);
             setHover(false);
           }}
+          onMouseDownCapture={() => { if (edgeTimer.current) clearTimeout(edgeTimer.current); setHover(false); }}
         >
           <div className="absolute left-1/2 top-1/2 w-0 h-0" style={{ transform: `scale(${1 / zoom})`, transformOrigin: "0 0" }}>
           {hover && !selected && !editing && (hasSmarts || !!data?.label) && data && <SmartsCard data={data} label={data.label} />}

@@ -69,16 +69,16 @@ export function CtaBanner() {
 
   return (
     <div
-      className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-40 hidden xl:flex items-center gap-3 max-w-[42vw] glass rounded-full px-4 py-1.5 text-[0.74rem] font-light text-text/80 transition-opacity duration-1000"
-      style={{ opacity: visible ? 1 : 0, pointerEvents: visible ? "auto" : "none" }}
+      className="absolute inset-0 z-[60] hidden md:flex items-center justify-center gap-4 px-8 text-[0.8rem] font-light text-text/85 transition-opacity duration-1000"
+      style={{ background: "var(--tint-solid)", opacity: visible ? 1 : 0, pointerEvents: visible ? "auto" : "none" }}
       aria-hidden={!visible}
     >
       <span className="truncate">{line}</span>
       <a
         href="mailto:ron@struinova.com?subject=Loom%20%E2%80%93%20let%27s%20talk"
-        className="text-[0.66rem] text-orange/80 hover:text-orange hover:underline whitespace-nowrap"
+        className="text-[0.64rem] text-muted/70 hover:text-orange hover:underline whitespace-nowrap"
       >
-        {t("Talk to us →", "Sprechen wir →")}
+        {t("Talk to us", "Sprechen wir")}
       </a>
       <button
         onClick={() => {
@@ -88,7 +88,7 @@ export function CtaBanner() {
           } catch {}
         }}
         aria-label={t("Dismiss", "Schließen")}
-        className="opacity-50 hover:opacity-100"
+        className="opacity-40 hover:opacity-100"
       >
         ✕
       </button>
