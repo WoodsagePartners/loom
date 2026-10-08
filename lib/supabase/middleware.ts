@@ -51,7 +51,7 @@ export async function updateSession(request: NextRequest) {
   const path = request.nextUrl.pathname;
   // /auth/callback must stay reachable while signed out — it is the page that
   // turns a magic-link code into a session.
-  const isPublic = path.startsWith("/login") || path.startsWith("/auth/") || ["/privacy", "/terms", "/processor"].includes(path);
+  const isPublic = path.startsWith("/login") || path.startsWith("/auth/") || ["/", "/privacy", "/terms", "/processor"].includes(path);
   if (!user && !isPublic) {
     const url = request.nextUrl.clone();
     url.pathname = "/login";

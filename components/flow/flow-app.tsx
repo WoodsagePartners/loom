@@ -736,7 +736,7 @@ export function FlowApp({
 
   async function signOut() {
     await sb.auth.signOut();
-    window.location.assign("/login");
+    window.location.assign("/");
   }
 
   return (
