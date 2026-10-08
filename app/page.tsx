@@ -206,102 +206,63 @@ export default async function Home() {
               </p>
 
               <figure className="diagram">
-                <svg
-                  viewBox="0 0 900 300"
-                  role="img"
-                  aria-label="A Workspace contains many Processes; one Process is expanded to show it holds Lanes, which hold Steps joined by Lines."
-                >
-                  <rect
-                    x="20"
-                    y="20"
-                    width="860"
-                    height="140"
-                    rx="16"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeOpacity="0.35"
-                    strokeWidth="1.6"
-                    strokeDasharray="7 6"
-                  />
-                  <text x="40" y="44" fontSize="13" fontWeight="600" fill="currentColor" opacity="0.7">
-                    WORKSPACE — one company&rsquo;s environment
-                  </text>
-
-                  <g>
-                    <rect x="48" y="62" width="230" height="78" rx="12" fill="var(--panel)" stroke="currentColor" strokeOpacity="0.3" />
-                    <text x="66" y="90" fontSize="13" fill="currentColor" opacity="0.85">
-                      Hiring a role
-                    </text>
-                    <text x="66" y="110" fontSize="11" fill="currentColor" opacity="0.5">
-                      Process
-                    </text>
-                  </g>
-                  <g>
-                    <rect x="305" y="62" width="230" height="78" rx="12" fill="var(--panel)" stroke="var(--accent)" strokeWidth="2" />
-                    <text x="323" y="90" fontSize="13" fontWeight="600" fill="currentColor">
-                      Order to delivery
-                    </text>
-                    <text x="323" y="110" fontSize="11" fill="var(--accent)">
-                      Process · expanded below
-                    </text>
-                  </g>
-                  <g>
-                    <rect x="562" y="62" width="230" height="78" rx="12" fill="var(--panel)" stroke="currentColor" strokeOpacity="0.3" />
-                    <text x="580" y="90" fontSize="13" fill="currentColor" opacity="0.85">
-                      Support escalation
-                    </text>
-                    <text x="580" y="110" fontSize="11" fill="currentColor" opacity="0.5">
-                      Process
-                    </text>
-                  </g>
-
-                  <line x1="420" y1="140" x2="420" y2="180" stroke="var(--accent)" strokeWidth="2" />
-                  <polygon points="420,186 414,176 426,176" fill="var(--accent)" />
-
-                  <rect x="60" y="192" width="780" height="46" rx="8" fill="currentColor" fillOpacity="0.04" stroke="currentColor" strokeOpacity="0.18" />
-                  <text x="40" y="219" fontSize="11" fill="currentColor" opacity="0.6" transform="rotate(-90 40 219)" textAnchor="middle">
-                    LANE
-                  </text>
-                  <text x="72" y="208" fontSize="11" fill="currentColor" opacity="0.65">
-                    Sales
-                  </text>
-                  <rect x="130" y="198" width="86" height="34" rx="7" fill="var(--panel)" stroke="currentColor" strokeOpacity="0.35" />
-                  <text x="173" y="219" fontSize="11" textAnchor="middle" fill="currentColor">
-                    Quote sent
-                  </text>
-                  <rect x="300" y="198" width="86" height="34" rx="7" fill="var(--panel)" stroke="currentColor" strokeOpacity="0.35" />
-                  <text x="343" y="219" fontSize="11" textAnchor="middle" fill="currentColor">
-                    PO received
-                  </text>
-
-                  <rect x="60" y="246" width="780" height="46" rx="8" fill="currentColor" fillOpacity="0.04" stroke="currentColor" strokeOpacity="0.18" />
-                  <text x="72" y="262" fontSize="11" fill="currentColor" opacity="0.65">
-                    Fulfilment
-                  </text>
-                  <rect x="560" y="252" width="86" height="34" rx="7" fill="var(--panel)" stroke="currentColor" strokeOpacity="0.35" />
-                  <text x="603" y="273" fontSize="11" textAnchor="middle" fill="currentColor">
-                    Pick &amp; pack
-                  </text>
-                  <rect x="700" y="252" width="86" height="34" rx="7" fill="var(--panel)" stroke="currentColor" strokeOpacity="0.35" />
-                  <text x="743" y="273" fontSize="11" textAnchor="middle" fill="currentColor">
-                    Shipped
-                  </text>
-
-                  <line x1="216" y1="215" x2="300" y2="215" stroke="var(--wire)" strokeWidth="2" />
-                  <polygon points="300,215 291,211 291,219" fill="var(--wire)" />
-                  <line x1="343" y1="232" x2="603" y2="252" stroke="var(--wire)" strokeWidth="2" />
-                  <polygon points="603,252 593,250 596,259" fill="var(--wire)" />
-                  <line x1="646" y1="269" x2="700" y2="269" stroke="var(--wire)" strokeWidth="2" />
-                  <polygon points="700,269 691,265 691,273" fill="var(--wire)" />
-                  <line x1="786" y1="260" x2="820" y2="220" stroke="var(--rework)" strokeWidth="2" strokeDasharray="2 5" />
-                  <text x="800" y="238" fontSize="9.5" fill="var(--rework)" opacity="0.85">
-                    rework
-                  </text>
-                </svg>
+                <svg viewBox="0 0 900 450" role="img" aria-label="A mapped process in Loom: four lanes (Customer, Sales, Finance, Fulfilment) hold steps drawn in role shapes, joined by lines of different weight. One handoff shows a three-day wait, one step carries two comments, and a dashed red line loops back for rework.">
+<defs>
+<marker id="arr-g" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="9" markerHeight="9" markerUnits="userSpaceOnUse" orient="auto-start-reverse"><path d="M1 1 L9 5 L1 9 z" fill="#d9b74a" /></marker>
+<marker id="arr-r" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="9" markerHeight="9" markerUnits="userSpaceOnUse" orient="auto-start-reverse"><path d="M1 1 L9 5 L1 9 z" fill="#f87171" /></marker>
+</defs>
+<g fontSize="11" fontFamily="IBM Plex Mono, monospace">
+<rect x="20" y="14" width="74" height="26" rx="13" fill="none" stroke="#f8991d" strokeOpacity="0.6" />
+<text x="57" y="31" textAnchor="middle" fill="#f8991d">+ STEP</text>
+<circle cx="112" cy="27" r="13" fill="none" stroke="currentColor" strokeOpacity="0.25" /><text x="112" y="31" textAnchor="middle" fill="currentColor" opacity="0.7">↶</text>
+<circle cx="142" cy="27" r="13" fill="none" stroke="currentColor" strokeOpacity="0.25" /><text x="142" y="31" textAnchor="middle" fill="currentColor" opacity="0.7">↷</text>
+<rect x="164" y="14" width="150" height="26" rx="13" fill="none" stroke="currentColor" strokeOpacity="0.25" />
+<circle cx="182" cy="26" r="4.5" fill="none" stroke="currentColor" strokeOpacity="0.6" strokeWidth="1.4" /><path d="M185.5 29.5 L189 33" stroke="currentColor" strokeOpacity="0.6" strokeWidth="1.4" strokeLinecap="round" />
+<text x="198" y="31" fill="currentColor" opacity="0.5">Find a step…</text>
+</g>
+<text x="880" y="31" textAnchor="end" fontSize="13" fontWeight="600" fill="currentColor" opacity="0.85">Order to delivery <tspan fontWeight="400" opacity="0.5" fontSize="11"> · Process</tspan></text>
+<rect x="20" y="58" width="860" height="82" rx="10" fill="#ffffff" fillOpacity="0.025" stroke="currentColor" strokeOpacity="0.12" />
+<rect x="20" y="58" width="4" height="82" rx="2" fill="#f87171" fillOpacity="0.8" />
+<text x="34" y="73" fontSize="11" fill="currentColor" opacity="0.6">Customer</text>
+<rect x="20" y="146" width="860" height="82" rx="10" fill="#ffffff" fillOpacity="0.025" stroke="currentColor" strokeOpacity="0.12" />
+<rect x="20" y="146" width="4" height="82" rx="2" fill="#f8991d" fillOpacity="0.8" />
+<text x="34" y="161" fontSize="11" fill="currentColor" opacity="0.6">Sales</text>
+<rect x="20" y="234" width="860" height="82" rx="10" fill="#ffffff" fillOpacity="0.025" stroke="currentColor" strokeOpacity="0.12" />
+<rect x="20" y="234" width="4" height="82" rx="2" fill="#7fa8ff" fillOpacity="0.8" />
+<text x="34" y="249" fontSize="11" fill="currentColor" opacity="0.6">Finance</text>
+<rect x="20" y="322" width="860" height="82" rx="10" fill="#ffffff" fillOpacity="0.025" stroke="currentColor" strokeOpacity="0.12" />
+<rect x="20" y="322" width="4" height="82" rx="2" fill="#d9b74a" fillOpacity="0.8" />
+<text x="34" y="337" fontSize="11" fill="currentColor" opacity="0.6">Fulfilment</text>
+<path d="M220 100.0 C235.0 100.0 235.0 188.0 250 188.0" fill="none" stroke="#d9b74a" strokeWidth="5" strokeLinecap="round" markerEnd="url(#arr-g)" />
+<path d="M370 188.0 C385.0 188.0 385.0 276.0 400 276.0" fill="none" stroke="#d9b74a" strokeWidth="5" strokeLinecap="round" markerEnd="url(#arr-g)" />
+<path d="M520 276.0 C535.0 276.0 535.0 364.0 550 364.0" fill="none" stroke="#d9b74a" strokeWidth="2.6" strokeLinecap="round" markerEnd="url(#arr-g)" />
+<path d="M520 276.0 C540.0 276.0 540.0 188.0 560 188.0" fill="none" stroke="#d9b74a" strokeWidth="1.4" strokeLinecap="round" markerEnd="url(#arr-g)" />
+<path d="M670 364.0 C685.0 364.0 685.0 364.0 700 364.0" fill="none" stroke="#d9b74a" strokeWidth="5" strokeLinecap="round" markerEnd="url(#arr-g)" />
+<path d="M760.0 342 C760.0 232.0 800.0 232.0 800.0 122" fill="none" stroke="#d9b74a" strokeWidth="2.6" strokeLinecap="round" markerEnd="url(#arr-g)" />
+<path d="M610 386 C610 440 310 440 310 210" fill="none" stroke="#f87171" strokeWidth="2" strokeDasharray="2 5" strokeLinecap="round" markerEnd="url(#arr-r)" />
+<text x="455" y="432" textAnchor="middle" fontSize="10.5" fill="#f87171" opacity="0.9">rework</text>
+<g><rect x="346" y="233" width="78" height="22" rx="11" fill="#3b1d1d" stroke="#f87171" strokeOpacity="0.8" /><text x="385" y="248" textAnchor="middle" fontSize="10.5" fill="#fca5a5">waits 3 days</text></g>
+<polygon points="114,78 220,78 206,122 100,122" fill="#16212f" stroke="#f87171" strokeWidth="1.8" />
+<text x="160.0" y="104.0" textAnchor="middle" fontSize="11.5" fill="#e6edf3">Places order</text>
+<rect x="250" y="166" width="120" height="44" rx="22" fill="#16212f" stroke="#f8991d" strokeWidth="1.8" />
+<text x="310.0" y="192.0" textAnchor="middle" fontSize="11.5" fill="#e6edf3">Confirm order</text>
+<rect x="400" y="254" width="120" height="44" rx="2" fill="#16212f" stroke="#d9b74a" strokeWidth="1.8" />
+<text x="460.0" y="280.0" textAnchor="middle" fontSize="11.5" fill="#e6edf3">Credit check</text>
+<rect x="550" y="342" width="120" height="44" rx="10" fill="#16212f" stroke="#7fa8ff" strokeWidth="1.8" />
+<text x="610.0" y="368.0" textAnchor="middle" fontSize="11.5" fill="#e6edf3">Pick &amp; pack</text>
+<rect x="700" y="342" width="120" height="44" rx="10" fill="#16212f" stroke="#7fa8ff" strokeWidth="1.8" />
+<text x="760.0" y="368.0" textAnchor="middle" fontSize="11.5" fill="#e6edf3">Ship</text>
+<polygon points="574,166 666,166 680,188.0 666,210 574,210 560,188.0" fill="#16212f" stroke="#e6edf3" strokeWidth="1.8" />
+<text x="620.0" y="192.0" textAnchor="middle" fontSize="11.5" fill="#e6edf3">Notify customer</text>
+<polygon points="754,78 860,78 846,122 740,122" fill="#16212f" stroke="#f87171" strokeWidth="1.8" />
+<text x="800.0" y="104.0" textAnchor="middle" fontSize="11.5" fill="#e6edf3">Delivery confirmed</text>
+<g><circle cx="520" cy="254" r="10" fill="#f8991d" stroke="#0a1119" strokeOpacity="0.4" /><text x="520" y="257.8" textAnchor="middle" fontSize="10.5" fontWeight="700" fill="#14161c">2</text></g>
+</svg>
                 <figcaption>
-                  One Workspace holds several Processes side by side. Opening &ldquo;Order to delivery&rdquo; shows its
-                  Lanes (Sales, Fulfilment) as rows, each holding Steps connected by Lines — the gold line is
-                  ordinary flow, the dashed red line is a loop back for rework.
+                  A process as Loom draws it: Lanes are the rows, Steps wear the shape of the Role doing them, and Lines
+                  carry the work between them — thicker lines are the main route. Here the handoff from Sales to Finance
+                  waits three days, the credit check has two comments from the team, and the dashed red line is a loop
+                  back for rework. Those are the knots worth untying.
                 </figcaption>
               </figure>
             </div>

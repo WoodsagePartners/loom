@@ -173,3 +173,14 @@ export const NODE_H = 76;
 
 export const laneIndexAt = (y: number, laneCount: number) =>
   Math.max(0, Math.min(laneCount - 1, Math.floor(y / LANE_H)));
+
+// ---- comments on steps ----
+export type FlowComment = {
+  id: string;
+  workflow_id: string;
+  node_id: string;
+  author_id: string;
+  author_name: string;
+  body: string;
+  created_at: string;
+};

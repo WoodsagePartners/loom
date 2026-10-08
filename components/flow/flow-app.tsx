@@ -22,6 +22,7 @@ import {
   type RoadmapPhase,
   type Workflow,
   type EdgePatch,
+  type FlowComment,
 } from "@/lib/flow";
 import type { Workspace, WorkspaceRole } from "@/lib/workspaces";
 import { WorkspaceSwitcher } from "@/components/workspace-switcher";
@@ -34,6 +35,7 @@ import { TeamPanel } from "@/components/team-panel";
 import { AccountMenu, AccountModal } from "@/components/account";
 import { PresenceStack, usePresence } from "@/components/presence";
 import { Guide, guideSeen, markGuideSeen } from "@/components/guide";
+import { CommentCard } from "@/components/flow/comment-card";
 import type { Profile } from "@/lib/profile";
 import { useT } from "@/lib/i18n";
 import { ContentI18nProvider, Tx } from "@/lib/content-i18n";
@@ -89,6 +91,8 @@ export function FlowApp({
   const [accountOpen, setAccountOpen] = useState(false);
   const [guideOpen, setGuideOpen] = useState(false);
   const [guideOffer, setGuideOffer] = useState(false);
+  const [comments, setComments] = useState<FlowComment[]>([]);
+  const [commentNodeId, setCommentNodeId] = useState<string | null>(null);
   useEffect(() => {
     if (!guideSeen()) setGuideOffer(true); // first visit only: offer, never force
   }, []);
@@ -155,7 +159,7 @@ export function FlowApp({
     const ids = (await sb.from("workflows").select("*").eq("org_id", orgId).order("created_at")).data as Workflow[] | null;
     const wf = ids ?? [];
     const wfIds = wf.map((w) => w.id);
-    const [a, l, n, e, rm, ph, pn] = await Promise.all([
+    const [a, l, n, e, rm, ph, pn, cm] = await Promise.all([
       sb.from("actors").select("*").eq("org_id", orgId).order("created_at"),
       wfIds.length ? sb.from("lanes").select("*").in("workflow_id", wfIds).order("position") : Promise.resolve({ data: [] }),
       wfIds.length ? sb.from("flow_nodes").select("*").in("workflow_id", wfIds) : Promise.resolve({ data: [] }),
@@ -163,7 +167,9 @@ export function FlowApp({
       wfIds.length ? sb.from("roadmaps").select("*").in("workflow_id", wfIds).order("position") : Promise.resolve({ data: [] }),
       wfIds.length ? sb.from("roadmap_phases").select("*").in("workflow_id", wfIds).order("position") : Promise.resolve({ data: [] }),
       wfIds.length ? sb.from("phase_nodes").select("*").in("workflow_id", wfIds) : Promise.resolve({ data: [] }),
+      wfIds.length ? sb.from("flow_comments").select("*").in("workflow_id", wfIds).order("created_at") : Promise.resolve({ data: [] }),
     ]);
+    setComments((cm.data ?? []) as FlowComment[]); // stays empty until the comments table exists
     setRoadmaps((rm.data ?? []) as Roadmap[]);
     setPhases((ph.data ?? []) as RoadmapPhase[]);
     setPhaseNodes((pn.data ?? []) as PhaseNode[]);
@@ -183,6 +189,27 @@ export function FlowApp({
 
   const wfLanes = useMemo(() => lanes.filter((l) => l.workflow_id === activeId).sort((a, b) => a.position - b.position), [lanes, activeId]);
   const wfNodes = useMemo(() => nodes.filter((n) => n.workflow_id === activeId), [nodes, activeId]);
+  const commentCounts = useMemo(() => {
+    const out: Record<string, number> = {};
+    for (const c of comments) out[c.node_id] = (out[c.node_id] ?? 0) + 1;
+    return out;
+  }, [comments]);
+  const commentNode = commentNodeId ? nodes.find((n) => n.id === commentNodeId) ?? null : null;
+  async function addComment(body: string) {
+    if (!commentNode) return;
+    const { data, error } = await sb
+      .from("flow_comments")
+      .insert({ workflow_id: commentNode.workflow_id, node_id: commentNode.id, body, author_name: profile.name || profile.email })
+      .select("*")
+      .single();
+    if (error || !data) return fail(t("Couldn't save the comment.", "Kommentar konnte nicht gespeichert werden."));
+    setComments((cs) => [...cs, data as FlowComment]);
+  }
+  async function deleteComment(id: string) {
+    const { error } = await sb.from("flow_comments").delete().eq("id", id);
+    if (error) return fail(t("Couldn't delete the comment.", "Kommentar konnte nicht gelöscht werden."));
+    setComments((cs) => cs.filter((c) => c.id !== id));
+  }
   const wfEdges = useMemo(() => edges.filter((e) => e.workflow_id === activeId), [edges, activeId]);
   const active = workflows.find((w) => w.id === activeId) ?? null;
 
@@ -824,6 +851,8 @@ export function FlowApp({
               onDeleteEdges={deleteEdges}
               focus={focus}
               onFocusToggle={(nodeId) => lens?.kind === "phase" && togglePhaseNode(lens.id, nodeId)}
+              commentCounts={commentCounts}
+              onOpenComments={setCommentNodeId}
             />
           ) : (
             <div className="h-full flex items-center justify-center p-6">
@@ -974,6 +1003,17 @@ export function FlowApp({
           </div>
           <p className="text-[0.78rem] text-muted font-normal mt-2">{t("You can always find it under Help.", "Sie finden es jederzeit unter Hilfe.")}</p>
         </div>
+      )}
+      {commentNode && (
+        <CommentCard
+          title={commentNode.label}
+          comments={comments.filter((c) => c.node_id === commentNode.id)}
+          meId={profile.id}
+          canModerate={role === "owner" || role === "admin"}
+          onAdd={addComment}
+          onDelete={deleteComment}
+          onClose={() => setCommentNodeId(null)}
+        />
       )}
       {guideOpen && <Guide onClose={() => setGuideOpen(false)} />}
       {accountOpen && <AccountModal profile={profile} onClose={() => setAccountOpen(false)} onSaved={setProfile} />}

@@ -78,6 +78,8 @@ type NodeData = {
   ring: string | null;
   badges: string[];
   selecting: boolean;
+  commentCount: number;
+  onOpenComments: (id: string) => void;
 };
 type RFNode = Node<NodeData, "flow">;
 type EdgeData = {
@@ -205,6 +207,27 @@ const FlowNodeView = memo(function FlowNodeView({ data, selected, dragging, posi
           className="absolute pointer-events-none"
           style={{ inset: -7, borderRadius: 22, border: `2px solid ${data.ring}`, boxShadow: `0 0 18px ${data.ring}88` }}
         />
+      )}
+      {!isStart && !isEnd && (data.commentCount > 0 || hoverNode) && (
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            data.onOpenComments(node.id);
+          }}
+          onDoubleClick={(e) => e.stopPropagation()}
+          title={data.commentCount > 0 ? t("Comments on this step", "Kommentare zu diesem Schritt") : t("Add a comment", "Kommentar hinzufügen")}
+          className="nodrag nopan absolute -top-3 -right-3 z-10 h-6 min-w-6 px-1.5 rounded-full flex items-center justify-center gap-1 text-[0.68rem] font-mono border transition-colors"
+          style={
+            data.commentCount > 0
+              ? { background: "#f8991d", color: "#14161c", borderColor: "rgba(0,0,0,.35)" }
+              : { background: "var(--tint-solid)", color: "var(--muted, #93a5b6)", borderColor: "rgba(255,255,255,.2)" }
+          }
+        >
+          <svg width="12" height="12" viewBox="0 0 16 16" aria-hidden="true">
+            <path d="M2 3.5C2 2.7 2.7 2 3.5 2h9c.8 0 1.5.7 1.5 1.5v6c0 .8-.7 1.5-1.5 1.5H8l-3 3v-3H3.5C2.7 11 2 10.3 2 9.5z" fill="currentColor" />
+          </svg>
+          {data.commentCount > 0 && data.commentCount}
+        </button>
       )}
       {data.badges.length > 0 && (
         <div className="absolute -bottom-2 right-2 flex gap-1 pointer-events-none">
@@ -682,6 +705,8 @@ export type CanvasProps = {
   focus: Focus | null;
   onFocusToggle: (nodeId: string) => void;
   processName?: string;
+  commentCounts: Record<string, number>;
+  onOpenComments: (nodeId: string) => void;
 };
 
 function Inner(props: CanvasProps) {
@@ -689,7 +714,7 @@ function Inner(props: CanvasProps) {
   const tx = useTx();
   const theme = useTheme();
   const { lanes, nodes, edges, actors, focus } = props;
-  const { screenToFlowPosition, flowToScreenPosition, zoomTo, getViewport } = useReactFlow();
+  const { screenToFlowPosition, flowToScreenPosition, zoomTo, getViewport, setCenter } = useReactFlow();
   const boxRef = useRef<HTMLDivElement>(null);
   const addNextRef = useRef<(id: string) => void>(() => {});
   const zoom = useStore((st) => st.transform[2]);
@@ -753,6 +778,36 @@ function Inner(props: CanvasProps) {
     if (n && n.label !== label) propsRef.current.onPatchNode(id, { label: label || "" });
   }, []);
 
+  // ---- find a step: highlight matches, dim the rest ----
+  const [query, setQuery] = useState("");
+  const [matchPos, setMatchPos] = useState(0);
+  const matches = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (!q) return [] as FlowNode[];
+    return nodes.filter((n) => {
+      const hay = `${n.label ?? ""} ${n.description ?? ""} ${n.actor_id ? (actorMap.get(n.actor_id)?.name ?? "") : ""}`.toLowerCase();
+      return hay.includes(q);
+    });
+  }, [query, nodes, actorMap]);
+  const matchIds = useMemo(() => new Set(matches.map((m) => m.id)), [matches]);
+  const searching = query.trim().length > 0;
+  const jumpTo = useCallback(
+    (i: number) => {
+      if (!matches.length) return;
+      const k = ((i % matches.length) + matches.length) % matches.length;
+      setMatchPos(k);
+      const n = matches[k];
+      const y = (laneIdx.get(n.lane_id ?? "") ?? 0) * LANE_H + n.y_offset;
+      setCenter(n.x + NODE_W / 2, y + NODE_H / 2, { zoom: Math.max(getViewport().zoom, 0.8), duration: 300 });
+    },
+    [matches, laneIdx, setCenter, getViewport]
+  );
+  const jumpedRef = useRef(false);
+  useEffect(() => {
+    setMatchPos(0);
+    jumpedRef.current = false;
+  }, [query]);
+
   const derived = useMemo<RFNode[]>(
     () =>
       nodes.map((n) => ({
@@ -770,13 +825,15 @@ function Inner(props: CanvasProps) {
           onPatch: (id, patch) => propsRef.current.onPatchNode(id, patch),
           onDelete: (id) => propsRef.current.onDeleteNodes([id]),
           onAddNext: (id) => addNextRef.current(id),
-          dim: !!focus && !focus.selecting && !focus.ids.has(n.id), // while picking steps, nothing is hidden
-          ring: focus && focus.ids.has(n.id) ? focus.ring : null,
+          dim: (!!focus && !focus.selecting && !focus.ids.has(n.id)) || (searching && !matchIds.has(n.id)), // while picking steps, nothing is hidden
+          ring: focus && focus.ids.has(n.id) ? focus.ring : searching && matchIds.has(n.id) ? "#f8991d" : null,
           badges: focus?.badges.get(n.id) ?? [],
           selecting: !!focus?.selecting,
+          commentCount: props.commentCounts[n.id] ?? 0,
+          onOpenComments: (id) => propsRef.current.onOpenComments(id),
         },
       })),
-    [nodes, laneIdx, actorMap, actors, editingId, commitLabel, focus]
+    [nodes, laneIdx, actorMap, actors, editingId, commitLabel, focus, searching, matchIds, props.commentCounts]
   );
 
   const [rfNodes, setRfNodes] = useState<RFNode[]>(derived);
@@ -1026,6 +1083,35 @@ function Inner(props: CanvasProps) {
             >
               {exporting ? "…" : "⤓"}
             </button>
+            <div className="glass rounded-full flex items-center pl-3 pr-1.5 h-8 gap-1.5">
+              <svg width="13" height="13" viewBox="0 0 16 16" aria-hidden="true" className="text-muted flex-none">
+                <circle cx="6.5" cy="6.5" r="4.5" fill="none" stroke="currentColor" strokeWidth="1.6" />
+                <path d="M10 10l4.5 4.5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+              </svg>
+              <input
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                onKeyDown={(e) => {
+                  e.stopPropagation();
+                  if (e.key === "Enter") {
+                    jumpTo(jumpedRef.current ? matchPos + (e.shiftKey ? -1 : 1) : matchPos);
+                    jumpedRef.current = true;
+                  }
+                  if (e.key === "Escape") setQuery("");
+                }}
+                placeholder={t("Find a step…", "Schritt suchen …")}
+                aria-label={t("Find a step", "Schritt suchen")}
+                className="nodrag nopan bg-transparent outline-none text-[0.8rem] font-normal w-32 placeholder:text-muted/70"
+              />
+              {searching && (
+                <>
+                  <span className="font-mono text-[0.68rem] text-muted whitespace-nowrap">
+                    {matches.length ? `${matchPos + 1}/${matches.length}` : t("none", "keine")}
+                  </span>
+                  <button onClick={() => setQuery("")} aria-label={t("Clear search", "Suche löschen")} className="w-5 h-5 text-muted hover:text-text leading-none">✕</button>
+                </>
+              )}
+            </div>
             </div>
           </Panel>
         )}

@@ -24,6 +24,25 @@ export const markGuideSeen = () => {
 
 type Card = { term: [string, string]; what: [string, string]; why: [string, string]; art: ReactNode };
 
+function WeightArt() {
+  const t = useT();
+  const rows: [number, string, string][] = [
+    [1.1, "Occasional", "Gelegentlich"],
+    [2.6, "Regular", "Regelmäßig"],
+    [5, "Main route", "Hauptweg"],
+  ];
+  return (
+    <svg width="150" height="34" aria-hidden>
+      {rows.map(([w, en, de], i) => (
+        <g key={i}>
+          <line x1="4" x2="46" y1={6 + i * 11} y2={6 + i * 11} stroke="#f8991d" strokeWidth={w} strokeLinecap="round" />
+          <text x="56" y={9.5 + i * 11} fontSize="9.5" fill="currentColor" opacity="0.8">{t(en, de)}</text>
+        </g>
+      ))}
+    </svg>
+  );
+}
+
 const Brace = ({ c }: { c: string }) => (
   <svg width="22" height="64" viewBox="0 0 20 100" preserveAspectRatio="none" aria-hidden>
     <path d="M18 2 C10 2 10 7 10 15 L10 37 C10 45 6 50 2 50 C6 50 10 55 10 63 L10 85 C10 93 10 98 18 98" fill="none" stroke={c} strokeWidth="2.5" strokeLinecap="round" vectorEffect="non-scaling-stroke" />
@@ -119,19 +138,37 @@ const CARDS: Card[] = [
     term: ["Line weight", "Linienstärke"],
     what: ["In the line details card, “How much travels here” makes a line thin (Occasional), medium (Regular) or thick (Main route). Click the same choice again to clear it.", "In der Detailkarte der Linie macht „Wie viel läuft hier durch“ eine Linie dünn (Gelegentlich), mittel (Regelmäßig) oder dick (Hauptweg). Dieselbe Auswahl erneut anklicken hebt sie auf."],
     why: ["Thickness shows where the work really flows — a thick line into a painful hand-off is the first thing to fix.", "Die Dicke zeigt, wo die Arbeit wirklich fließt – eine dicke Linie in eine schmerzhafte Übergabe ist das Erste, was man angeht."],
-    art: (
-      <svg width="64" height="30" aria-hidden>
-        {[1.1, 2.6, 5].map((w, i) => (
-          <line key={i} x1="4" x2="60" y1={5 + i * 10} y2={5 + i * 10} stroke="#f8991d" strokeWidth={w} strokeLinecap="round" />
-        ))}
-      </svg>
-    ),
+    art: <WeightArt />,
   },
   {
     term: ["Hover for details", "Mit der Maus Details sehen"],
     what: ["Rest the pointer on any step or line label and a small card shows its details — type, owner, description, and for lines what moves, wait and friction.", "Fahren Sie mit der Maus über einen Schritt oder eine Linien-Beschriftung – eine kleine Karte zeigt Details: Typ, Zuständigkeit, Beschreibung und bei Linien Übergabe, Wartezeit und Reibung."],
     why: ["You can read the whole map at a glance without opening anything — ideal when walking someone through a process.", "So lesen Sie die ganze Karte auf einen Blick, ohne etwas zu öffnen – ideal, um jemandem einen Prozess zu erklären."],
     art: <span className="text-3xl text-orange">☝</span>,
+  },
+  {
+    term: ["Comments", "Kommentare"],
+    what: ["Hover a step and click the small speech bubble in its corner to leave a note for your team. Steps with comments keep an orange badge showing how many. You can delete your own comments; owners and admins can delete any.", "Fahren Sie über einen Schritt und klicken Sie auf die kleine Sprechblase an der Ecke, um Ihrem Team eine Notiz zu hinterlassen. Schritte mit Kommentaren behalten ein orangefarbenes Zeichen mit der Anzahl. Eigene Kommentare können Sie löschen, Inhaber und Admins alle."],
+    why: ["Questions and context stay on the step they are about, so the next person finds them exactly where the work happens.", "Fragen und Hintergründe bleiben an dem Schritt, um den es geht – die nächste Person findet sie genau dort, wo gearbeitet wird."],
+    art: (
+      <svg width="64" height="30" aria-hidden>
+        <rect x="6" y="6" width="44" height="20" rx="8" fill="none" stroke="#7fa8ff" strokeWidth="1.8" />
+        <circle cx="50" cy="6" r="7" fill="#f8991d" />
+        <text x="50" y="9.2" fontSize="9" fontWeight="700" textAnchor="middle" fill="#14161c">2</text>
+      </svg>
+    ),
+  },
+  {
+    term: ["Find a step", "Schritt suchen"],
+    what: ["Type in the search box at the top of the canvas. Matching steps light up with an orange ring and the rest fade back. Press Enter to jump to the first match, then Enter again for the next. Esc clears the search.", "Tippen Sie in das Suchfeld oben auf der Fläche. Passende Schritte leuchten mit orangefarbenem Ring auf, die übrigen treten zurück. Mit Eingabe springen Sie zum ersten Treffer, erneut Eingabe zum nächsten. Esc löscht die Suche."],
+    why: ["In a big process, finding the step someone mentioned should take a second, not a scroll.", "In einem großen Prozess soll das Finden eines genannten Schritts eine Sekunde dauern, nicht minutenlanges Scrollen."],
+    art: (
+      <svg width="64" height="30" aria-hidden>
+        <rect x="4" y="6" width="56" height="18" rx="9" fill="none" stroke="currentColor" strokeOpacity="0.4" />
+        <circle cx="16" cy="15" r="4" fill="none" stroke="#f8991d" strokeWidth="1.6" />
+        <path d="M19 18 L23 22" stroke="#f8991d" strokeWidth="1.6" strokeLinecap="round" />
+      </svg>
+    ),
   },
   {
     term: ["Copy a process or lane", "Prozess oder Bahn kopieren"],
