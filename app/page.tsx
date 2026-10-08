@@ -85,6 +85,9 @@ export default async function Home() {
         .lp figure.diagram svg{width:100%; display:block; background:var(--panel); border:1px solid var(--border); border-radius:16px}
         .lp figcaption{color:var(--muted); font-size:.86rem; margin-top:10px; max-width:70ch}
 
+        .lp .pull-quote{margin:0; padding-left:20px; border-left:3px solid var(--wire)}
+        .lp .pull-quote p{font-size:clamp(1.05rem,2.4vw,1.35rem); font-weight:500; color:var(--fg); max-width:48ch; line-height:1.45}
+
         .lp .term-grid{display:grid; grid-template-columns:repeat(3,1fr); gap:14px; margin-top:24px}
         @media (max-width:760px){ .lp .term-grid{grid-template-columns:1fr 1fr} }
         @media (max-width:460px){ .lp .term-grid{grid-template-columns:1fr} }
@@ -184,6 +187,17 @@ export default async function Home() {
                   </span>
                 </div>
               </div>
+            </div>
+          </section>
+
+          <section id="quote" style={{ borderTop: "none", paddingBlock: "0 clamp(24px,4vw,40px)" }}>
+            <div className="wrap">
+              <blockquote className="pull-quote">
+                <p>
+                  &ldquo;If I had an hour to save the world, I&rsquo;d spend fifty-five minutes defining the
+                  problem and five minutes solving it.&rdquo;
+                </p>
+              </blockquote>
             </div>
           </section>
 
