@@ -90,6 +90,8 @@ export function FlowApp({
   const [teamOpen, setTeamOpen] = useState(false);
   const [accountOpen, setAccountOpen] = useState(false);
   const [guideOpen, setGuideOpen] = useState(false);
+  const [guideStart, setGuideStart] = useState<string | undefined>(undefined);
+  const [members, setMembers] = useState<{ id: string; email: string; name: string; role: string }[]>([]);
   const [guideOffer, setGuideOffer] = useState(false);
   const [comments, setComments] = useState<FlowComment[]>([]);
   const [commentNodeId, setCommentNodeId] = useState<string | null>(null);
@@ -97,7 +99,23 @@ export function FlowApp({
     if (!guideSeen()) setGuideOffer(true); // first visit only: offer, never force
   }, []);
   const [profile, setProfile] = useState(initialProfile);
-  const peers = usePresence(orgId, profile);
+  const peers = usePresence(orgId, profile, (p) => setToast({ msg: `${p.name || p.email.split("@")[0]} ${t("joined the workspace", "ist dem Arbeitsbereich beigetreten")}`, kind: "info" }));
+  // who is in this workspace (shown under Team in the left menu); refresh whenever the Team panel closes
+  useEffect(() => {
+    if (teamOpen) return;
+    let live = true;
+    (async () => {
+      const [{ data }, { data: names }] = await Promise.all([sb.rpc("team_members", { target_org: orgId }), sb.rpc("team_member_names", { target_org: orgId })]);
+      if (!live || !Array.isArray(data)) return;
+      const nameOf = new Map<string, string>(((names ?? []) as { user_id: string; full_name: string | null }[]).map((n) => [n.user_id, n.full_name ?? ""]));
+      setMembers(
+        (data as { user_id: string; email: string; role: string }[])
+          .map((m) => ({ id: m.user_id, email: m.email, name: nameOf.get(m.user_id) ?? "", role: m.role }))
+          .sort((a, b) => (a.role === b.role ? a.email.localeCompare(b.email) : a.role === "owner" ? -1 : b.role === "owner" ? 1 : a.role === "admin" ? -1 : 1))
+      );
+    })();
+    return () => { live = false; };
+  }, [orgId, teamOpen, sb]);
   const [firstName, setFirstName] = useState("");
 
   // remember the last workflow per workspace (per-viewer convenience only)
@@ -636,8 +654,6 @@ export function FlowApp({
       .single();
     if (error || !data) return fail(error?.message ?? t("Could not add the plan.", "Der Plan konnte nicht hinzugefügt werden."));
     setRoadmaps((p) => [...p, data as Roadmap]);
-    // a first phase to start from
-    await addPhase((data as Roadmap).id, t("Phase 1", "Phase 1"));
   }
   async function patchRoadmap(id: string, patch: Partial<Roadmap>) {
     setRoadmaps((p) => p.map((r) => (r.id === id ? { ...r, ...patch } : r)));
@@ -797,6 +813,8 @@ export function FlowApp({
           activeWorkflowId={activeId}
           lanes={wfLanes}
           actors={actors}
+          members={members}
+          onHelp={(term) => { setGuideStart(term); setGuideOpen(true); }}
           memberHint={t(`${memberCount} member(s) in this workspace.`, `${memberCount} Mitglied(er) in diesem Workspace.`)}
           onSelectWorkflow={select}
           onCreateWorkflow={createWorkflow}
@@ -1015,7 +1033,7 @@ export function FlowApp({
           onClose={() => setCommentNodeId(null)}
         />
       )}
-      {guideOpen && <Guide onClose={() => setGuideOpen(false)} />}
+      {guideOpen && <Guide start={guideStart} onClose={() => { setGuideOpen(false); setGuideStart(undefined); }} />}
       {accountOpen && <AccountModal profile={profile} onClose={() => setAccountOpen(false)} onSaved={setProfile} />}
       {teamOpen && <TeamPanel orgId={orgId} orgName={orgName} role={role} onClose={() => setTeamOpen(false)} />}
     </div>

@@ -24,6 +24,8 @@ type Props = {
   lanes: Lane[];
   actors: Actor[];
   memberHint: string;
+  members: { id: string; email: string; name: string; role: string }[];
+  onHelp: (term: string) => void;
   onSelectWorkflow: (id: string) => void;
   onCreateWorkflow: (name: string, color?: string) => void;
   onPatchWorkflow: (id: string, patch: Partial<Workflow>) => void;
@@ -100,6 +102,7 @@ function SectionHeader({
   onToggle,
   onAdd,
   addLabel,
+  onHelp,
 }: {
   title: string;
   count?: number;
@@ -107,14 +110,27 @@ function SectionHeader({
   onToggle: () => void;
   onAdd?: () => void;
   addLabel?: string;
+  onHelp?: () => void;
 }) {
+  const t = useT();
   return (
     <div className="flex items-center gap-2 px-3 pt-3 pb-1.5 mt-2 border-t border-white/10 first:mt-0 first:border-t-0">
-      <button onClick={onToggle} aria-expanded={open} className="flex-1 flex items-center gap-2 text-left group/h">
+      <button onClick={onToggle} aria-expanded={open} className="flex items-center gap-2 text-left group/h">
         <span className="w-3 text-[0.8rem] leading-none text-muted group-hover/h:text-orange transition-colors">{open ? "▾" : "▸"}</span>
         <span className="text-[0.78rem] font-medium tracking-[0.12em] uppercase text-text/90">{title}</span>
         {count !== undefined && <span className="font-mono text-[0.72rem] text-muted/60">{count}</span>}
       </button>
+      {onHelp && (
+        <button
+          onClick={onHelp}
+          title={t("What is this?", "Was ist das?")}
+          aria-label={t("What is this?", "Was ist das?")}
+          className="w-4 h-4 rounded-full border border-white/20 text-[0.6rem] leading-none text-muted/70 hover:text-orange hover:border-orange/60 flex items-center justify-center flex-none"
+        >
+          ?
+        </button>
+      )}
+      <button onClick={onToggle} tabIndex={-1} aria-hidden className="flex-1 self-stretch" />
       {onAdd && open && (
         <button
           onMouseDown={(e) => e.preventDefault()}
@@ -125,6 +141,16 @@ function SectionHeader({
           +
         </button>
       )}
+    </div>
+  );
+}
+
+function EditFooter({ onDelete, deleteLabel, onDone }: { onDelete: () => void; deleteLabel: string; onDone: () => void }) {
+  const t = useT();
+  return (
+    <div className="mt-2 flex items-center justify-between">
+      <button onClick={onDelete} title={deleteLabel} className="btn-danger inline-flex h-6 items-center rounded-full border px-3 text-[0.68rem] font-mono leading-none tracking-wider transition-colors">{t("DELETE", "LÖSCHEN")}</button>
+      <button onClick={onDone} className="inline-flex h-6 items-center rounded-full border border-orange/60 bg-orange/10 px-3 text-[0.68rem] font-mono leading-none tracking-wider text-orange hover:bg-orange/20 transition-colors">{t("DONE", "FERTIG")}</button>
     </div>
   );
 }
@@ -162,7 +188,7 @@ export function LeftNav(p: Props) {
   const [pinned, setPinned] = useState(true);
   const [hover, setHover] = useState(false);
   const [suppress, setSuppress] = useState(false); // after clicking Collapse, ignore hover until the pointer leaves
-  const [open, setOpen] = useState<Record<SectionKey, boolean>>({ workflows: true, lanes: true, actors: true, roadmaps: true, team: false });
+  const [open, setOpen] = useState<Record<SectionKey, boolean>>({ workflows: true, lanes: true, actors: true, roadmaps: true, team: true });
   const [adding, setAdding] = useState<string | null>(null);
   const [editing, setEditing] = useState<string | null>(null);
   const [newActor, setNewActor] = useState<{ name: string; kind: ActorKind; role: string } | null>(null);
@@ -235,6 +261,7 @@ export function LeftNav(p: Props) {
             {/* ---------------------------------------------- workflows --- */}
             <SectionHeader
               title={title("workflows")}
+              onHelp={() => p.onHelp("Process")}
               count={p.workflows.length}
               open={open.workflows}
               onToggle={() => toggle("workflows")}
@@ -290,7 +317,7 @@ export function LeftNav(p: Props) {
                       </button>
                     </div>
                     {editing === w.id && (
-                      <div className="pl-8 pr-3 pb-3 bg-white/[0.03]">
+                      <div className="pl-8 pr-3 pb-3 bg-white/[0.03]" onKeyDown={(e) => e.key === "Escape" && setEditing(null)}>
                         <input
                           defaultValue={w.name}
                           onBlur={(e) => e.target.value.trim() && e.target.value.trim() !== w.name && p.onPatchWorkflow(w.id, { name: e.target.value.trim() })}
@@ -315,9 +342,7 @@ export function LeftNav(p: Props) {
                           <button onClick={() => p.onDuplicateWorkflow(w.id)} className="text-[0.72rem] text-muted hover:text-orange">
                             {t("Duplicate process", "Prozess duplizieren")}
                           </button>
-                          <button onClick={() => p.onDeleteWorkflow(w.id)} className="text-[0.72rem] text-muted hover:text-red-300">
-                            {t("Delete process", "Prozess löschen")}
-                          </button>
+                          <EditFooter onDelete={() => p.onDeleteWorkflow(w.id)} deleteLabel={t("Delete process", "Prozess löschen")} onDone={() => setEditing(null)} />
                         </div>
                       </div>
                     )}
@@ -329,6 +354,7 @@ export function LeftNav(p: Props) {
             {/* --------------------------------------------------- lanes --- */}
             <SectionHeader
               title={title("lanes")}
+              onHelp={() => p.onHelp("Lane")}
               count={p.activeWorkflowId ? p.lanes.length : undefined}
               open={open.lanes}
               onToggle={() => toggle("lanes")}
@@ -359,16 +385,14 @@ export function LeftNav(p: Props) {
                       </span>
                     </div>
                     {editing === l.id && (
-                      <div className="pl-8 pr-3 pb-3 bg-white/[0.03]">
+                      <div className="pl-8 pr-3 pb-3 bg-white/[0.03]" onKeyDown={(e) => e.key === "Escape" && setEditing(null)}>
                         <input
                           defaultValue={l.name}
                           onBlur={(e) => e.target.value.trim() && e.target.value.trim() !== l.name && p.onPatchLane(l.id, { name: e.target.value.trim() })}
                           className={FIELD + " mt-2"}
                         />
                         <Swatches value={l.color} onPick={(c) => p.onPatchLane(l.id, { color: c })} />
-                        <button onClick={() => p.onDeleteLane(l.id)} className="text-[0.72rem] text-muted hover:text-red-300">
-                          {t("Delete lane", "Bahn löschen")}
-                        </button>
+                        <EditFooter onDelete={() => p.onDeleteLane(l.id)} deleteLabel={t("Delete lane", "Bahn löschen")} onDone={() => setEditing(null)} />
                       </div>
                     )}
                   </div>
@@ -379,6 +403,7 @@ export function LeftNav(p: Props) {
             {/* ------------------------------------------------- actors --- */}
             <SectionHeader
               title={title("actors")}
+              onHelp={() => p.onHelp("Role")}
               count={p.actors.length}
               open={open.actors}
               onToggle={() => toggle("actors")}
@@ -445,7 +470,7 @@ export function LeftNav(p: Props) {
                       <button onClick={(e) => { e.stopPropagation(); setEditing(editing === a.id ? null : a.id); }} className="hidden group-hover:block px-0.5 text-muted/50 hover:text-text text-xs" title={t("Edit", "Bearbeiten")}>✎</button>
                     </div>
                     {editing === a.id && (
-                      <div className="pl-8 pr-3 pb-3 bg-white/[0.03]">
+                      <div className="pl-8 pr-3 pb-3 bg-white/[0.03]" onKeyDown={(e) => e.key === "Escape" && setEditing(null)}>
                         <input defaultValue={a.name} onBlur={(e) => e.target.value.trim() && e.target.value.trim() !== a.name && p.onPatchActor(a.id, { name: e.target.value.trim() })} className={FIELD + " mt-2"} />
                         <div className="grid grid-cols-5 gap-1.5 mt-2">
                           {ACTOR_KINDS.map((k) => (
@@ -455,7 +480,7 @@ export function LeftNav(p: Props) {
                           ))}
                         </div>
                         <Swatches value={a.color} onPick={(c) => p.onPatchActor(a.id, { color: c })} />
-                        <button onClick={() => p.onDeleteActor(a.id)} className="text-[0.72rem] text-muted hover:text-red-300">{t("Delete role", "Rolle löschen")}</button>
+                        <EditFooter onDelete={() => p.onDeleteActor(a.id)} deleteLabel={t("Delete role", "Rolle löschen")} onDone={() => setEditing(null)} />
                       </div>
                     )}
                   </div>
@@ -466,6 +491,7 @@ export function LeftNav(p: Props) {
             {/* ---------------------------------------------- roadmaps --- */}
             <SectionHeader
               title={title("roadmaps")}
+              onHelp={() => p.onHelp("Plan & Phase")}
               count={p.activeWorkflowId ? p.roadmaps.length : undefined}
               open={open.roadmaps}
               onToggle={() => toggle("roadmaps")}
@@ -497,11 +523,16 @@ export function LeftNav(p: Props) {
                       </span>
                     </div>
                     {editing === r.id && (
-                      <div className="pl-8 pr-3 pb-3 bg-white/[0.03]">
+                      <div className="pl-8 pr-3 pb-3 bg-white/[0.03]" onKeyDown={(e) => e.key === "Escape" && setEditing(null)}>
                         <input defaultValue={r.name} onBlur={(e) => e.target.value.trim() && e.target.value.trim() !== r.name && p.onPatchRoadmap(r.id, { name: e.target.value.trim() })} className={FIELD + " mt-2"} />
                         <Swatches value={r.color} onPick={(c) => p.onPatchRoadmap(r.id, { color: c })} />
-                        <button onClick={() => p.onDeleteRoadmap(r.id)} className="text-[0.72rem] text-muted hover:text-red-300">{t("Delete plan", "Plan löschen")}</button>
+                        <EditFooter onDelete={() => p.onDeleteRoadmap(r.id)} deleteLabel={t("Delete plan", "Plan löschen")} onDone={() => setEditing(null)} />
                       </div>
+                    )}
+                    {p.phases.filter((x) => x.roadmap_id === r.id).length === 0 && adding !== `phase:${r.id}` && (
+                      <button onClick={() => { setOpen((o) => ({ ...o, roadmaps: true })); setAdding(`phase:${r.id}`); }} className="pl-11 pr-3 py-1 text-left text-[0.72rem] text-muted hover:text-orange transition-colors">
+                        + {t("Add Phases", "Phasen hinzufügen")}
+                      </button>
                     )}
                     {p.phases.filter((x) => x.roadmap_id === r.id).map((ph, pi) => (
                       <div key={ph.id}>
@@ -511,14 +542,14 @@ export function LeftNav(p: Props) {
                         >
                           <span className="w-1.5 h-4 rounded-sm flex-none" style={{ background: ph.color ?? NEUTRAL }} />
                           <span title={tx(ph.name)} className="flex-1 truncate text-[0.72rem] ink-text" style={{ color: soft(ph.color) }}><Tx text={ph.name} d={560 + pi * 160} /></span>
-                          <span className="font-mono text-[0.62rem] text-muted/60">{p.phaseCounts[ph.id] ?? 0}</span>
-                          <button onClick={(e) => { e.stopPropagation(); setEditing(editing === ph.id ? null : ph.id); }} className="text-muted/50 hover:text-text text-xs opacity-0 group-hover:opacity-100" title={t("Edit", "Bearbeiten")}>✎</button>
+                          <span title={t("Steps in this phase", "Schritte in dieser Phase")} className="font-mono text-[0.62rem] text-muted/60">{p.phaseCounts[ph.id] ?? 0} {(p.phaseCounts[ph.id] ?? 0) === 1 ? t("step", "Schritt") : t("steps", "Schritte")}</span>
+                          <button onClick={(e) => { e.stopPropagation(); setEditing(editing === ph.id ? null : ph.id); }} className="text-muted/50 hover:text-text text-xs hidden group-hover:block" title={t("Edit", "Bearbeiten")}>✎</button>
                         </div>
                         {editing === ph.id && (
-                          <div className="pl-11 pr-3 pb-3 bg-white/[0.03]">
+                          <div className="pl-11 pr-3 pb-3 bg-white/[0.03]" onKeyDown={(e) => e.key === "Escape" && setEditing(null)}>
                             <input defaultValue={ph.name} onBlur={(e) => e.target.value.trim() && e.target.value.trim() !== ph.name && p.onPatchPhase(ph.id, { name: e.target.value.trim() })} className={FIELD + " mt-2"} />
                             <Swatches value={ph.color} onPick={(c) => p.onPatchPhase(ph.id, { color: c })} />
-                            <button onClick={() => p.onDeletePhase(ph.id)} className="text-[0.72rem] text-muted hover:text-red-300">{t("Delete phase", "Phase löschen")}</button>
+                            <EditFooter onDelete={() => p.onDeletePhase(ph.id)} deleteLabel={t("Delete phase", "Phase löschen")} onDone={() => setEditing(null)} />
                           </div>
                         )}
                       </div>
@@ -539,14 +570,31 @@ export function LeftNav(p: Props) {
             )}
 
             {/* --------------------------------------------------- team --- */}
-            <button
-              onClick={p.onOpenTeam}
-              className="w-full flex items-center gap-2 px-4 py-2.5 text-left font-mono text-[0.78rem] tracking-[0.12em] uppercase text-text/90 hover:text-orange transition-colors"
-              title={t("Manage team & invites", "Team & Einladungen verwalten")}
-            >
-              <span className="text-[0.62rem] text-muted">›</span>
-              {title("team")}
-            </button>
+            <SectionHeader
+              title={title("team")}
+              count={p.members.length || undefined}
+              open={open.team}
+              onToggle={() => toggle("team")}
+              onAdd={p.onOpenTeam}
+              addLabel={t("Invite people", "Personen einladen")}
+              onHelp={() => p.onHelp("Team")}
+            />
+            {open.team && (
+              <div className="pb-2">
+                {p.members.map((m) => (
+                  <div key={m.id} className="flex items-center gap-2 pl-8 pr-3 py-px leading-tight" title={m.email}>
+                    <span className="w-4 h-4 rounded-full flex-none flex items-center justify-center text-[0.58rem] font-medium text-white/90" style={{ background: pickColor((m.name || m.email).length) }}>
+                      {((m.name || m.email)[0] ?? "?").toUpperCase()}
+                    </span>
+                    <span className="flex-1 truncate text-[0.76rem] text-text/85">{m.name || m.email.split("@")[0]}</span>
+                    {m.role !== "member" && <span className="font-mono text-[0.58rem] tracking-wider uppercase text-muted/60">{m.role === "owner" ? t("Owner", "Eigent.") : "Admin"}</span>}
+                  </div>
+                ))}
+                <button onClick={p.onOpenTeam} className="pl-8 pr-3 pt-1.5 text-left text-[0.72rem] text-muted hover:text-orange transition-colors">
+                  {t("Manage team", "Team verwalten")}
+                </button>
+              </div>
+            )}
           </div>
           <div className="flex-none min-w-[244px] border-t border-white/10 px-3 py-2 flex items-center justify-between">
             

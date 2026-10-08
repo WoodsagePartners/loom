@@ -1,9 +1,15 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useT } from "@/lib/i18n";
 import type { Workspace } from "@/lib/workspaces";
+import { createClient } from "@/lib/supabase/client";
+import { AccountMenu, AccountModal } from "@/components/account";
+import { MoreMenu } from "@/components/more-menu";
+import { Guide } from "@/components/guide";
+import { ContentI18nProvider, Tx } from "@/lib/content-i18n";
+import type { Profile } from "@/lib/profile";
 
 const KEYWORD = "DELETE";
 
@@ -34,7 +40,7 @@ function DeleteDialog({ ws, onClose, onDeleted }: { ws: Workspace; onClose: () =
   return (
     <div className="fixed inset-0 z-[80] flex items-center justify-center bg-black/40 backdrop-blur-[3px] p-4" onMouseDown={(e) => e.target === e.currentTarget && !busy && onClose()}>
       <div role="alertdialog" aria-modal="true" className="w-full max-w-md glass glass-bright glass-dense glass-pop rounded-2xl p-6 text-sm">
-        <div className="font-mono text-[0.66rem] tracking-[0.14em] uppercase text-red-300 mb-2">{t("Caution — permanent", "Achtung – endgültig")}</div>
+        <div className="font-mono text-[0.66rem] tracking-[0.14em] uppercase text-danger mb-2">{t("Caution — permanent", "Achtung – endgültig")}</div>
         <div className="text-[0.78rem] text-muted mb-1">{t("Delete this workspace and clear all associated caches", "Diesen Arbeitsbereich löschen und alle zugehörigen Caches leeren")}</div>
         <h2 className="text-base font-medium mb-2">{t(`Delete “${ws.name}”?`, `„${ws.name}“ löschen?`)}</h2>
         <p className="text-[0.88rem] leading-relaxed text-text/90">
@@ -43,7 +49,7 @@ function DeleteDialog({ ws, onClose, onDeleted }: { ws: Workspace; onClose: () =
             "Dies löscht den Arbeitsbereich und alles darin: alle Prozesse, Bahnen, Rollen, Schritte, Linien, Pläne, Mitglieder, Einladungen und alle zwischengespeicherten Übersetzungen."
           )}
         </p>
-        <p className="mt-2 text-[0.88rem] leading-relaxed text-red-300 font-medium">
+        <p className="mt-2 text-[0.88rem] leading-relaxed text-danger font-medium">
           {t("This cannot be undone and nothing can be retrieved afterwards — not by you, not by us.", "Dies kann nicht rückgängig gemacht werden. Nichts kann danach wiederhergestellt werden – weder von Ihnen noch von uns.")}
         </p>
         <label className="block mt-4 text-[0.78rem] text-muted">
@@ -56,13 +62,13 @@ function DeleteDialog({ ws, onClose, onDeleted }: { ws: Workspace; onClose: () =
             className="mt-1 w-full bg-black/30 border border-white/10 rounded-xl text-text text-sm px-3 py-2.5 outline-none focus:border-red-400/60 font-mono tracking-wider"
           />
         </label>
-        {err && <p className="mt-2 text-xs text-red-300">{err}</p>}
+        {err && <p className="mt-2 text-xs text-danger">{err}</p>}
         <div className="mt-5 flex items-center justify-end gap-3">
           <button disabled={busy} onClick={onClose} className="rounded-full border border-white/20 px-4 py-1.5 text-[0.74rem] font-mono tracking-wider hover:border-white/40">{t("CANCEL", "ABBRECHEN")}</button>
           <button
             disabled={busy || word.trim() !== KEYWORD}
             onClick={go}
-            className="rounded-full border border-red-400/50 bg-red-500/15 px-4 py-1.5 text-[0.74rem] font-mono tracking-wider text-red-300 hover:bg-red-500/25 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+            className="rounded-full border btn-danger px-4 py-1.5 text-[0.74rem] font-mono tracking-wider transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
           >
             {busy ? t("DELETING…", "LÖSCHE…") : t("DELETE FOREVER", "ENDGÜLTIG LÖSCHEN")}
           </button>
@@ -72,12 +78,20 @@ function DeleteDialog({ ws, onClose, onDeleted }: { ws: Workspace; onClose: () =
   );
 }
 
-export function WorkspaceCards({ workspaces }: { workspaces: Workspace[] }) {
+export function WorkspaceCards({ workspaces, profile: initialProfile }: { workspaces: Workspace[]; profile: Profile }) {
   const t = useT();
+  const [profile, setProfile] = useState(initialProfile);
+  const [accountOpen, setAccountOpen] = useState(false);
+  const [guideOpen, setGuideOpen] = useState(false);
   const router = useRouter();
   const [list, setList] = useState(workspaces);
   const [target, setTarget] = useState<Workspace | null>(null);
   const [opening, setOpening] = useState<string | null>(null);
+  const contentTexts = useMemo(() => workspaces.flatMap((w) => [w.name, w.description ?? ""]).filter(Boolean), [workspaces]);
+  async function signOut() {
+    await createClient().auth.signOut();
+    window.location.assign("/");
+  }
   const roleLabel = { owner: t("Owner", "Eigentümer"), admin: t("Admin", "Admin"), member: t("Member", "Mitglied") };
 
   async function open(id: string) {
@@ -87,6 +101,7 @@ export function WorkspaceCards({ workspaces }: { workspaces: Workspace[] }) {
   }
 
   return (
+    <ContentI18nProvider texts={contentTexts}>
     <div className="min-h-screen flex flex-col">
       <div className="glass-chrome flex-none border-b border-white/10 h-[4.25rem] flex items-center gap-3 pl-5 pr-8">
         <span className="flex items-center gap-3 font-semibold tracking-[0.16em] text-sm">
@@ -96,6 +111,10 @@ export function WorkspaceCards({ workspaces }: { workspaces: Workspace[] }) {
         </span>
         <span className="text-muted/40">|</span>
         <span className="font-mono text-[0.78rem] tracking-[0.16em] text-muted">{t("WORKSPACES", "ARBEITSBEREICHE")}</span>
+        <div className="ml-auto flex items-center gap-3">
+          <MoreMenu onHelp={() => setGuideOpen(true)} />
+          <AccountMenu profile={profile} onAccount={() => setAccountOpen(true)} onTeam={() => {}} onGuide={() => setGuideOpen(true)} onSignOut={signOut} />
+        </div>
       </div>
     <main className="flex-1 flex items-start justify-center p-6 pt-12">
       <div className="w-full max-w-2xl">
@@ -105,9 +124,9 @@ export function WorkspaceCards({ workspaces }: { workspaces: Workspace[] }) {
           {list.map((w) => (
             <div key={w.id} className="glass rounded-2xl p-5 flex flex-col gap-4">
               <div>
-                <div className="text-[0.95rem] font-medium truncate">{w.name}</div>
+                <div className="text-[0.95rem] font-medium truncate"><Tx text={w.name} /></div>
                 <div className="text-[0.7rem] font-mono tracking-wider text-muted/70 mt-0.5">{roleLabel[w.role].toUpperCase()}</div>
-                {w.description && <p className="mt-2 text-[0.85rem] text-muted font-normal leading-snug line-clamp-3 whitespace-pre-line">{w.description}</p>}
+                {w.description && <p className="mt-2 text-[0.85rem] text-muted font-normal leading-snug line-clamp-3 whitespace-pre-line"><Tx text={w.description} /></p>}
                 {w.lastEdited && (
                   <div className="mt-2 text-[0.74rem] text-muted/70 font-normal" suppressHydrationWarning>
                     {t("Last edited", "Zuletzt bearbeitet")} {new Date(w.lastEdited).toLocaleDateString(undefined, { dateStyle: "medium" })}
@@ -127,7 +146,7 @@ export function WorkspaceCards({ workspaces }: { workspaces: Workspace[] }) {
                   <button
                     onClick={() => setTarget(w)}
                     title={t("Delete this workspace and clear all associated caches", "Diesen Arbeitsbereich löschen und alle zugehörigen Caches leeren")}
-                    className="rounded-full border border-red-400/50 bg-red-500/15 px-4 py-2 text-[0.72rem] font-mono tracking-wider text-red-300 hover:bg-red-500/25 transition-colors whitespace-nowrap"
+                    className="rounded-full border btn-danger px-4 py-2 text-[0.72rem] font-mono tracking-wider transition-colors whitespace-nowrap"
                   >
                     {t("DELETE", "LÖSCHEN")}
                   </button>
@@ -151,6 +170,9 @@ export function WorkspaceCards({ workspaces }: { workspaces: Workspace[] }) {
         />
       )}
     </main>
+    {guideOpen && <Guide onClose={() => setGuideOpen(false)} />}
+    {accountOpen && <AccountModal profile={profile} onClose={() => setAccountOpen(false)} onSaved={setProfile} />}
     </div>
+    </ContentI18nProvider>
   );
 }

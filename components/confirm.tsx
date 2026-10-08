@@ -23,7 +23,7 @@ function ConfirmDialog({ req, onDone }: { req: Req; onDone: (ok: boolean) => voi
           <button ref={cancelRef} onClick={() => onDone(false)} className="rounded-full border border-white/20 px-4 py-1.5 text-[0.74rem] font-mono tracking-wider hover:border-white/40">
             {t("CANCEL", "ABBRECHEN")}
           </button>
-          <button onClick={() => onDone(true)} className="rounded-full border border-red-400/50 bg-red-500/15 px-4 py-1.5 text-[0.74rem] font-mono tracking-wider text-red-300 hover:bg-red-500/25 transition-colors">
+          <button onClick={() => onDone(true)} className="btn-danger rounded-full border px-4 py-1.5 text-[0.74rem] font-mono tracking-wider transition-colors">
             {req.confirmLabel ?? t("DELETE", "LÖSCHEN")}
           </button>
         </div>

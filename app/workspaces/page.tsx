@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { WorkspaceCards } from "@/components/workspace-cards";
 import type { Workspace, WorkspaceRole } from "@/lib/workspaces";
+import { profileFromUser } from "@/lib/profile";
 
 export default async function WorkspacesPage() {
   const sb = await createClient();
@@ -29,5 +30,5 @@ export default async function WorkspacesPage() {
     w.description = (o?.description as string | null | undefined) ?? null;
     w.lastEdited = (o?.last_edited_at as string | null | undefined) ?? (o?.created_at as string | null | undefined) ?? null;
   }
-  return <WorkspaceCards workspaces={workspaces} />;
+  return <WorkspaceCards workspaces={workspaces} profile={profileFromUser(user)} />;
 }

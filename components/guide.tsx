@@ -103,9 +103,18 @@ const CARDS: Card[] = [
     what: ["A plan is one improvement effort. Phases split it into stages — say “Quick wins”, then “Bigger fixes” — by grouping the steps that belong together.", "Ein Plan ist ein Verbesserungsvorhaben. Phasen teilen es in Etappen – etwa „Schnelle Erfolge“, dann „Größere Anpassungen“ – indem Sie zusammengehörige Schritte bündeln."],
     why: ["It turns “everything is broken” into a sequence: which steps to improve first, which later, and who is involved.", "So wird aus „alles ist kaputt“ eine Reihenfolge: welche Schritte zuerst, welche später und wer beteiligt ist."],
     art: (
-      <div className="flex items-end gap-1.5">
-        {[PALETTE[2], PALETTE[5], PALETTE[1]].map((c, i) => (
-          <span key={c} className="w-6 rounded-sm" style={{ background: c, height: 16 + i * 10, opacity: 0.85 }} />
+      <div className="w-44 rounded-md border border-white/15 bg-white/[0.04] py-1.5 text-left text-[0.7rem]">
+        <div className="flex items-center gap-2 px-2.5 py-0.5">
+          <span className="w-2 h-2 rotate-45 flex-none" style={{ background: PALETTE[0] }} />
+          <span className="flex-1" style={{ color: PALETTE[0] }}>Fix billing</span>
+          <span className="text-[0.55rem] font-mono tracking-wider text-muted/70">PLAN</span>
+        </div>
+        {[["Quick wins", PALETTE[2], "3 steps"], ["Bigger fixes", PALETTE[5], "5 steps"]].map(([n, c, k]) => (
+          <div key={n} className="flex items-center gap-2 pl-6 pr-2.5 py-0.5">
+            <span className="w-1.5 h-3.5 rounded-sm flex-none" style={{ background: c }} />
+            <span className="flex-1" style={{ color: c }}>{n}</span>
+            <span className="text-[0.58rem] font-mono text-muted/60">{k}</span>
+          </div>
         ))}
       </div>
     ),
@@ -183,6 +192,18 @@ const CARDS: Card[] = [
     art: <span className="text-3xl text-orange">✎</span>,
   },
   {
+    term: ["Team", "Team"],
+    what: [
+      "Open Team in the left menu to see who is in this workspace. Owners and admins use the + (or Manage team) to invite colleagues by email; they join with a link and see everything here.",
+      "Unter Team im linken Menü sehen Sie, wer in diesem Arbeitsbereich ist. Eigentümer und Admins laden über + (oder Team verwalten) Kolleginnen und Kollegen per E-Mail ein; sie treten über einen Link bei und sehen hier alles.",
+    ],
+    why: [
+      "A map gets better when the people who do the work can see it, comment on it and correct it.",
+      "Eine Karte wird besser, wenn die Menschen, die die Arbeit machen, sie sehen, kommentieren und korrigieren können.",
+    ],
+    art: <span className="text-3xl text-orange">☺</span>,
+  },
+  {
     term: ["Share & switch language", "Teilen & Sprache wechseln"],
     what: ["The ⤓ button saves the current process as a PNG picture, ready for a slide or an email. The EN / DE toggle switches the whole app — and your own step and lane names are translated too.", "Die Schaltfläche ⤓ speichert den aktuellen Prozess als PNG-Bild, bereit für Folie oder E-Mail. Mit EN / DE wechseln Sie die ganze Oberfläche – auch Ihre eigenen Schritt- und Bahnnamen werden übersetzt."],
     why: ["A map people can drop into a meeting, in the language the room speaks, gets used.", "Eine Karte, die man in ein Meeting mitnehmen kann, in der Sprache des Raums, wird auch genutzt."],
@@ -208,9 +229,9 @@ const CARDS: Card[] = [
   },
 ];
 
-export function Guide({ onClose }: { onClose: () => void }) {
+export function Guide({ onClose, start }: { onClose: () => void; start?: string }) {
   const t = useT();
-  const [i, setI] = useState(0);
+  const [i, setI] = useState(() => Math.max(0, CARDS.findIndex((c) => c.term[0] === start)));
   const c = CARDS[i];
   const last = i === CARDS.length - 1;
 

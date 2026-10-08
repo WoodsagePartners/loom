@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { Avatar } from "@/components/account";
 import { useT } from "@/lib/i18n";
@@ -9,7 +9,9 @@ import type { Profile } from "@/lib/profile";
 type Peer = { id: string; name: string; email: string; avatarColor: string | null; avatarUrl: string | null };
 
 /** Who is in this workspace right now — Supabase Realtime presence on a private, membership-gated channel. */
-export function usePresence(orgId: string, me: Profile) {
+export function usePresence(orgId: string, me: Profile, onJoin?: (p: Peer) => void) {
+  const joinRef = useRef(onJoin);
+  joinRef.current = onJoin;
   const sb = useMemo(() => createClient(), []);
   const [peers, setPeers] = useState<Peer[]>([]);
 
@@ -29,8 +31,14 @@ export function usePresence(orgId: string, me: Profile) {
         const list: Peer[] = Object.values(state).map((arr) => arr[0]).filter(Boolean);
         setPeers(list);
       };
+      let ready = false; // ignore the initial roll-call; only announce people who arrive later
       channel
-        .on("presence", { event: "sync" }, sync)
+        .on("presence", { event: "sync" }, () => { sync(); setTimeout(() => { ready = true; }, 1500); })
+        .on("presence", { event: "join" }, ({ key, newPresences }) => {
+          if (!ready || key === me.id) return;
+          const p = (newPresences?.[0] ?? null) as unknown as Peer | null;
+          if (p) joinRef.current?.(p);
+        })
         .subscribe(async (status) => {
           if (status === "SUBSCRIBED") {
             await channel!.track({ id: me.id, name: me.name, email: me.email, avatarColor: me.avatarColor, avatarUrl: me.avatarUrl });
@@ -58,7 +66,7 @@ export function PresenceStack({ peers, meId }: { peers: Peer[]; meId: string }) 
     <div className="flex items-center" title={`${t("Online now", "Jetzt online")}: ${label}`}>
       <div className="flex -space-x-2">
         {shown.map((p) => (
-          <span key={p.id} className="rounded-full" style={{ boxShadow: "0 0 0 2px var(--tint-solid)" }}>
+          <span key={p.id} className="inline-flex flex-none rounded-full" style={{ boxShadow: "0 0 0 2px var(--tint-solid)" }}>
             <Avatar p={p} size={26} online />
           </span>
         ))}

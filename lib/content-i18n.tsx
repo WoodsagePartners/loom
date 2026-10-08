@@ -1,7 +1,7 @@
 "use client";
 
 import { createContext, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { useLang, type Lang } from "@/lib/i18n";
+import { useLang, useT, type Lang } from "@/lib/i18n";
 
 // Translates what people TYPE (step names, lanes, actors…) between English and
 // German. The interface strings use useT(); this handles user content. Each
@@ -19,6 +19,7 @@ export function ContentI18nProvider({ texts, children }: { texts: string[]; chil
   const [epoch, setEpoch] = useState(0);
   const prev = useRef(lang);
   const asked = useRef<Set<string>>(new Set());
+  const [busy, setBusy] = useState(0);
 
   // every language switch restarts the swap animation
   useEffect(() => {
@@ -37,7 +38,9 @@ export function ContentI18nProvider({ texts, children }: { texts: string[]; chil
     const todo = key.split("\u0000").filter((t) => t && t.length <= 600 && !asked.current.has(t));
     if (!todo.length) return;
     todo.forEach((t) => asked.current.add(t));
+    setBusy((b) => b + 1);
     (async () => {
+     try {
       for (let i = 0; i < todo.length; i += 40) {
         const chunk = todo.slice(i, i + 40);
         try {
@@ -59,11 +62,19 @@ export function ContentI18nProvider({ texts, children }: { texts: string[]; chil
           break;
         }
       }
+     } finally {
+      setBusy((b) => Math.max(0, b - 1));
+     }
     })();
   }, [key]);
 
   const value = useMemo(() => ({ map, lang, epoch }), [map, lang, epoch]);
-  return <C.Provider value={value}>{children}</C.Provider>;
+  return (
+    <C.Provider value={value}>
+      {children}
+      {busy > 0 && lang === "de" && <TranslatingToast />}
+    </C.Provider>
+  );
 }
 
 function pick(ctx: Ctx, text: string) {
@@ -89,5 +100,19 @@ export function Tx({ text, d = 0, className }: { text: string; d?: number; class
     >
       {pick(ctx, text)}
     </span>
+  );
+}
+
+function TranslatingToast() {
+  const t = useT();
+  return (
+    <div
+      role="status"
+      className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[95] glass glass-bright glass-pop rounded-full px-4 py-2 text-[0.8rem] flex items-center gap-2.5 pointer-events-none"
+      style={{ background: "var(--tint-solid)" }}
+    >
+      <span className="inline-block w-3 h-3 rounded-full border-2 border-orange/30 border-t-orange animate-spin" aria-hidden />
+      {t("Translating… one moment", "Wird übersetzt … einen Moment")}
+    </div>
   );
 }

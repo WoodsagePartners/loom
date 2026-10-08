@@ -117,6 +117,9 @@ const INPUT_CLS =
 
 // ------------------------------------------------------------- node view --
 
+// hover cards and quick actions wait this long, so moving across a board stays calm
+const HOVER_DELAY = 1000;
+
 // ---- drag a card by its top strip --------------------------------------------------
 function useDragCard(getZoom?: () => number) {
   const [o, setO] = useState({ x: 0, y: 0 });
@@ -169,6 +172,8 @@ const FlowNodeView = memo(function FlowNodeView({ data, selected, dragging, posi
   const [hoverNode, setHoverNode] = useState(false);
   const [plusVis, setPlusVis] = useState(false);
   const plusTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const hoverTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => () => { if (hoverTimer.current) clearTimeout(hoverTimer.current); if (plusTimer.current) clearTimeout(plusTimer.current); }, []);
   const plusOn = () => {
     if (plusTimer.current) clearTimeout(plusTimer.current);
     setPlusVis(true);
@@ -225,8 +230,15 @@ const FlowNodeView = memo(function FlowNodeView({ data, selected, dragging, posi
 
   return (
     <div
-      onMouseEnter={() => { setHoverNode(true); plusOn(); }}
-      onMouseLeave={() => { setHoverNode(false); plusOff(); }}
+      onMouseEnter={() => {
+        if (hoverTimer.current) clearTimeout(hoverTimer.current);
+        hoverTimer.current = setTimeout(() => { setHoverNode(true); plusOn(); }, HOVER_DELAY);
+      }}
+      onMouseLeave={() => {
+        if (hoverTimer.current) clearTimeout(hoverTimer.current);
+        setHoverNode(false);
+        plusOff();
+      }}
       onDoubleClick={(e) => {
         e.stopPropagation();
         data.onStartEdit(node.id);
@@ -613,6 +625,8 @@ const FlowEdgeView = memo(function FlowEdgeView(props: EdgeProps<RFEdge>) {
   });
   const [editing, setEditing] = useState(false);
   const [hover, setHover] = useState(false);
+  const edgeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => () => { if (edgeTimer.current) clearTimeout(edgeTimer.current); }, []);
   const zoom = useStore((st) => st.transform[2]);
   const sm = data?.smarts;
   const hasSmarts = !!sm && !!(sm.payload || sm.channel || sm.wait_minutes || sm.friction || sm.note);
@@ -639,8 +653,14 @@ const FlowEdgeView = memo(function FlowEdgeView(props: EdgeProps<RFEdge>) {
         <div
           className="nodrag nopan absolute"
           style={{ transform: `translate(-50%, -50%) translate(${labelX}px, ${labelY}px)`, pointerEvents: "all" }}
-          onMouseEnter={() => setHover(true)}
-          onMouseLeave={() => setHover(false)}
+          onMouseEnter={() => {
+            if (edgeTimer.current) clearTimeout(edgeTimer.current);
+            edgeTimer.current = setTimeout(() => setHover(true), HOVER_DELAY);
+          }}
+          onMouseLeave={() => {
+            if (edgeTimer.current) clearTimeout(edgeTimer.current);
+            setHover(false);
+          }}
         >
           <div className="absolute left-1/2 top-1/2 w-0 h-0" style={{ transform: `scale(${1 / zoom})`, transformOrigin: "0 0" }}>
           {hover && !selected && !editing && (hasSmarts || !!data?.label) && data && <SmartsCard data={data} label={data.label} />}
@@ -1059,6 +1079,9 @@ function Inner(props: CanvasProps) {
   addNextRef.current = (id: string) => {
     const n = propsRef.current.nodes.find((x) => x.id === id);
     if (!n || !n.lane_id) return;
+    // close any open step / line card first so cards don't stack up
+    setSelEdge(null);
+    setRfNodes((nds) => (nds.some((x) => x.selected) ? nds.map((x) => (x.selected ? { ...x, selected: false } : x)) : nds));
     openPromptAt(freeX(n.lane_id, n.x + NODE_W + 60), n.lane_id, n.y_offset, id);
   };
 
