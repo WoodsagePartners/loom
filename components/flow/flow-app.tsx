@@ -773,7 +773,7 @@ export function FlowApp({
       <div className="glass-chrome flex-none border-b border-white/10 h-[4.25rem] flex items-center gap-3 pl-5 pr-8 relative z-40">
         <span className="flex items-center gap-2 font-semibold tracking-[0.16em] text-sm">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/loom-mark.svg" alt="" width={28} height={28} className="rounded-lg" />
+          <img src="/loom-mark.svg" alt="" width={42} height={42} className="rounded-xl" />
           <span>THE <span className="text-orange">LOOM</span></span>
         </span>
         <span className="text-muted/40">|</span>

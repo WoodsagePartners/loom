@@ -47,7 +47,8 @@ export default async function Home() {
         }
         .lp .nav-row{display:flex; align-items:center; justify-content:space-between; gap:16px; padding-block:14px}
         .lp .brand{display:flex; align-items:center; gap:10px; font-weight:700; font-size:1.05rem}
-        .lp .brand .mark{width:26px; height:26px; flex:none}
+        .lp .brand .mark{width:52px; height:52px; flex:none; border-radius:12px}
+        .lp .brand .wordmark{letter-spacing:.18em; font-size:1.15rem}
         .lp .nav-links{display:flex; gap:22px; font-size:.92rem; color:var(--muted)}
         .lp .nav-links a{color:inherit; text-decoration:none}
         .lp .nav-links a:hover{color:var(--fg)}
@@ -113,17 +114,9 @@ export default async function Home() {
         <header className="nav">
           <div className="wrap nav-row">
             <div className="brand">
-              <svg className="mark" viewBox="0 0 48 48" aria-hidden="true">
-                <circle cx="24" cy="24" r="22" fill="none" stroke="var(--wire)" strokeWidth="2.5" />
-                <circle cx="24" cy="24" r="4" fill="var(--accent)" />
-                <circle cx="12" cy="14" r="3" fill="var(--info)" />
-                <circle cx="37" cy="16" r="3" fill="var(--wire)" />
-                <circle cx="14" cy="35" r="3" fill="var(--rework)" />
-                <line x1="24" y1="24" x2="12" y2="14" stroke="var(--wire)" strokeWidth="1.6" />
-                <line x1="24" y1="24" x2="37" y2="16" stroke="var(--wire)" strokeWidth="1.6" />
-                <line x1="24" y1="24" x2="14" y2="35" stroke="var(--wire)" strokeWidth="1.6" />
-              </svg>
-              Loom
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img className="mark" src="/loom-mark.svg" alt="" width={52} height={52} />
+              <span className="wordmark">LOOM</span>
             </div>
             <nav className="nav-links">
               <a href="#model">Data model</a>

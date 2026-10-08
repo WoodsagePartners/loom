@@ -87,7 +87,17 @@ export function WorkspaceCards({ workspaces }: { workspaces: Workspace[] }) {
   }
 
   return (
-    <main className="min-h-screen flex items-center justify-center p-6">
+    <div className="min-h-screen flex flex-col">
+      <div className="glass-chrome flex-none border-b border-white/10 h-[4.25rem] flex items-center gap-3 pl-5 pr-8">
+        <span className="flex items-center gap-3 font-semibold tracking-[0.16em] text-sm">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/loom-mark.svg" alt="" width={42} height={42} className="rounded-xl" />
+          <span>THE <span className="text-orange">LOOM</span></span>
+        </span>
+        <span className="text-muted/40">|</span>
+        <span className="font-mono text-[0.78rem] tracking-[0.16em] text-muted">{t("WORKSPACES", "ARBEITSBEREICHE")}</span>
+      </div>
+    <main className="flex-1 flex items-start justify-center p-6 pt-12">
       <div className="w-full max-w-2xl">
         <h1 className="text-lg font-medium mb-1">{t("Your workspaces", "Ihre Arbeitsbereiche")}</h1>
         <p className="text-muted text-sm font-light mb-6">{t("Choose where to work.", "Wählen Sie, wo Sie arbeiten möchten.")}</p>
@@ -141,5 +151,6 @@ export function WorkspaceCards({ workspaces }: { workspaces: Workspace[] }) {
         />
       )}
     </main>
+    </div>
   );
 }
