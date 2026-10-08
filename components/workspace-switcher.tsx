@@ -16,12 +16,11 @@ const ROLE_LABEL: Record<WorkspaceRole, string> = {
 export function WorkspaceSwitcher({
   orgId,
   orgName,
-  workspaces,
   role,
 }: {
   orgId: string;
   orgName: string;
-  workspaces: Workspace[];
+  workspaces?: Workspace[]; // no longer listed here: the Workspaces page is the place to switch
   role: WorkspaceRole;
 }) {
   const router = useRouter();
@@ -32,7 +31,6 @@ export function WorkspaceSwitcher({
   const [renameErr, setRenameErr] = useState<string | null>(null);
   const sb = useRef(createClient()).current;
   const canRename = role === "owner" || role === "admin";
-  const [switching, setSwitching] = useState(false);
   const [details, setDetails] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
@@ -60,24 +58,6 @@ export function WorkspaceSwitcher({
     setRenaming(false);
     setRenameErr(null);
     router.refresh();
-  }
-
-  async function switchTo(id: string) {
-    if (id === orgId || switching) return;
-    setSwitching(true);
-    try {
-      const res = await fetch("/api/workspace/switch", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ orgId: id }),
-      });
-      if (res.ok) {
-        setOpen(false);
-        router.refresh();
-      }
-    } finally {
-      setSwitching(false);
-    }
   }
 
   return (
@@ -127,22 +107,6 @@ export function WorkspaceSwitcher({
           className="absolute left-0 top-full mt-2 w-72 z-50 glass glass-bright glass-clear rounded-xl p-1.5"
           style={{ background: "var(--tint-solid)" }}
         >
-          <div className="px-2.5 pt-1.5 pb-1 text-[0.66rem] font-mono tracking-[0.14em] text-muted/70">{t("WORKSPACES", "ARBEITSBEREICHE")}</div>
-          {workspaces.map((w) => (
-            <button
-              key={w.id}
-              type="button"
-              role="menuitem"
-              disabled={switching}
-              onClick={() => switchTo(w.id)}
-              className={`w-full flex items-center gap-2 px-2.5 py-2 text-left text-[0.82rem] rounded-lg hover:bg-white/10 disabled:opacity-50 ${w.id === orgId ? "bg-white/[0.06]" : ""}`}
-            >
-              <span className="w-3 text-orange text-xs">{w.id === orgId ? "✓" : ""}</span>
-              <span className="flex-1 truncate">{w.name}</span>
-              <span className="text-[0.68rem] text-muted/70">{({ owner: t("Owner", "Eigentümer"), admin: t("Admin", "Admin"), member: t("Member", "Mitglied") })[w.role]}</span>
-            </button>
-          ))}
-          <div className="my-1.5 border-t border-white/10" />
           {canRename && (
             <button
               type="button"
@@ -167,7 +131,7 @@ export function WorkspaceSwitcher({
             onClick={() => router.push("/workspaces")}
             className="w-full px-2.5 py-2 text-left text-[0.82rem] rounded-lg text-muted hover:text-text hover:bg-white/10"
           >
-            {t("All workspaces…", "Alle Arbeitsbereiche…")}
+            {t("← All workspaces", "← Alle Arbeitsbereiche")}
           </button>
         </div>
       )}

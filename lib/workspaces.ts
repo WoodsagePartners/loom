@@ -4,6 +4,9 @@ export type Workspace = {
   id: string;
   name: string;
   role: WorkspaceRole;
+  description?: string | null;
+  /** ISO timestamp of the latest edit (falls back to creation date). */
+  lastEdited?: string | null;
 };
 
 // Remembers which workspace this browser last had open. The server verifies

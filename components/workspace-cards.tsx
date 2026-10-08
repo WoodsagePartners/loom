@@ -97,6 +97,12 @@ export function WorkspaceCards({ workspaces }: { workspaces: Workspace[] }) {
               <div>
                 <div className="text-[0.95rem] font-medium truncate">{w.name}</div>
                 <div className="text-[0.7rem] font-mono tracking-wider text-muted/70 mt-0.5">{roleLabel[w.role].toUpperCase()}</div>
+                {w.description && <p className="mt-2 text-[0.85rem] text-muted font-normal leading-snug line-clamp-3 whitespace-pre-line">{w.description}</p>}
+                {w.lastEdited && (
+                  <div className="mt-2 text-[0.74rem] text-muted/70 font-normal" suppressHydrationWarning>
+                    {t("Last edited", "Zuletzt bearbeitet")} {new Date(w.lastEdited).toLocaleDateString(undefined, { dateStyle: "medium" })}
+                  </div>
+                )}
               </div>
               <div className="flex items-center justify-between gap-3 mt-auto">
                 <button
