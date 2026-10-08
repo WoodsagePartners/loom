@@ -21,13 +21,22 @@ export default function LoginPage() {
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
   const [invited, setInvited] = useState(false);
+  const [inviteOrg, setInviteOrg] = useState("");
 
-  // Arriving from an invite link: open straight on "create your account".
+  // Arriving from an invite link: open straight on "create your account", with the
+  // invited address filled in (a public lookup that only answers for a live token).
   useEffect(() => {
-    if (new URLSearchParams(window.location.search).get("invite") === "1") {
-      setInvited(true);
-      setSigningUp(true);
-    }
+    const inv = new URLSearchParams(window.location.search).get("invite");
+    if (!inv) return;
+    setInvited(true);
+    setSigningUp(true);
+    if (inv === "1") return;
+    (async () => {
+      const { data } = await createClient().rpc("invite_preview", { invite_token: inv });
+      const row = Array.isArray(data) ? data[0] : data;
+      if (row?.email) setEmail(row.email);
+      if (row?.org_name) setInviteOrg(row.org_name);
+    })();
   }, []);
 
   async function forgot() {
@@ -116,11 +125,13 @@ export default function LoginPage() {
             )}
             {invited && signingUp && (
               <div className="rounded-xl border border-orange/30 bg-orange/10 px-3 py-2.5 text-[0.88rem] font-normal">
-                <div className="text-text mb-0.5">{t("You've been invited to a workspace.", "Sie wurden in einen Arbeitsbereich eingeladen.")}</div>
+                <div className="text-text mb-0.5">{inviteOrg
+                    ? t(`You've been invited to ${inviteOrg}.`, `Sie wurden zu „${inviteOrg}“ eingeladen.`)
+                    : t("You've been invited to a workspace.", "Sie wurden in einen Arbeitsbereich eingeladen.")}</div>
                 <div className="text-muted">
                   {t(
-                    "Enter the email address the invitation was sent to and choose a password — you'll join right after.",
-                    "Geben Sie die E-Mail-Adresse ein, an die die Einladung ging, und wählen Sie ein Passwort – danach sind Sie direkt dabei."
+                    "Choose a password to create your account — you'll join right after.",
+                    "Wählen Sie ein Passwort, um Ihr Konto zu erstellen – danach sind Sie direkt dabei."
                   )}
                 </div>
               </div>

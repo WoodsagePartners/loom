@@ -33,7 +33,7 @@ import { WorkflowCanvas } from "@/components/flow/workflow-canvas";
 import { TeamPanel } from "@/components/team-panel";
 import { AccountMenu, AccountModal } from "@/components/account";
 import { PresenceStack, usePresence } from "@/components/presence";
-import { Guide, guideSeen } from "@/components/guide";
+import { Guide, guideSeen, markGuideSeen } from "@/components/guide";
 import type { Profile } from "@/lib/profile";
 import { useT } from "@/lib/i18n";
 import { ContentI18nProvider, Tx } from "@/lib/content-i18n";
@@ -88,8 +88,9 @@ export function FlowApp({
   const [teamOpen, setTeamOpen] = useState(false);
   const [accountOpen, setAccountOpen] = useState(false);
   const [guideOpen, setGuideOpen] = useState(false);
+  const [guideOffer, setGuideOffer] = useState(false);
   useEffect(() => {
-    if (!guideSeen()) setGuideOpen(true); // first visit only
+    if (!guideSeen()) setGuideOffer(true); // first visit only: offer, never force
   }, []);
   const [profile, setProfile] = useState(initialProfile);
   const peers = usePresence(orgId, profile);
@@ -944,6 +945,36 @@ export function FlowApp({
         </main>
       </div>
 
+      {guideOffer && !guideOpen && (
+        <div className="fixed bottom-5 right-5 z-40 w-[min(22rem,calc(100vw-2.5rem))] rounded-2xl border border-white/15 p-4 shadow-2xl" style={{ background: "var(--tint-solid)" }}>
+          <div className="text-sm font-medium mb-1">{t("New to Loom?", "Neu bei Loom?")}</div>
+          <p className="text-[0.88rem] text-muted font-normal mb-3">
+            {t("Want a quick tour of how it works? It takes about a minute.", "Möchten Sie eine kurze Einführung, wie Loom funktioniert? Das dauert etwa eine Minute.")}
+          </p>
+          <div className="flex gap-2">
+            <button
+              onClick={() => {
+                setGuideOffer(false);
+                setGuideOpen(true);
+              }}
+              className="flex-1 rounded-full text-white text-xs font-mono tracking-wider py-2"
+              style={{ background: "linear-gradient(135deg, rgba(248,153,29,.9), rgba(194,87,27,.85))" }}
+            >
+              {t("SHOW ME", "ZEIGEN")}
+            </button>
+            <button
+              onClick={() => {
+                markGuideSeen();
+                setGuideOffer(false);
+              }}
+              className="flex-1 rounded-full border border-white/15 text-xs font-mono tracking-wider py-2"
+            >
+              {t("NOT NOW", "SPÄTER")}
+            </button>
+          </div>
+          <p className="text-[0.78rem] text-muted font-normal mt-2">{t("You can always find it under Help.", "Sie finden es jederzeit unter Hilfe.")}</p>
+        </div>
+      )}
       {guideOpen && <Guide onClose={() => setGuideOpen(false)} />}
       {accountOpen && <AccountModal profile={profile} onClose={() => setAccountOpen(false)} onSaved={setProfile} />}
       {teamOpen && <TeamPanel orgId={orgId} orgName={orgName} role={role} onClose={() => setTeamOpen(false)} />}

@@ -14,6 +14,14 @@ export const guideSeen = () => {
   }
 };
 
+export const markGuideSeen = () => {
+  try {
+    localStorage.setItem(SEEN, "1");
+  } catch {
+    /* ignore */
+  }
+};
+
 type Card = { term: [string, string]; what: [string, string]; why: [string, string]; art: ReactNode };
 
 const Brace = ({ c }: { c: string }) => (
