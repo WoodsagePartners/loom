@@ -116,7 +116,49 @@ const INPUT_CLS =
   "nodrag nopan nowheel w-full bg-black/40 border border-white/15 rounded-md text-text text-[0.8rem] px-2 py-1.5 outline-none focus:border-orange/60";
 
 // ------------------------------------------------------------- node view --
+
+// ---- drag a card by its top strip --------------------------------------------------
+function useDragCard(getZoom?: () => number) {
+  const [o, setO] = useState({ x: 0, y: 0 });
+  const st = useRef<{ sx: number; sy: number; ox: number; oy: number } | null>(null);
+  const bind = {
+    onPointerDown: (e: React.PointerEvent<HTMLElement>) => {
+      e.preventDefault();
+      e.stopPropagation();
+      e.currentTarget.setPointerCapture(e.pointerId);
+      st.current = { sx: e.clientX, sy: e.clientY, ox: o.x, oy: o.y };
+    },
+    onPointerMove: (e: React.PointerEvent<HTMLElement>) => {
+      const d = st.current;
+      if (!d) return;
+      const z = getZoom ? getZoom() || 1 : 1;
+      setO({ x: d.ox + (e.clientX - d.sx) / z, y: d.oy + (e.clientY - d.sy) / z });
+    },
+    onPointerUp: (e: React.PointerEvent<HTMLElement>) => {
+      st.current = null;
+      try { e.currentTarget.releasePointerCapture(e.pointerId); } catch {}
+    },
+  };
+  return { o, setO, bind };
+}
+
+function DragGrip({ bind }: { bind: ReturnType<typeof useDragCard>["bind"] }) {
+  const t = useT();
+  return (
+    <div
+      {...bind}
+      title={t("Drag to move this card", "Zum Verschieben ziehen")}
+      className="nodrag nopan -mx-3 -mt-3 mb-2 h-5 rounded-t-xl cursor-grab active:cursor-grabbing flex items-center justify-center select-none touch-none bg-white/[0.06] hover:bg-white/[0.1] transition-colors"
+    >
+      <span className="font-mono text-[0.6rem] tracking-[0.35em] text-muted/60 leading-none">⋮⋮⋮</span>
+    </div>
+  );
+}
+
 const FlowNodeView = memo(function FlowNodeView({ data, selected, dragging, positionAbsoluteY }: NodeProps<RFNode>) {
+  const card = useDragCard();
+  const resetCard = card.setO;
+  useEffect(() => { if (!selected) resetCard({ x: 0, y: 0 }); }, [selected, resetCard]);
   const t = useT();
   // open the editor above the step when it sits in the lower half of the screen
   const flipUp = useStore((st) => st.transform[1] + positionAbsoluteY * st.transform[2] > st.height * 0.5);
@@ -326,8 +368,10 @@ const FlowNodeView = memo(function FlowNodeView({ data, selected, dragging, posi
       <NodeToolbar position={flipUp ? Position.Top : Position.Bottom} offset={14} isVisible={selected && !dragging}>
         <div
           className="nodrag nopan glass glass-bright glass-dense glass-pop w-72 max-h-[70vh] overflow-y-auto rounded-xl p-3 text-[0.8rem]"
+          style={{ position: "relative", left: card.o.x, top: card.o.y }}
           onDoubleClick={(e) => e.stopPropagation()}
         >
+          <DragGrip bind={card.bind} />
           <div className="font-mono text-[0.62rem] tracking-[0.14em] text-muted/80 mb-1">{t("STEP NAME", "SCHRITTNAME")}</div>
           <input
             key={node.id + node.label}
@@ -435,6 +479,8 @@ const SM_FIELD = "nodrag nopan nowheel w-full bg-black/40 border border-white/15
 /** Editor for the "smarts" on a line: what moves, how, wait, friction, note. */
 function SmartsEditor({ id, data }: { id: string; data: EdgeData }) {
   const t = useT();
+  const rf = useReactFlow();
+  const card = useDragCard(() => rf.getZoom());
   const s = data.smarts;
   const wp = waitParts(s.wait_minutes);
   const [payload, setPayload] = useState(s.payload ?? "");
@@ -449,7 +495,8 @@ function SmartsEditor({ id, data }: { id: string; data: EdgeData }) {
     if (m !== (s.wait_minutes ?? null)) data.onSmarts(id, { wait_minutes: m });
   };
   return (
-    <div className="absolute left-1/2 -translate-x-1/2 top-4 w-72 glass glass-bright glass-dense glass-pop rounded-xl p-3 text-left text-[0.8rem] space-y-3 whitespace-normal" onMouseDown={(e) => e.stopPropagation()}>
+    <div className="absolute left-1/2 -translate-x-1/2 top-4 w-72 glass glass-bright glass-dense glass-pop rounded-xl p-3 text-left text-[0.8rem] space-y-3 whitespace-normal" style={{ marginLeft: card.o.x, marginTop: card.o.y }} onMouseDown={(e) => e.stopPropagation()}>
+      <DragGrip bind={card.bind} />
       <div>
         <div className={SM_LABEL}>{t("What moves", "Was wird übergeben")}</div>
         <input value={payload} onChange={(e) => setPayload(e.target.value)} onBlur={() => payload.trim() !== (s.payload ?? "") && data.onSmarts(id, { payload: payload.trim() || null })} placeholder={t("e.g. signed order PDF", "z. B. unterschriebener Auftrag (PDF)")} className={SM_FIELD} />
@@ -853,6 +900,19 @@ function Inner(props: CanvasProps) {
       return [...derived.map((d) => (sel.has(d.id) ? { ...d, selected: true } : d)), BOUNDS_NODE];
     });
   }, [derived]);
+
+  // Esc closes the open step / line card (they show while something is selected)
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== "Escape") return;
+      const el = e.target as HTMLElement | null;
+      if (el && (el.tagName === "INPUT" || el.tagName === "TEXTAREA" || el.tagName === "SELECT")) (el as HTMLElement).blur();
+      setSelEdge(null);
+      setRfNodes((nds) => (nds.some((n) => n.selected) ? nds.map((n) => (n.selected ? { ...n, selected: false } : n)) : nds));
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
 
   const onNodesChange: OnNodesChange<RFNode> = useCallback(
     (changes) => setRfNodes((nds) => applyNodeChanges(changes, nds)),

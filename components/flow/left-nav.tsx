@@ -348,14 +348,14 @@ export function LeftNav(p: Props) {
                 )}
                 {p.lanes.map((l, i) => (
                   <div key={l.id}>
-                    <div className={`${rowCls} cursor-pointer ${isLens("lane", l.id) ? "bg-white/10" : ""}`} onClick={() => p.onLens(isLens("lane", l.id) ? null : { kind: "lane", id: l.id })}>
-                      <span className="w-1.5 h-5 rounded-sm flex-none" style={{ background: l.color ?? NEUTRAL }} />
+                    <div className={`group flex items-center gap-2 pl-8 pr-3 py-px leading-tight hover:bg-white/5 cursor-pointer ${isLens("lane", l.id) ? "bg-white/10" : ""}`} onClick={() => p.onLens(isLens("lane", l.id) ? null : { kind: "lane", id: l.id })}>
+                      <span className="w-1.5 h-3 rounded-sm flex-none" style={{ background: l.color ?? NEUTRAL }} />
                       <span title={tx(l.name)} className="flex-1 truncate text-[0.76rem] ink-text" style={{ color: soft(l.color) }}><Tx text={l.name} d={160 + i * 160} /></span>
-                      <span className="flex gap-0.5 opacity-0 group-hover:opacity-100 text-muted/70" onClick={(e) => e.stopPropagation()}>
-                        <button disabled={i === 0} onClick={() => p.onMoveLane(l.id, -1)} className="px-1 hover:text-text disabled:opacity-30" title={t("Move up", "Nach oben")}>↑</button>
-                        <button disabled={i === p.lanes.length - 1} onClick={() => p.onMoveLane(l.id, 1)} className="px-1 hover:text-text disabled:opacity-30" title={t("Move down", "Nach unten")}>↓</button>
-                        <button onClick={() => p.onDuplicateLane(l.id)} className="px-1 hover:text-orange" title={t("Duplicate lane", "Bahn duplizieren")}>⧉</button>
-                        <button onClick={() => setEditing(editing === l.id ? null : l.id)} className="px-1 hover:text-text" title={t("Edit", "Bearbeiten")}>✎</button>
+                      <span className="hidden group-hover:flex flex-none text-muted/70" onClick={(e) => e.stopPropagation()}>
+                        <button disabled={i === 0} onClick={() => p.onMoveLane(l.id, -1)} className="px-0.5 hover:text-text disabled:opacity-30" title={t("Move up", "Nach oben")}>↑</button>
+                        <button disabled={i === p.lanes.length - 1} onClick={() => p.onMoveLane(l.id, 1)} className="px-0.5 hover:text-text disabled:opacity-30" title={t("Move down", "Nach unten")}>↓</button>
+                        <button onClick={() => p.onDuplicateLane(l.id)} className="px-0.5 hover:text-orange" title={t("Duplicate lane", "Bahn duplizieren")}>⧉</button>
+                        <button onClick={() => setEditing(editing === l.id ? null : l.id)} className="px-0.5 hover:text-text" title={t("Edit", "Bearbeiten")}>✎</button>
                       </span>
                     </div>
                     {editing === l.id && (
@@ -491,9 +491,9 @@ export function LeftNav(p: Props) {
                     <div className={`${rowCls} cursor-pointer ${isLens("roadmap", r.id) ? "bg-white/10" : ""}`} onClick={() => p.onLens(isLens("roadmap", r.id) ? null : { kind: "roadmap", id: r.id })}>
                       <span className="w-2 h-2 rotate-45 flex-none" style={{ background: r.color ?? NEUTRAL }} />
                       <span title={tx(r.name)} className="flex-1 truncate text-[0.76rem] ink-text" style={{ color: soft(r.color) }}><Tx text={r.name} d={480 + ri * 160} /></span>
-                      <span className="flex gap-0.5 opacity-0 group-hover:opacity-100 text-muted/70" onClick={(e) => e.stopPropagation()}>
-                        <button onClick={() => { setOpen((o) => ({ ...o, roadmaps: true })); setAdding((a) => (a === `phase:${r.id}` ? null : `phase:${r.id}`)); }} onMouseDown={(e) => e.preventDefault()} className="px-1 hover:text-text" title={t("Add phase", "Phase hinzufügen")}>+</button>
-                        <button onClick={() => setEditing(editing === r.id ? null : r.id)} className="px-1 hover:text-text" title={t("Edit", "Bearbeiten")}>✎</button>
+                      <span className="hidden group-hover:flex flex-none text-muted/70" onClick={(e) => e.stopPropagation()}>
+                        <button onClick={() => { setOpen((o) => ({ ...o, roadmaps: true })); setAdding((a) => (a === `phase:${r.id}` ? null : `phase:${r.id}`)); }} onMouseDown={(e) => e.preventDefault()} className="px-0.5 hover:text-text" title={t("Add phase", "Phase hinzufügen")}>+</button>
+                        <button onClick={() => setEditing(editing === r.id ? null : r.id)} className="px-0.5 hover:text-text" title={t("Edit", "Bearbeiten")}>✎</button>
                       </span>
                     </div>
                     {editing === r.id && (
