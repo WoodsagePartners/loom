@@ -300,7 +300,7 @@ export function LeftNav(p: Props) {
                           e.stopPropagation();
                           p.onDuplicateWorkflow(w.id);
                         }}
-                        className="hidden group-hover:block px-0.5 text-muted/50 hover:text-orange text-xs"
+                        className="hidden group-hover:block leading-none px-0.5 text-muted/50 hover:text-orange text-xs"
                         title={t("Duplicate process", "Prozess duplizieren")}
                       >
                         ⧉
@@ -310,7 +310,7 @@ export function LeftNav(p: Props) {
                           e.stopPropagation();
                           setEditing(editing === w.id ? null : w.id);
                         }}
-                        className="hidden group-hover:block px-0.5 text-muted/50 hover:text-text text-xs"
+                        className="hidden group-hover:block leading-none px-0.5 text-muted/50 hover:text-text text-xs"
                         title={t("Edit", "Bearbeiten")}
                       >
                         ✎
@@ -377,7 +377,7 @@ export function LeftNav(p: Props) {
                     <div className={`group flex items-center gap-2 pl-8 pr-3 py-px leading-tight hover:bg-white/5 cursor-pointer ${isLens("lane", l.id) ? "bg-white/10" : ""}`} onClick={() => p.onLens(isLens("lane", l.id) ? null : { kind: "lane", id: l.id })}>
                       <span className="w-1.5 h-3 rounded-sm flex-none" style={{ background: l.color ?? NEUTRAL }} />
                       <span title={tx(l.name)} className="flex-1 truncate text-[0.76rem] ink-text" style={{ color: soft(l.color) }}><Tx text={l.name} d={160 + i * 160} /></span>
-                      <span className="hidden group-hover:flex flex-none text-muted/70" onClick={(e) => e.stopPropagation()}>
+                      <span className="hidden group-hover:flex flex-none text-[0.7rem] leading-none text-muted/70" onClick={(e) => e.stopPropagation()}>
                         <button disabled={i === 0} onClick={() => p.onMoveLane(l.id, -1)} className="px-0.5 hover:text-text disabled:opacity-30" title={t("Move up", "Nach oben")}>↑</button>
                         <button disabled={i === p.lanes.length - 1} onClick={() => p.onMoveLane(l.id, 1)} className="px-0.5 hover:text-text disabled:opacity-30" title={t("Move down", "Nach unten")}>↓</button>
                         <button onClick={() => p.onDuplicateLane(l.id)} className="px-0.5 hover:text-orange" title={t("Duplicate lane", "Bahn duplizieren")}>⧉</button>
@@ -467,7 +467,7 @@ export function LeftNav(p: Props) {
                       <span className="flex-1 min-w-0">
                         <span title={tx(a.name)} className="block truncate text-[0.76rem] ink-text" style={{ color: soft(a.color) }}><Tx text={a.name} d={320 + ai * 160} /></span>
                       </span>
-                      <button onClick={(e) => { e.stopPropagation(); setEditing(editing === a.id ? null : a.id); }} className="hidden group-hover:block px-0.5 text-muted/50 hover:text-text text-xs" title={t("Edit", "Bearbeiten")}>✎</button>
+                      <button onClick={(e) => { e.stopPropagation(); setEditing(editing === a.id ? null : a.id); }} className="hidden group-hover:block leading-none px-0.5 text-muted/50 hover:text-text text-xs" title={t("Edit", "Bearbeiten")}>✎</button>
                     </div>
                     {editing === a.id && (
                       <div className="pl-8 pr-3 pb-3 bg-white/[0.03]" onKeyDown={(e) => e.key === "Escape" && setEditing(null)}>
@@ -517,7 +517,7 @@ export function LeftNav(p: Props) {
                     <div className={`${rowCls} cursor-pointer ${isLens("roadmap", r.id) ? "bg-white/10" : ""}`} onClick={() => p.onLens(isLens("roadmap", r.id) ? null : { kind: "roadmap", id: r.id })}>
                       <span className="w-2 h-2 rotate-45 flex-none" style={{ background: r.color ?? NEUTRAL }} />
                       <span title={tx(r.name)} className="flex-1 truncate text-[0.76rem] ink-text" style={{ color: soft(r.color) }}><Tx text={r.name} d={480 + ri * 160} /></span>
-                      <span className="hidden group-hover:flex flex-none text-muted/70" onClick={(e) => e.stopPropagation()}>
+                      <span className="hidden group-hover:flex flex-none text-[0.7rem] leading-none text-muted/70" onClick={(e) => e.stopPropagation()}>
                         <button onClick={() => { setOpen((o) => ({ ...o, roadmaps: true })); setAdding((a) => (a === `phase:${r.id}` ? null : `phase:${r.id}`)); }} onMouseDown={(e) => e.preventDefault()} className="px-0.5 hover:text-text" title={t("Add phase", "Phase hinzufügen")}>+</button>
                         <button onClick={() => setEditing(editing === r.id ? null : r.id)} className="px-0.5 hover:text-text" title={t("Edit", "Bearbeiten")}>✎</button>
                       </span>
@@ -543,7 +543,7 @@ export function LeftNav(p: Props) {
                           <span className="w-1.5 h-4 rounded-sm flex-none" style={{ background: ph.color ?? NEUTRAL }} />
                           <span title={tx(ph.name)} className="flex-1 truncate text-[0.72rem] ink-text" style={{ color: soft(ph.color) }}><Tx text={ph.name} d={560 + pi * 160} /></span>
                           <span title={t("Steps in this phase", "Schritte in dieser Phase")} className="font-mono text-[0.62rem] text-muted/60">{p.phaseCounts[ph.id] ?? 0} {(p.phaseCounts[ph.id] ?? 0) === 1 ? t("step", "Schritt") : t("steps", "Schritte")}</span>
-                          <button onClick={(e) => { e.stopPropagation(); setEditing(editing === ph.id ? null : ph.id); }} className="text-muted/50 hover:text-text text-xs hidden group-hover:block" title={t("Edit", "Bearbeiten")}>✎</button>
+                          <button onClick={(e) => { e.stopPropagation(); setEditing(editing === ph.id ? null : ph.id); }} className="text-muted/50 hover:text-text text-xs leading-none hidden group-hover:block" title={t("Edit", "Bearbeiten")}>✎</button>
                         </div>
                         {editing === ph.id && (
                           <div className="pl-11 pr-3 pb-3 bg-white/[0.03]" onKeyDown={(e) => e.key === "Escape" && setEditing(null)}>

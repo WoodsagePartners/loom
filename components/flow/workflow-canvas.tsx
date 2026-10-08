@@ -73,6 +73,7 @@ type NodeData = {
   onCancelEdit: () => void;
   onPatch: (id: string, patch: Partial<FlowNode>) => string | null;
   onDelete: (id: string) => void;
+  onClose: () => void;
   onAddNext: (id: string) => void;
   dim: boolean;
   ring: string | null;
@@ -90,6 +91,7 @@ type EdgeData = {
   onLabel: (id: string, label: string) => void;
   onKind: (id: string, kind: EdgeKind) => void;
   onSelect: (id: string) => void;
+  onDelete: (id: string) => void;
   smarts: Pick<FlowEdge, "payload" | "channel" | "wait_minutes" | "friction" | "weight" | "note">;
   onSmarts: (id: string, patch: EdgePatch) => void;
   dim: boolean;
@@ -143,6 +145,16 @@ function useDragCard(getZoom?: () => number) {
     },
   };
   return { o, setO, bind };
+}
+
+function CardFooter({ onDelete, onDone }: { onDelete: () => void; onDone: () => void }) {
+  const t = useT();
+  return (
+    <div className="mt-3 flex items-center justify-between">
+      <button type="button" onClick={onDelete} className="btn-danger inline-flex h-6 items-center rounded-full border px-3 text-[0.68rem] font-mono leading-none tracking-wider transition-colors">{t("DELETE", "LÖSCHEN")}</button>
+      <button type="button" onClick={onDone} className="inline-flex h-6 items-center rounded-full border border-orange/60 bg-orange/10 px-3 text-[0.68rem] font-mono leading-none tracking-wider text-orange hover:bg-orange/20 transition-colors">{t("DONE", "FERTIG")}</button>
+    </div>
+  );
 }
 
 function DragGrip({ bind }: { bind: ReturnType<typeof useDragCard>["bind"] }) {
@@ -467,12 +479,7 @@ const FlowNodeView = memo(function FlowNodeView({ data, selected, dragging, posi
             className={INPUT_CLS + " resize-none"}
           />
           {err && <div className="mt-2 text-[0.75rem] text-red-300">{err}</div>}
-          <button
-            onClick={() => data.onDelete(node.id)}
-            className="mt-2.5 text-[0.75rem] text-muted hover:text-red-300"
-          >
-            {t("Delete this step", "Schritt löschen")}
-          </button>
+          <CardFooter onDelete={() => data.onDelete(node.id)} onDone={data.onClose} />
         </div>
       </NodeToolbar>
     </div>
@@ -568,6 +575,7 @@ function SmartsEditor({ id, data }: { id: string; data: EdgeData }) {
         <div className={SM_LABEL}>{t("Note", "Notiz")}</div>
         <textarea rows={3} value={note} onChange={(e) => setNote(e.target.value)} onBlur={() => note.trim() !== (s.note ?? "") && data.onSmarts(id, { note: note.trim() || null })} placeholder={t("What happens here, and what goes wrong?", "Was passiert hier – und was geht schief?")} className={SM_FIELD + " resize-none"} />
       </div>
+      <CardFooter onDelete={() => data.onDelete(id)} onDone={() => data.onSelect(null)} />
     </div>
   );
 }
@@ -784,6 +792,7 @@ function Inner(props: CanvasProps) {
   const { screenToFlowPosition, flowToScreenPosition, zoomTo, getViewport, setCenter } = useReactFlow();
   const boxRef = useRef<HTMLDivElement>(null);
   const addNextRef = useRef<(id: string) => void>(() => {});
+  const closeRef = useRef<() => void>(() => {});
   const zoom = useStore((st) => st.transform[2]);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [grid, setGrid] = useState(false);
@@ -893,6 +902,7 @@ function Inner(props: CanvasProps) {
           onCancelEdit: () => setEditingId(null),
           onPatch: (id, patch) => propsRef.current.onPatchNode(id, patch),
           onDelete: (id) => propsRef.current.onDeleteNodes([id]),
+          onClose: () => closeRef.current(),
           onAddNext: (id) => addNextRef.current(id),
           dim: (!!focus && !focus.selecting && !focus.ids.has(n.id)) || (searching && !matchIds.has(n.id)), // while picking steps, nothing is hidden
           ring: focus && focus.ids.has(n.id) ? focus.ring : searching && matchIds.has(n.id) ? "#f8991d" : null,
@@ -958,6 +968,7 @@ function Inner(props: CanvasProps) {
           onLabel: (id, label) => propsRef.current.onPatchEdge(id, { label: label || null }),
           onKind: (id, kind) => propsRef.current.onPatchEdge(id, { kind }),
           onSelect: (id) => setSelEdge(id),
+          onDelete: (id) => propsRef.current.onDeleteEdges([id]),
           smarts: { payload: e.payload ?? null, channel: e.channel ?? null, wait_minutes: e.wait_minutes ?? null, friction: e.friction ?? null, weight: e.weight ?? null, note: e.note ?? null },
           onSmarts: (id, patch) => propsRef.current.onPatchEdge(id, patch),
           dim: !!focus && !focus.selecting && !(focus.ids.has(e.from_node_id) && focus.ids.has(e.to_node_id)),
@@ -1038,7 +1049,8 @@ function Inner(props: CanvasProps) {
     const id = await propsRef.current.onAddNode(pd.x, pd.laneId, pd.yOffset, label.trim());
     if (id) {
       pendingSelect.current = id;
-      if (pd.fromId) Promise.resolve(propsRef.current.onConnect(pd.fromId, id, "r", "l")).then((eid) => eid && setSelEdge(eid));
+      // only the new step's card opens (not the line's too) so the two cards never overlap
+      if (pd.fromId) void propsRef.current.onConnect(pd.fromId, id, "r", "l");
     }
   };
 
@@ -1076,13 +1088,18 @@ function Inner(props: CanvasProps) {
     setPending((p) => (p ? { ...p, px: LANE_LABEL_W + 40, py: 52 } : p));
   };
 
+  closeRef.current = () => {
+    setSelEdge(null);
+    setRfNodes((nds) => (nds.some((x) => x.selected) ? nds.map((x) => (x.selected ? { ...x, selected: false } : x)) : nds));
+  };
+
   addNextRef.current = (id: string) => {
     const n = propsRef.current.nodes.find((x) => x.id === id);
     if (!n || !n.lane_id) return;
     // close any open step / line card first so cards don't stack up
     setSelEdge(null);
     setRfNodes((nds) => (nds.some((x) => x.selected) ? nds.map((x) => (x.selected ? { ...x, selected: false } : x)) : nds));
-    openPromptAt(freeX(n.lane_id, n.x + NODE_W + 60), n.lane_id, n.y_offset, id);
+    openPromptAt(n.x + NODE_W + 60, n.lane_id, n.y_offset, id); // drop right beside the + (user can drag it elsewhere)
   };
 
   const showCoach = nodes.filter((n) => n.type !== "start").length === 0;
