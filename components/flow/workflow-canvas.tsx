@@ -738,7 +738,7 @@ function Inner(props: CanvasProps) {
     await new Promise((r) => setTimeout(r, 120));
     try {
       const maxRight = props.nodes.reduce((m, n) => Math.max(m, n.x + NODE_W), LANE_LABEL_W + NODE_W);
-      const w = Math.min(LANE_W, Math.round(maxRight + 120));
+      const w = Math.min(laneW, Math.round(maxRight + 120));
       const h = props.lanes.length * LANE_H;
       const dataUrl = await toPng(el, {
         backgroundColor: theme === "light" ? "#eef2f7" : "#0a1119",
@@ -768,6 +768,8 @@ function Inner(props: CanvasProps) {
     });
   const actorMap = useMemo(() => new Map(actors.map((a) => [a.id, a])), [actors]);
   const laneIdx = useMemo(() => new Map(lanes.map((l, i) => [l.id, i])), [lanes]);
+  // lane bands run at least LANE_W, and always reach past the right-most step
+  const laneW = useMemo(() => Math.max(LANE_W, props.nodes.reduce((m, n) => Math.max(m, n.x + NODE_W), 0) + 400), [props.nodes]);
 
   const propsRef = useRef(props);
   propsRef.current = props;
@@ -1135,7 +1137,7 @@ function Inner(props: CanvasProps) {
                   position: "absolute",
                   left: 0,
                   top: i * LANE_H,
-                  width: LANE_W,
+                  width: laneW,
                   height: LANE_H,
                   pointerEvents: "none",
                   background: `${c}0d`,
