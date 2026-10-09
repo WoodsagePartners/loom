@@ -15,7 +15,7 @@ export default async function DashboardPage() {
 
   const { data: memberships } = await supabase
     .from("memberships")
-    .select("org_id, role, orgs(name)")
+    .select("org_id, role, orgs(name, locked)")
     .eq("user_id", user.id);
 
   if (!memberships || memberships.length === 0) redirect("/onboarding");
@@ -25,6 +25,7 @@ export default async function DashboardPage() {
       id: m.org_id as string,
       name: (m.orgs?.name as string | undefined) ?? "Workspace",
       role: m.role as WorkspaceRole,
+      locked: !!m.orgs?.locked,
     }))
     .sort((a, b) => a.name.localeCompare(b.name));
 
@@ -37,7 +38,7 @@ export default async function DashboardPage() {
 
   const { data: wfRows } = await supabase
     .from("workflows")
-    .select("id, org_id, name, description, color")
+    .select("id, org_id, name, description, color, locked, locked_at")
     .eq("org_id", orgId)
     .order("created_at", { ascending: true });
   const workflows = (wfRows ?? []) as unknown as Workflow[];
@@ -65,6 +66,7 @@ export default async function DashboardPage() {
       orgName={orgName}
       workspaces={workspaces}
       role={active.role}
+      orgLocked={!!active.locked}
       memberCount={countRes.count ?? 1}
       buildSha={buildSha}
       profile={profileFromUser(user)}

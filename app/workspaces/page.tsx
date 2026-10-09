@@ -8,10 +8,10 @@ export default async function WorkspacesPage() {
   const sb = await createClient();
   const { data: { user } } = await sb.auth.getUser();
   if (!user) redirect("/login");
-  const { data: memberships } = await sb.from("memberships").select("org_id, role, orgs(name)").eq("user_id", user.id);
+  const { data: memberships } = await sb.from("memberships").select("org_id, role, orgs(name, locked)").eq("user_id", user.id);
   if (!memberships || memberships.length === 0) redirect("/onboarding");
   const workspaces: Workspace[] = memberships
-    .map((m: any) => ({ id: m.org_id as string, name: (m.orgs?.name as string | undefined) ?? "Workspace", role: m.role as WorkspaceRole }))
+    .map((m: any) => ({ id: m.org_id as string, name: (m.orgs?.name as string | undefined) ?? "Workspace", role: m.role as WorkspaceRole, locked: !!m.orgs?.locked }))
     .sort((a, b) => a.name.localeCompare(b.name));
   // description / last-edited come from columns that may not exist yet on an older database: ask for
   // the most we can get and quietly fall back, so this page never breaks over a missing column.

@@ -7,6 +7,8 @@ export type Workspace = {
   description?: string | null;
   /** ISO timestamp of the latest edit (falls back to creation date). */
   lastEdited?: string | null;
+  /** A locked workspace is view-only until an owner or admin unlocks it. */
+  locked?: boolean;
 };
 
 // Remembers which workspace this browser last had open. The server verifies

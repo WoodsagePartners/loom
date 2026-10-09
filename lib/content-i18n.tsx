@@ -9,9 +9,13 @@ import { useLang, useT, type Lang } from "@/lib/i18n";
 // in with a short staggered fade so the change sweeps across the diagram.
 
 type Pair = { en: string; de: string };
-type Ctx = { map: Record<string, Pair>; lang: Lang; epoch: number };
+type Ctx = { map: Record<string, Pair>; lang: Lang; epoch: number; report: (d: number) => void };
 
-const C = createContext<Ctx>({ map: {}, lang: "en", epoch: 0 });
+// The swap sweep runs at slower: delays x1.6, each fade 1.6s.
+const SLOW = 1.6;
+const FADE_MS = 1600;
+
+const C = createContext<Ctx>({ map: {}, lang: "en", epoch: 0, report: () => {} });
 
 export function ContentI18nProvider({ texts, children }: { texts: string[]; children: ReactNode }) {
   const lang = useLang();
@@ -20,11 +24,31 @@ export function ContentI18nProvider({ texts, children }: { texts: string[]; chil
   const prev = useRef(lang);
   const asked = useRef<Set<string>>(new Set());
   const [busy, setBusy] = useState(0);
+  const maxD = useRef(0); // longest stagger delay among the texts on screen
+  const [pct, setPct] = useState<number | null>(null); // sweep progress after a language switch
+
+  // drive the toast's percentage across the whole sweep
+  useEffect(() => {
+    if (epoch === 0) return;
+    const start = Date.now();
+    setPct(0);
+    const iv = setInterval(() => {
+      const total = maxD.current * SLOW + FADE_MS;
+      const p = Math.min(100, Math.round(((Date.now() - start) / total) * 100));
+      setPct(p);
+      if (p >= 100) {
+        clearInterval(iv);
+        setTimeout(() => setPct((cur) => (cur === 100 ? null : cur)), 700);
+      }
+    }, 100);
+    return () => clearInterval(iv);
+  }, [epoch]);
 
   // every language switch restarts the swap animation
   useEffect(() => {
     if (prev.current !== lang) {
       prev.current = lang;
+      maxD.current = 0;
       setEpoch((e) => e + 1);
     }
   }, [lang]);
@@ -68,11 +92,11 @@ export function ContentI18nProvider({ texts, children }: { texts: string[]; chil
     })();
   }, [key]);
 
-  const value = useMemo(() => ({ map, lang, epoch }), [map, lang, epoch]);
+  const value = useMemo(() => ({ map, lang, epoch, report: (d: number) => { if (d > maxD.current) maxD.current = d; } }), [map, lang, epoch]);
   return (
     <C.Provider value={value}>
       {children}
-      {busy > 0 && lang === "de" && <TranslatingToast />}
+      {(pct !== null || busy > 0) && <TranslatingToast lang={lang} pct={pct === null ? 0 : busy > 0 ? Math.min(pct, 99) : pct} />}
     </C.Provider>
   );
 }
@@ -92,18 +116,19 @@ export function useTx() {
 export function Tx({ text, d = 0, className }: { text: string; d?: number; className?: string }) {
   const ctx = useContext(C);
   const animate = ctx.epoch > 0;
+  if (animate) ctx.report(d);
   return (
     <span
       key={ctx.epoch}
       className={`${className ?? ""} ${animate ? "tx-swap" : ""}`}
-      style={animate ? { animationDelay: `${Math.round(d)}ms` } : undefined}
+      style={animate ? { animationDelay: `${Math.round(d * SLOW)}ms`, animationDuration: `${FADE_MS}ms` } : undefined}
     >
       {pick(ctx, text)}
     </span>
   );
 }
 
-function TranslatingToast() {
+function TranslatingToast({ lang, pct }: { lang: Lang; pct: number }) {
   const t = useT();
   return (
     <div
@@ -112,7 +137,9 @@ function TranslatingToast() {
       style={{ background: "var(--tint-solid)" }}
     >
       <span className="inline-block w-3 h-3 rounded-full border-2 border-orange/30 border-t-orange animate-spin" aria-hidden />
-      {t("Translating… one moment", "Wird übersetzt … einen Moment")}
+      {lang === "de"
+        ? t(`Translating to German, ${pct}% complete`, `Übersetze ins Deutsche, ${pct} % abgeschlossen`)
+        : t(`Translating to English, ${pct}% complete`, `Übersetze ins Englische, ${pct} % abgeschlossen`)}
     </div>
   );
 }

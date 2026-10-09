@@ -23,12 +23,13 @@ import {
   type Workflow,
   type EdgePatch,
   type FlowComment,
+  type FlowPin,
+  type PinKind,
 } from "@/lib/flow";
 import type { Workspace, WorkspaceRole } from "@/lib/workspaces";
 import { WorkspaceSwitcher } from "@/components/workspace-switcher";
 import { LangToggle } from "@/components/lang-toggle";
 import { LeftNav } from "@/components/flow/left-nav";
-import { MoreMenu } from "@/components/more-menu";
 import { CtaBanner } from "@/components/flow/cta-banner";
 import { WorkflowCanvas } from "@/components/flow/workflow-canvas";
 import { TeamPanel } from "@/components/team-panel";
@@ -39,6 +40,7 @@ import { CommentCard } from "@/components/flow/comment-card";
 import type { Profile } from "@/lib/profile";
 import { useT } from "@/lib/i18n";
 import { ContentI18nProvider, Tx } from "@/lib/content-i18n";
+import { PursuitModal } from "@/components/flow/pursuit-modal";
 
 type Initial = {
   workflows: Workflow[];
@@ -56,6 +58,7 @@ export function FlowApp({
   orgName,
   workspaces,
   role,
+  orgLocked = false,
   memberCount,
   buildSha,
   profile: initialProfile,
@@ -65,6 +68,7 @@ export function FlowApp({
   orgName: string;
   workspaces: Workspace[];
   role: WorkspaceRole;
+  orgLocked?: boolean;
   memberCount: number;
   buildSha: string;
   profile: Profile;
@@ -94,6 +98,7 @@ export function FlowApp({
   const [members, setMembers] = useState<{ id: string; email: string; name: string; role: string }[]>([]);
   const [guideOffer, setGuideOffer] = useState(false);
   const [comments, setComments] = useState<FlowComment[]>([]);
+  const [pins, setPins] = useState<FlowPin[]>([]);
   const [commentNodeId, setCommentNodeId] = useState<string | null>(null);
   useEffect(() => {
     if (!guideSeen()) setGuideOffer(true); // first visit only: offer, never force
@@ -177,7 +182,7 @@ export function FlowApp({
     const ids = (await sb.from("workflows").select("*").eq("org_id", orgId).order("created_at")).data as Workflow[] | null;
     const wf = ids ?? [];
     const wfIds = wf.map((w) => w.id);
-    const [a, l, n, e, rm, ph, pn, cm] = await Promise.all([
+    const [a, l, n, e, rm, ph, pn, cm, pk] = await Promise.all([
       sb.from("actors").select("*").eq("org_id", orgId).order("created_at"),
       wfIds.length ? sb.from("lanes").select("*").in("workflow_id", wfIds).order("position") : Promise.resolve({ data: [] }),
       wfIds.length ? sb.from("flow_nodes").select("*").in("workflow_id", wfIds) : Promise.resolve({ data: [] }),
@@ -186,7 +191,9 @@ export function FlowApp({
       wfIds.length ? sb.from("roadmap_phases").select("*").in("workflow_id", wfIds).order("position") : Promise.resolve({ data: [] }),
       wfIds.length ? sb.from("phase_nodes").select("*").in("workflow_id", wfIds) : Promise.resolve({ data: [] }),
       wfIds.length ? sb.from("flow_comments").select("*").in("workflow_id", wfIds).order("created_at") : Promise.resolve({ data: [] }),
+      wfIds.length ? sb.from("flow_pins").select("*").in("workflow_id", wfIds).order("created_at") : Promise.resolve({ data: [] }),
     ]);
+    setPins((pk.data ?? []) as FlowPin[]);
     setComments((cm.data ?? []) as FlowComment[]); // stays empty until the comments table exists
     setRoadmaps((rm.data ?? []) as Roadmap[]);
     setPhases((ph.data ?? []) as RoadmapPhase[]);
@@ -212,6 +219,85 @@ export function FlowApp({
     for (const c of comments) out[c.node_id] = (out[c.node_id] ?? 0) + 1;
     return out;
   }, [comments]);
+  // first load of the layer's pins (the page hands us everything else already)
+  useEffect(() => {
+    const ids = initial.workflows.map((w) => w.id);
+    if (!ids.length) return;
+    sb.from("flow_pins").select("*").in("workflow_id", ids).order("created_at").then((r) => setPins((r.data ?? []) as FlowPin[]));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  const wfPins = useMemo(() => pins.filter((p) => p.workflow_id === activeId), [pins, activeId]);
+  const wfPlans = useMemo(
+    () => ({
+      roadmaps: roadmaps.filter((r) => r.workflow_id === activeId),
+      phases: phases.filter((p) => p.workflow_id === activeId),
+      phaseNodes: phaseNodes.filter((p) => p.workflow_id === activeId),
+    }),
+    [roadmaps, phases, phaseNodes, activeId]
+  );
+  // everything pursued in this process, for the Pursuits list in the left panel
+  const pursuits = useMemo(
+    () => wfPins.filter((p) => p.pursued_at && p.status !== "dismissed").sort((a, b) => (a.pursued_at ?? "").localeCompare(b.pursued_at ?? "")),
+    [wfPins]
+  );
+  const [focusPin, setFocusPin] = useState<{ id: string; n: number } | null>(null);
+  const [pursuitOpen, setPursuitOpen] = useState<string | null>(null);
+  const addPin = useCallback(
+    async (a: { node_id?: string | null; edge_id?: string | null; kind: PinKind; body?: string; parent_id?: string | null; origin?: string | null; status?: FlowPin["status"]; pursued_at?: string | null; lineage?: FlowPin["lineage"] }) => {
+      if (!activeId) return null;
+      const { data, error } = await sb
+        .from("flow_pins")
+        .insert({ workflow_id: activeId, node_id: a.node_id ?? null, edge_id: a.edge_id ?? null, parent_id: a.parent_id ?? null, kind: a.kind, body: a.body ?? "", origin: a.origin ?? null, status: a.status ?? "open", pursued_at: a.pursued_at ?? null, lineage: a.lineage ?? null, author_name: profile.name || profile.email })
+        .select("*")
+        .single();
+      if (error || !data) { fail(t("Couldn't save the pin.", "Pin konnte nicht gespeichert werden.")); return null; }
+      setPins((ps) => [...ps, data as FlowPin]);
+      return data as FlowPin;
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [sb, activeId, profile.name, profile.email]
+  );
+  const patchPin = useCallback(
+    async (id: string, patch: Partial<FlowPin>) => {
+      setPins((ps) => ps.map((p) => (p.id === id ? { ...p, ...patch } : p)));
+      const { error } = await sb.from("flow_pins").update({ ...patch, updated_at: new Date().toISOString() }).eq("id", id);
+      if (error) fail(t("Couldn't save the pin.", "Pin konnte nicht gespeichert werden."));
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [sb]
+  );
+  const deletePin = useCallback(
+    async (id: string) => {
+      setPins((ps) => ps.filter((p) => p.id !== id && p.parent_id !== id));
+      const { error } = await sb.from("flow_pins").delete().eq("id", id);
+      if (error) fail(t("Couldn't delete the pin.", "Pin konnte nicht gelöscht werden."));
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [sb]
+  );
+  // every pursuit gets a three-word headline; Loom writes it once, you can change it any time
+  const headlining = useRef<Set<string>>(new Set());
+  const askHeadline = useCallback(async (p: Pick<FlowPin, "body" | "kind" | "lineage">, body?: string): Promise<string | null> => {
+    try {
+      const r = await fetch("/api/pursuit-headline", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ body: body ?? p.body, kind: p.kind, lineage: (p.lineage ?? []).map((l) => ({ kind: l.kind, text: l.text })) }),
+      });
+      const j = r.ok ? await r.json() : null;
+      return typeof j?.headline === "string" && j.headline.trim() ? (j.headline.trim() as string) : null;
+    } catch {
+      return null;
+    }
+  }, []);
+  useEffect(() => {
+    for (const p of pursuits) {
+      if (p.headline || headlining.current.has(p.id) || !p.body.trim()) continue;
+      headlining.current.add(p.id);
+      const fallback = p.body.trim().split(/\s+/).slice(0, 3).join(" ");
+      askHeadline(p).then((h) => patchPin(p.id, { headline: h ?? fallback }));
+    }
+  }, [pursuits, askHeadline, patchPin]);
   const commentNode = commentNodeId ? nodes.find((n) => n.id === commentNodeId) ?? null : null;
   async function addComment(body: string) {
     if (!commentNode) return;
@@ -230,6 +316,10 @@ export function FlowApp({
   }
   const wfEdges = useMemo(() => edges.filter((e) => e.workflow_id === activeId), [edges, activeId]);
   const active = workflows.find((w) => w.id === activeId) ?? null;
+  // locked = view only. A locked workspace locks every process in it; owners/admins flip either one.
+  const locked = orgLocked || !!active?.locked;
+  const lockSource: "workspace" | "process" | null = orgLocked ? "workspace" : active?.locked ? "process" : null;
+  const canLock = (role === "owner" || role === "admin") && !orgLocked;
 
   // ------------------------------------------------------------ undo/redo --
   // Snapshot history of the active workflow's steps and lines. Undo/redo diffs the
@@ -340,8 +430,9 @@ export function FlowApp({
       ...edges.flatMap((e) => [e.label ?? "", e.payload ?? "", e.channel ?? "", e.note ?? ""]),
       ...roadmaps.map((r) => r.name),
       ...phases.map((p) => p.name),
+      ...pins.flatMap((p) => [p.body, p.support ?? "", p.headline ?? ""]),
     ],
-    [workflows, lanes, actors, nodes, edges, roadmaps, phases]
+    [workflows, lanes, actors, nodes, edges, roadmaps, phases, pins]
   );
 
   // ------------------------------------------------------------ workflows --
@@ -378,6 +469,11 @@ export function FlowApp({
     }
   }
 
+  function toggleProcessLock() {
+    if (!active || !canLock) return;
+    void patchWorkflow(active.id, { locked: !active.locked });
+  }
+
   async function duplicateWorkflow(id: string) {
     const src = workflows.find((x) => x.id === id);
     if (!src) return;
@@ -385,7 +481,7 @@ export function FlowApp({
     const { id: _w, ...wfRest } = src as Workflow & Record<string, unknown>;
     const { data: wf, error } = await sb
       .from("workflows")
-      .insert({ ...wfRest, name: `${src.name} ${t("(copy)", "(Kopie)")}` })
+      .insert({ ...wfRest, locked: false, locked_at: null, locked_by: null, name: `${src.name} ${t("(copy)", "(Kopie)")}` })
       .select("*")
       .single();
     if (error || !wf) return fail(error?.message ?? t("Could not copy the process.", "Der Prozess konnte nicht kopiert werden."));
@@ -474,6 +570,53 @@ export function FlowApp({
     }
     await reload();
     fail(t("Lane copied below. Lines between lanes aren't copied.", "Bahn unten kopiert. Linien zwischen Bahnen werden nicht kopiert."), "info");
+  }
+
+  // ---- copy / paste steps (and the lines between them), within or across processes ----
+  const clipRef = useRef<{ nodes: FlowNode[]; edges: FlowEdge[]; laneName: Record<string, string> } | null>(null);
+  const pasteN = useRef(0);
+  function copyNodes(ids: string[]) {
+    const set = new Set(ids);
+    const ns = nodes.filter((n) => set.has(n.id) && n.type !== "start"); // one Start per process, so it stays behind
+    if (!ns.length) return fail(t("Select steps first: Ctrl-click, or Shift-drag a box.", "Zuerst Schritte auswählen: Strg-Klick oder Shift-Rahmen."), "info");
+    const keep = new Set(ns.map((n) => n.id));
+    const es = edges.filter((e) => keep.has(e.from_node_id) && keep.has(e.to_node_id));
+    const laneName: Record<string, string> = {};
+    lanes.forEach((l) => { laneName[l.id] = l.name; });
+    clipRef.current = { nodes: ns, edges: es, laneName };
+    pasteN.current = 0;
+    fail(`${t("Copied", "Kopiert")}: ${ns.length} ${t("steps", "Schritte")}, ${es.length} ${t("lines", "Linien")}. ${t("Paste with Ctrl+V.", "Einfügen mit Strg+V.")}`, "info");
+  }
+  async function pasteNodes() {
+    const c = clipRef.current;
+    if (!c || !activeId) return fail(t("Nothing copied yet. Select steps and press Ctrl+C.", "Noch nichts kopiert. Schritte auswählen und Strg+C drücken."), "info");
+    if (!wfLanes.length) return;
+    record();
+    pasteN.current += 1;
+    const xs = c.nodes.map((n) => n.x);
+    const sameProcess = c.nodes.every((n) => wfLanes.some((l) => l.id === n.lane_id));
+    const dx = (sameProcess ? pasteN.current : pasteN.current - 1) * (Math.max(...xs) - Math.min(...xs) + 260);
+    const laneFor = (n: FlowNode) => wfLanes.find((l) => l.id === n.lane_id) ?? wfLanes.find((l) => l.name === c.laneName[n.lane_id ?? ""]) ?? wfLanes[0];
+    const idMap: Record<string, string> = {};
+    const rows = c.nodes.map((n) => {
+      const { id: oldId, created_at: _c, updated_at: _u, ...rest } = n as unknown as Record<string, any>;
+      const nid = crypto.randomUUID();
+      idMap[oldId] = nid;
+      return { ...rest, id: nid, workflow_id: activeId, lane_id: laneFor(n).id, actor_id: actors.some((a) => a.id === n.actor_id) ? n.actor_id : null, x: Math.round(n.x + dx) };
+    });
+    const r1 = await sb.from("flow_nodes").insert(rows).select("*");
+    if (r1.error || !r1.data) { reload(); return fail(r1.error?.message ?? t("Could not paste the steps.", "Die Schritte konnten nicht eingefügt werden.")); }
+    setNodes((p) => [...p, ...(r1.data as FlowNode[])]);
+    if (c.edges.length) {
+      const erows = c.edges.map((e) => {
+        const { id: _i, created_at: _c, ...rest } = e as unknown as Record<string, any>;
+        return { ...rest, workflow_id: activeId, from_node_id: idMap[e.from_node_id], to_node_id: idMap[e.to_node_id] };
+      });
+      const r2 = await sb.from("flow_edges").insert(erows).select("*");
+      if (r2.error || !r2.data) { reload(); return fail(r2.error?.message ?? t("Could not paste the lines.", "Die Linien konnten nicht eingefügt werden.")); }
+      setEdges((p) => [...p, ...(r2.data as FlowEdge[])]);
+    }
+    fail(`${t("Pasted", "Eingefügt")}: ${rows.length} ${t("steps", "Schritte")}. ${t("Drag them into place; Ctrl+Z undoes.", "An die richtige Stelle ziehen; Strg+Z macht es rückgängig.")}`, "info");
   }
 
   async function patchLane(id: string, patch: Partial<Lane>) {
@@ -793,10 +936,9 @@ export function FlowApp({
           <span>THE <span className="text-orange">LOOM</span></span>
         </span>
         <span className="text-muted/40">|</span>
-        <WorkspaceSwitcher orgId={orgId} orgName={orgName} workspaces={workspaces} role={role} />
+        <WorkspaceSwitcher orgId={orgId} orgName={orgName} workspaces={workspaces} role={role} locked={orgLocked} />
         <CtaBanner />
         <div className="ml-auto flex items-center gap-3">
-          <MoreMenu onHelp={() => setGuideOpen(true)} />
           {peers.length > 1 && (
             <>
               <PresenceStack peers={peers} meId={profile.id} />
@@ -809,6 +951,7 @@ export function FlowApp({
 
       <div className="flex flex-1 min-h-0 relative">
         <LeftNav
+          orgLocked={orgLocked}
           workflows={workflows}
           activeWorkflowId={activeId}
           lanes={wfLanes}
@@ -833,6 +976,9 @@ export function FlowApp({
           roadmaps={wfRoadmaps}
           phases={wfPhases}
           phaseCounts={phaseCounts}
+          pursuits={pursuits}
+          onOpenPursuit={(id) => setPursuitOpen(id)}
+          onShowPursuit={(id) => setFocusPin({ id, n: Date.now() })}
           lens={lens}
           onLens={(l) => {
             setLens(l);
@@ -864,13 +1010,27 @@ export function FlowApp({
               canUndo={histCount.u > 0}
               canRedo={histCount.r > 0}
               onUndo={undo}
+              onCopyNodes={copyNodes}
+              onPasteNodes={pasteNodes}
+              onGuide={() => setGuideOpen(true)}
+              locked={locked}
+              lockSource={lockSource}
+              canLock={canLock}
+              onToggleLock={toggleProcessLock}
               onRedo={redo}
               onNotice={fail}
               onDeleteEdges={deleteEdges}
               focus={focus}
               onFocusToggle={(nodeId) => lens?.kind === "phase" && togglePhaseNode(lens.id, nodeId)}
               commentCounts={commentCounts}
+              pins={wfPins}
+              plans={wfPlans}
+              focusPin={focusPin}
+              onAddPin={addPin}
+              onPatchPin={patchPin}
+              onDeletePin={deletePin}
               onOpenComments={setCommentNodeId}
+              canProbe
             />
           ) : (
             <div className="h-full flex items-center justify-center p-6">
@@ -1033,6 +1193,21 @@ export function FlowApp({
           onClose={() => setCommentNodeId(null)}
         />
       )}
+      {pursuitOpen && (() => {
+        const pp = pins.find((x) => x.id === pursuitOpen && x.pursued_at);
+        if (!pp) return null;
+        return (
+          <PursuitModal
+            key={pp.id}
+            pin={pp}
+            onSave={(patch) => patchPin(pp.id, patch)}
+            onSuggest={(b) => askHeadline(pp, b)}
+            onShow={() => { setPursuitOpen(null); setFocusPin({ id: pp.id, n: Date.now() }); }}
+            onRemove={() => { setPursuitOpen(null); patchPin(pp.id, { pursued_at: null, lineage: null, headline: null }); }}
+            onClose={() => setPursuitOpen(null)}
+          />
+        );
+      })()}
       {guideOpen && <Guide start={guideStart} onClose={() => { setGuideOpen(false); setGuideStart(undefined); }} />}
       {accountOpen && <AccountModal profile={profile} onClose={() => setAccountOpen(false)} onSaved={setProfile} />}
       {teamOpen && <TeamPanel orgId={orgId} orgName={orgName} role={role} onClose={() => setTeamOpen(false)} />}

@@ -7,6 +7,8 @@ import { avatarSrc, colorOf, initialsOf, type Profile } from "@/lib/profile";
 import { useT } from "@/lib/i18n";
 import { LangToggle } from "@/components/lang-toggle";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { LegalModal } from "@/components/legal-modal";
+import { PRIVACY, PROCESSOR, TERMS } from "@/lib/legal";
 
 export function Avatar({ p, size = 30, online }: { p: { id: string; name: string; email: string; avatarColor: string | null; avatarUrl?: string | null }; size?: number; online?: boolean }) {
   const c = colorOf(p);
@@ -203,6 +205,7 @@ export function AccountModal({ profile, onClose, onSaved }: { profile: Profile; 
   const [pw2, setPw2] = useState("");
   const [msg, setMsg] = useState<{ kind: "ok" | "err"; text: string } | null>(null);
   const [busy, setBusy] = useState(false);
+  const [legal, setLegal] = useState<"privacy" | "terms" | "processor" | null>(null);
   const [photo, setPhoto] = useState<string | null>(profile.avatarUrl);
   const fileRef = useRef<HTMLInputElement>(null);
   useEffect(() => {
@@ -407,7 +410,14 @@ export function AccountModal({ profile, onClose, onSaved }: { profile: Profile; 
             </div>
           )}
         </div>
+
+        <div className="border-t border-white/10 pt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-[0.7rem] text-muted/80">
+          <button type="button" onClick={() => setLegal("privacy")} className="hover:text-orange hover:underline">{t("Privacy notice", "Datenschutzhinweis")}</button>
+          <button type="button" onClick={() => setLegal("terms")} className="hover:text-orange hover:underline">{t("Terms of use", "Nutzungsbedingungen")}</button>
+          <button type="button" onClick={() => setLegal("processor")} className="hover:text-orange hover:underline">{t("Processor note", "Auftragsverarbeitung")}</button>
+        </div>
       </div>
+      {legal && <LegalModal doc={legal === "privacy" ? PRIVACY : legal === "terms" ? TERMS : PROCESSOR} slug={legal} onClose={() => setLegal(null)} />}
     </div>
   );
 }

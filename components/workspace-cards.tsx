@@ -6,8 +6,9 @@ import { useT } from "@/lib/i18n";
 import type { Workspace } from "@/lib/workspaces";
 import { createClient } from "@/lib/supabase/client";
 import { AccountMenu, AccountModal } from "@/components/account";
-import { MoreMenu } from "@/components/more-menu";
+import { CtaBanner } from "@/components/flow/cta-banner";
 import { Guide } from "@/components/guide";
+import { LockIcon } from "@/components/icons";
 import { ContentI18nProvider, Tx } from "@/lib/content-i18n";
 import type { Profile } from "@/lib/profile";
 
@@ -103,7 +104,7 @@ export function WorkspaceCards({ workspaces, profile: initialProfile }: { worksp
   return (
     <ContentI18nProvider texts={contentTexts}>
     <div className="min-h-screen flex flex-col">
-      <div className="glass-chrome flex-none border-b border-white/10 h-[4.25rem] flex items-center gap-3 pl-5 pr-8">
+      <div className="relative glass-chrome flex-none border-b border-white/10 h-[4.25rem] flex items-center gap-3 pl-5 pr-8">
         <span className="flex items-center gap-3 font-semibold tracking-[0.16em] text-sm">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src="/loom-mark.svg" alt="" width={42} height={42} className="rounded-xl" />
@@ -111,21 +112,34 @@ export function WorkspaceCards({ workspaces, profile: initialProfile }: { worksp
         </span>
         <span className="text-muted/40">|</span>
         <span className="font-mono text-[0.78rem] tracking-[0.16em] text-muted">{t("WORKSPACES", "ARBEITSBEREICHE")}</span>
+        <CtaBanner />
         <div className="ml-auto flex items-center gap-3">
-          <MoreMenu onHelp={() => setGuideOpen(true)} />
           <AccountMenu profile={profile} onAccount={() => setAccountOpen(true)} onTeam={() => {}} onGuide={() => setGuideOpen(true)} onSignOut={signOut} />
         </div>
       </div>
     <main className="flex-1 flex items-start justify-center p-6 pt-12">
       <div className="w-full max-w-2xl">
-        <h1 className="text-lg font-medium mb-1">{t("Your workspaces", "Ihre Arbeitsbereiche")}</h1>
-        <p className="text-muted text-sm font-light mb-6">{t("Choose where to work.", "Wählen Sie, wo Sie arbeiten möchten.")}</p>
+        <h1 className="text-lg font-medium mb-1">
+          {(() => {
+            const first = (profile.name || "").trim().split(/\s+/)[0] || profile.email.split("@")[0];
+            return t(`Welcome ${first}!`, `Willkommen ${first}!`);
+          })()}
+        </h1>
+        <p className="text-muted text-sm font-light mb-6">{t("Here are your workspaces...", "Hier sind Ihre Arbeitsbereiche...")}</p>
         <div className="grid gap-3 sm:grid-cols-2">
           {list.map((w) => (
             <div key={w.id} className="glass rounded-2xl p-5 flex flex-col gap-4">
               <div>
                 <div className="text-[0.95rem] font-medium truncate"><Tx text={w.name} /></div>
-                <div className="text-[0.7rem] font-mono tracking-wider text-muted/70 mt-0.5">{roleLabel[w.role].toUpperCase()}</div>
+                <div className="text-[0.7rem] font-mono tracking-wider text-muted/70 mt-0.5 flex items-center gap-2">
+                  <span>{roleLabel[w.role].toUpperCase()}</span>
+                  {w.locked && (
+                    <span className="inline-flex items-center gap-1 text-orange" title={t("Locked: view only until an owner or admin unlocks it", "Gesperrt: nur Ansicht, bis ein Eigentümer oder Admin entsperrt")}>
+                      <LockIcon size={11} />
+                      {t("LOCKED", "GESPERRT")}
+                    </span>
+                  )}
+                </div>
                 {w.description && <p className="mt-2 text-[0.85rem] text-muted font-normal leading-snug line-clamp-3 whitespace-pre-line"><Tx text={w.description} /></p>}
                 {w.lastEdited && (
                   <div className="mt-2 text-[0.74rem] text-muted/70 font-normal" suppressHydrationWarning>

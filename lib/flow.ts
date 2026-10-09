@@ -21,6 +21,8 @@ export type Workflow = {
   description: string | null;
   color: string | null;
   ai_context?: string | null;
+  locked?: boolean; // owners/admins can lock a process: view-only until unlocked
+  locked_at?: string | null;
 };
 
 export type Lane = {
@@ -41,6 +43,8 @@ export type FlowNode = {
   description: string | null;
   x: number;
   y_offset: number;
+  duration_minutes?: number | null; // how long the step itself takes
+  wait_minutes?: number | null; // how long work waits before the step starts
 };
 
 // ---- roadmaps: named plans, each split into colored phases that group steps ----
@@ -182,5 +186,29 @@ export type FlowComment = {
   author_id: string;
   author_name: string;
   body: string;
+  created_at: string;
+};
+
+// ---- the layer (z=1): questions, findings and ideas pinned to steps and lines ----
+export type PinKind = "question" | "finding" | "idea";
+export type LineageStep = { kind: string; text: string; de?: string };
+export type Lineage = LineageStep[];
+
+export type FlowPin = {
+  id: string;
+  workflow_id: string;
+  node_id: string | null;
+  edge_id: string | null;
+  parent_id: string | null;
+  kind: PinKind;
+  body: string;
+  status: "open" | "active" | "done" | "dismissed";
+  origin: string | null; // key of the signal this pin came from, if any
+  support: string | null; // an idea's short "because…" (reason or evidence)
+  phase_id: string | null; // legacy (plans were retired in favour of pursuits)
+  pursued_at: string | null; // set when the pin is pursued; the Pursuits list is every pin with this
+  headline: string | null; // a three-word label for a pursuit (Loom writes it, you can change it)
+  lineage: Lineage | null; // where it came from, frozen at the moment it was pursued
+  author_name: string;
   created_at: string;
 };

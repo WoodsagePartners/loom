@@ -22,7 +22,7 @@ const LINES: [string, string][] = [
   ["Begin with the Why. The How will thank you later.", "Beginnen Sie mit dem Warum. Das Wie dankt es Ihnen später."],
 ];
 
-const SHOW_MS = 8000;
+const SHOW_MS = 7000;
 const GAP_MS = 5 * 60 * 1000; // at most once every ~5 minutes
 const FIRST_MS = 20000;
 
@@ -51,11 +51,13 @@ export function CtaBanner() {
   useEffect(() => {
     if (hidden) return;
     let on = false;
+    let shown = 0;
     let timer: ReturnType<typeof setTimeout>;
     const step = () => {
       on = !on;
+      // swap the text only while the pill is invisible (as it fades IN), never during the fade-out
+      if (on && shown++ > 0) setI((x) => x + 1);
       setVisible(on);
-      if (!on) setI((x) => x + 1);
       timer = setTimeout(step, on ? SHOW_MS : GAP_MS);
     };
     timer = setTimeout(step, FIRST_MS);
@@ -69,14 +71,15 @@ export function CtaBanner() {
 
   return (
     <div
-      className="absolute inset-0 z-[60] hidden md:flex items-center justify-center gap-4 px-8 text-[0.8rem] font-light text-text/85 transition-opacity duration-1000"
-      style={{ background: "var(--tint-solid)", opacity: visible ? 1 : 0, pointerEvents: visible ? "auto" : "none" }}
+      className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[60] hidden md:flex items-center gap-3 max-w-[56vw] rounded-full px-4 py-1.5 text-[0.76rem] font-light text-text/85 shadow-lg backdrop-blur-md transition-opacity duration-[1800ms] ease-in-out"
+      style={{ background: "color-mix(in srgb, var(--tint-solid) 88%, transparent)", border: "1px solid rgb(var(--c-white) / .12)", opacity: visible ? 1 : 0, pointerEvents: "none" }}
       aria-hidden={!visible}
     >
       <span className="truncate">{line}</span>
       <a
         href="mailto:ron@struinova.com?subject=Loom%20%E2%80%93%20let%27s%20talk"
         className="text-[0.64rem] text-muted/70 hover:text-orange hover:underline whitespace-nowrap"
+        style={{ pointerEvents: visible ? "auto" : "none" }}
       >
         {t("Talk to us", "Sprechen wir")}
       </a>
@@ -89,6 +92,7 @@ export function CtaBanner() {
         }}
         aria-label={t("Dismiss", "Schließen")}
         className="opacity-40 hover:opacity-100"
+        style={{ pointerEvents: visible ? "auto" : "none" }}
       >
         ✕
       </button>
