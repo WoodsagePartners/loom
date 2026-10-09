@@ -346,10 +346,10 @@ function PinDot({ item, unsupported = false, x, y, active, onClick }: { item: It
   );
 }
 
-function Card({ x, y, onClose, children, width = 250 }: { x: number; y: number; onClose: () => void; children: ReactNode; width?: number }) {
+function Card({ x, y, onClose, children, width = 320 }: { x: number; y: number; onClose: () => void; children: ReactNode; width?: number }) {
   return (
     <div
-      className="nodrag nopan nowheel glass glass-bright rounded-xl p-2.5"
+      className="nodrag nopan nowheel glass glass-bright rounded-xl p-3.5"
       onClick={(e) => e.stopPropagation()}
       onDoubleClick={(e) => e.stopPropagation()}
       style={{ position: "absolute", left: x - 12, top: y + 18, width, pointerEvents: "auto", zIndex: 60, background: "rgba(12,16,26,0.97)", borderColor: "rgba(248,153,29,.45)", boxShadow: "0 18px 30px -8px rgba(0,0,0,.65)" }}
@@ -366,23 +366,23 @@ function SignalCard({ sig, x, y, onClose, onAsk, onPursue, onPromote, onDismiss 
   const color = sig.level === "high" ? SIGNAL_HIGH : SIGNAL_WARN;
   return (
     <Card x={x} y={y} onClose={onClose}>
-      <div className="font-mono text-[0.58rem] tracking-[0.14em]" style={{ color }}>▲ {t("SIGNAL", "SIGNAL")} · {sig.level === "high" ? t("LIKELY HURTING", "VERMUTLICH SCHÄDLICH") : t("WORTH A LOOK", "BEACHTENSWERT")}</div>
-      <div className="mt-1.5 text-[0.76rem] text-text/90 leading-snug">{t(sig.en, sig.de)}</div>
-      <div className="mt-1 text-[0.66rem] text-muted">{t("Loom spotted this from your map. It's only a suggestion until you act on it.", "Loom hat das in Ihrer Karte entdeckt. Es bleibt ein Vorschlag, bis Sie handeln.")}</div>
+      <div className="font-mono text-[0.7rem] tracking-[0.14em]" style={{ color }}>▲ {t("SIGNAL", "SIGNAL")} · {sig.level === "high" ? t("LIKELY HURTING", "VERMUTLICH SCHÄDLICH") : t("WORTH A LOOK", "BEACHTENSWERT")}</div>
+      <div className="mt-1.5 text-[0.95rem] text-text/90 leading-snug">{t(sig.en, sig.de)}</div>
+      <div className="mt-1 text-[0.82rem] text-muted">{t("Loom spotted this from your map. It's only a suggestion until you act on it.", "Loom hat das in Ihrer Karte entdeckt. Es bleibt ein Vorschlag, bis Sie handeln.")}</div>
       {busy ? (
-        <div className="mt-2.5 flex items-center gap-2 text-[0.72rem] text-orange">
+        <div className="mt-2.5 flex items-center gap-2 text-[0.9rem] text-orange">
           <span className="inline-block w-3 h-3 rounded-full border-2 border-orange/30 border-t-orange animate-spin" aria-hidden />
           {t("Loom is phrasing a question…", "Loom formuliert eine Frage …")}
         </div>
       ) : (
         <div className="mt-2.5 flex flex-col gap-1.5">
-          <button onClick={async () => { setBusy(true); await onAsk(); setBusy(false); }} className="rounded-full border border-orange/60 bg-orange/10 text-orange text-[0.7rem] px-3 py-1.5 hover:bg-orange/20 text-left">
+          <button onClick={async () => { setBusy(true); await onAsk(); setBusy(false); }} className="rounded-full border border-orange/60 bg-orange/10 text-orange text-[0.88rem] px-3 py-1.5 hover:bg-orange/20 text-left">
             ✦ {t("Ask Loom to make this a question…", "Loom bitten, daraus eine Frage zu machen …")}
           </button>
-          <button onClick={onPursue} className="rounded-full border border-amber-300/50 text-amber-200 text-[0.7rem] px-3 py-1.5 hover:bg-amber-300/10 text-left">
+          <button onClick={onPursue} className="rounded-full border border-amber-300/50 text-amber-200 text-[0.88rem] px-3 py-1.5 hover:bg-amber-300/10 text-left">
             ☆ {t("Pursue this as it is", "So verfolgen, wie es ist")}
           </button>
-          <div className="flex gap-3 text-[0.66rem] text-muted px-1">
+          <div className="flex gap-3 text-[0.82rem] text-muted px-1">
             <button onClick={onPromote} className="hover:text-text">{t("Use as written", "So übernehmen")}</button>
             <button onClick={onDismiss} className="hover:text-text">{t("Dismiss", "Verwerfen")}</button>
           </div>
@@ -443,9 +443,9 @@ function PinCard({ pin, pins, x, y, onPursue, onUnpursue, onPatch, onDelete, onC
   return (
     <Card x={x} y={y} onClose={onClose}>
       <div className="flex items-center gap-2 pr-4">
-        <span className="font-mono text-[0.58rem] tracking-[0.14em]" style={{ color: k.color }}>{k.glyph} {t(k.en, k.de).toUpperCase()}</span>
+        <span className="font-mono text-[0.7rem] tracking-[0.14em]" style={{ color: k.color }}>{k.glyph} {t(k.en, k.de).toUpperCase()}</span>
         {pin.kind === "idea" && !supported && (
-          <span className="font-mono text-[0.56rem] tracking-wider text-amber-300/80 border border-amber-300/30 rounded-full px-1.5 py-px">{t("NO EVIDENCE YET", "NOCH KEIN BELEG")}</span>
+          <span className="font-mono text-[0.68rem] tracking-wider text-amber-300/80 border border-amber-300/30 rounded-full px-1.5 py-px">{t("NO EVIDENCE YET", "NOCH KEIN BELEG")}</span>
         )}
       </div>
       <textarea
@@ -456,10 +456,10 @@ function PinCard({ pin, pins, x, y, onPursue, onUnpursue, onPatch, onDelete, onC
         onBlur={() => { const v = draft.trim(); if (v !== pin.body && v) onPatch(pin.id, { body: v }); }}
         rows={Math.min(9, Math.max(3, Math.ceil(draft.length / 30)))}
         placeholder={pin.kind === "question" ? t("What do we want to understand?", "Was möchten wir verstehen?") : pin.kind === "finding" ? t("What did we find? Add the evidence.", "Was haben wir gefunden? Belege ergänzen.") : t("What could we change?", "Was könnten wir ändern?")}
-        className="mt-2 w-full resize-none bg-black/40 border border-white/15 rounded-md text-[0.78rem] text-text px-2 py-1.5 outline-none focus:border-orange/60 placeholder:text-text/40"
+        className="mt-2 w-full resize-none bg-black/40 border border-white/15 rounded-md text-[0.95rem] text-text px-2 py-1.5 outline-none focus:border-orange/60 placeholder:text-text/40"
       />
       {draft.trim() && tx(draft) !== draft.trim() && (
-        <div className="mt-1.5 text-[0.7rem] text-text/70 leading-snug italic">{tx(draft)}</div>
+        <div className="mt-1.5 text-[0.88rem] text-text/70 leading-snug italic">{tx(draft)}</div>
       )}
       {pin.kind === "idea" && !pin.parent_id && (
         <input
@@ -467,11 +467,11 @@ function PinCard({ pin, pins, x, y, onPursue, onUnpursue, onPatch, onDelete, onC
           onChange={(e) => setWhy(e.target.value)}
           onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); onClose(); } }}
           placeholder={t("Because… (a reason or some evidence)", "Weil … (ein Grund oder ein Beleg)")}
-          className="mt-1.5 w-full bg-black/30 border border-white/10 rounded-md text-[0.72rem] text-text px-2 py-1 outline-none focus:border-orange/60 placeholder:text-text/35"
+          className="mt-1.5 w-full bg-black/30 border border-white/10 rounded-md text-[0.9rem] text-text px-2 py-1 outline-none focus:border-orange/60 placeholder:text-text/35"
         />
       )}
       {statuses.length > 0 && (
-        <div className="mt-2 flex rounded-full border border-white/15 overflow-hidden text-[0.64rem]">
+        <div className="mt-2 flex rounded-full border border-white/15 overflow-hidden text-[0.8rem]">
           {statuses.map((st) => (
             <button
               key={st.key}
@@ -485,7 +485,7 @@ function PinCard({ pin, pins, x, y, onPursue, onUnpursue, onPatch, onDelete, onC
       )}
       <div className="mt-2">
         {pin.pursued_at ? (
-          <div className="rounded-lg border border-amber-300/50 bg-amber-300/10 px-2 py-1.5 text-[0.7rem]">
+          <div className="rounded-lg border border-amber-300/50 bg-amber-300/10 px-2 py-1.5 text-[0.88rem]">
             <div className="flex items-center gap-2 text-amber-200">
               <span>★ {t("Pursued", "Verfolgt")}</span>
               <button onClick={() => onUnpursue(pin)} className="ml-auto text-amber-200/70 hover:text-text">{t("Remove", "Entfernen")}</button>
@@ -497,13 +497,13 @@ function PinCard({ pin, pins, x, y, onPursue, onUnpursue, onPatch, onDelete, onC
             onClick={() => { const v = draft.trim(); if (v && v !== pin.body) onPatch(pin.id, { body: v }); onPursue({ ...pin, body: v || pin.body }); }}
             disabled={!draft.trim()}
             title={t("Collect this in Pursuits, with where it came from", "In den Vorhaben sammeln, samt Herkunft")}
-            className="w-full rounded-full border border-amber-300/50 text-amber-200 hover:bg-amber-300/10 disabled:opacity-40 disabled:hover:bg-transparent text-[0.72rem] py-1"
+            className="w-full rounded-full border border-amber-300/50 text-amber-200 hover:bg-amber-300/10 disabled:opacity-40 disabled:hover:bg-transparent text-[0.9rem] py-1"
           >
             ☆ {t("Pursue", "Verfolgen")}
           </button>
         )}
       </div>
-      <div className="mt-2 flex items-center gap-2 text-[0.68rem]">
+      <div className="mt-2 flex items-center gap-2 text-[0.82rem]">
         {pin.kind === "question" && (
           <>
             <button onClick={() => child("finding")} className="text-muted hover:text-text">+ {t("Finding", "Befund")}</button>
@@ -514,7 +514,7 @@ function PinCard({ pin, pins, x, y, onPursue, onUnpursue, onPatch, onDelete, onC
         {pin.kind === "idea" && !pin.parent_id && !hasFinding && <button onClick={() => child("finding")} className="text-muted hover:text-text">+ {t("Finding", "Befund")}</button>}
         <button onClick={() => { onDelete(pin.id); onClose(); }} className="ml-auto text-muted hover:text-red-300">{t("Delete", "Löschen")}</button>
       </div>
-      {pin.author_name && <div className="mt-1 text-[0.6rem] text-muted/70">{pin.author_name}</div>}
+      {pin.author_name && <div className="mt-1 text-[0.72rem] text-muted/70">{pin.author_name}</div>}
     </Card>
   );
 }

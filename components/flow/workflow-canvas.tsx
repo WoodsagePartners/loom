@@ -281,7 +281,7 @@ const FlowNodeView = memo(function FlowNodeView({ data, selected, dragging, posi
         outline: selected ? "2px solid rgba(248,153,29,.85)" : "none",
         outlineOffset: 4,
         borderRadius: 18,
-        opacity: data.dim ? (data.soft ? 0.75 : 0.2) : 1,
+        opacity: data.dim ? (data.soft ? 0.6 : 0.2) : 1,
         filter: data.dim && !data.soft ? "grayscale(0.8)" : undefined,
         transition: "opacity .35s ease, filter .35s ease",
         cursor: data.selecting ? "pointer" : undefined,
@@ -760,12 +760,12 @@ const FlowEdgeView = memo(function FlowEdgeView(props: EdgeProps<RFEdge>) {
         id={id}
         path={path}
         markerEnd={markerEnd}
-        style={{ stroke, strokeWidth: (WEIGHTS.find((w) => w.key === sm?.weight)?.px ?? 1.9) + (selectedRaw ? 0.9 : 0), filter: selectedRaw ? `drop-shadow(0 0 5px ${stroke})` : undefined, strokeDasharray: kindInfo.dash, strokeLinecap: kindInfo.dash ? "round" : "butt", opacity: data?.dim ? (data.soft ? 0.7 : 0.12) : 1, transition: "opacity .35s ease" }}
+        style={{ stroke, strokeWidth: (WEIGHTS.find((w) => w.key === sm?.weight)?.px ?? 1.9) + (selectedRaw ? 0.9 : 0), filter: selectedRaw ? `drop-shadow(0 0 5px ${stroke})` : undefined, strokeDasharray: kindInfo.dash, strokeLinecap: kindInfo.dash ? "round" : "butt", opacity: data?.dim ? (data.soft ? 0.5 : 0.12) : 1, transition: "opacity .35s ease" }}
       />
       <EdgeLabelRenderer>
         <div
           className="nodrag nopan absolute"
-          style={{ transform: `translate(-50%, -50%) translate(${labelX}px, ${labelY}px)`, pointerEvents: "all" }}
+          style={{ transform: `translate(-50%, -50%) translate(${labelX}px, ${labelY}px)`, pointerEvents: "all", opacity: data?.dim ? (data.soft ? 0.6 : 0.2) : 1, transition: "opacity .35s ease" }}
           onMouseEnter={() => {
             if (edgeTimer.current) clearTimeout(edgeTimer.current);
             edgeTimer.current = setTimeout(() => setHover(true), HOVER_DELAY);
@@ -1583,7 +1583,7 @@ function Inner(props: CanvasProps) {
       {props.canProbe && (
         <div className="absolute top-3 right-3 z-30 flex items-start gap-2">
           {drawer && (
-            <div className="glass glass-bright rounded-xl p-3 w-[17rem] text-[0.76rem]" style={{ background: theme === "light" ? "rgba(255,255,255,0.98)" : "rgba(12,16,26,0.98)" }}>
+            <div className="glass glass-bright rounded-xl p-3 w-[20rem] text-[0.76rem]" style={{ background: theme === "light" ? "rgba(255,255,255,0.98)" : "rgba(12,16,26,0.98)" }}>
               <div className="font-mono text-[0.6rem] tracking-[0.16em] text-orange mb-2">
                 {drawer === "inquiry" ? t("INQUIRY", "UNTERSUCHUNG") : drawer === "intelligence" ? t("INTELLIGENCE", "INTELLIGENZ") : t("INNOVATION", "INNOVATION")}
               </div>
