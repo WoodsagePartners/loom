@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, type ReactNode } from "react";
-import { EDGE_KINDS, NODE_TYPES, PALETTE } from "@/lib/flow";
+import { EDGE_KINDS, NODE_TYPES, PALETTE, ROLE_PALETTE } from "@/lib/flow";
 import { ShapeIcon } from "@/components/flow/shapes";
 import { useT } from "@/lib/i18n";
 import { HandIcon, LockIcon, PencilIcon, PointerIcon } from "@/components/icons";
@@ -187,7 +187,7 @@ const CARDS: Card[] = [
       "Shared roles keep every team speaking the same language, while each workspace still has room for what is special about its own work.",
       "Gemeinsame Rollen sorgen dafür, dass alle Teams dieselbe Sprache sprechen, und jeder Arbeitsbereich behält Platz für das Besondere seiner Arbeit.",
     ],
-    art: <span className="flex gap-2"><ShapeIcon kind="team" color="#5f8bb3" size={28} /><ShapeIcon kind="system" color="#5a8a6b" size={28} /><ShapeIcon kind="person" color="#d08a3c" size={28} /></span>,
+    art: <span className="flex gap-2"><ShapeIcon kind="team" color={ROLE_PALETTE[0]} size={28} /><ShapeIcon kind="system" color={ROLE_PALETTE[1]} size={28} /><ShapeIcon kind="person" color={ROLE_PALETTE[2]} size={28} /></span>,
   },
   {
     term: ["Hide unused roles", "Ungenutzte Rollen ausblenden"],
@@ -430,7 +430,7 @@ export const ADMIN_CARDS: Card[] = [
       "A shared vocabulary of roles makes processes from different teams comparable.",
       "Ein gemeinsames Vokabular an Rollen macht Prozesse verschiedener Teams vergleichbar.",
     ],
-    art: <span className="flex gap-2"><ShapeIcon kind="team" color="#5f8bb3" size={28} /><ShapeIcon kind="ai" color="#8a7bb0" size={28} /></span>,
+    art: <span className="flex gap-2"><ShapeIcon kind="team" color={ROLE_PALETTE[0]} size={28} /><ShapeIcon kind="ai" color={ROLE_PALETTE[3]} size={28} /></span>,
   },
   {
     term: ["License and term", "Lizenz und Laufzeit"],
@@ -467,7 +467,7 @@ export function GuideDeck({ cards, heading }: { cards: Card[]; heading: string }
   return (
     <div className="glass rounded-2xl p-5">
       <div className="font-mono text-label tracking-[0.16em] text-muted/80 mb-4">{heading} · {i + 1}/{cards.length}</div>
-      <div className="h-12 flex items-center mb-2">{c.art}</div>
+      <div className="min-h-14 flex items-center mb-3">{c.art}</div>
       <h3 className="text-lg font-semibold mb-2">{t(...c.term)}</h3>
       <p className="text-body leading-relaxed mb-3">{t(...c.what)}</p>
       <div className="rounded-xl border border-orange/25 bg-orange/[0.07] px-3.5 py-2.5">
@@ -475,13 +475,13 @@ export function GuideDeck({ cards, heading }: { cards: Card[]; heading: string }
         <p className="text-small leading-relaxed text-text/90">{t(...c.why)}</p>
       </div>
       <div className="flex items-center justify-between mt-5">
-        <button onClick={() => setI((x) => Math.max(0, x - 1))} disabled={i === 0} className="text-small text-muted hover:text-text disabled:opacity-30">‹ {t("Back", "Zurück")}</button>
-        <div className="flex gap-1.5 flex-wrap justify-center">
-          {cards.map((_, k) => (
-            <button key={k} onClick={() => setI(k)} aria-label={`${k + 1}`} className="w-1.5 h-1.5 rounded-full transition-all" style={{ background: k === i ? THEME.orange : "rgb(var(--c-white) / .25)", transform: k === i ? "scale(1.4)" : undefined }} />
-          ))}
-        </div>
-        <button onClick={() => setI((x) => (last ? 0 : x + 1))} className="text-small text-orange hover:underline">{last ? t("Start over", "Von vorn") : t("Next", "Weiter")} ›</button>
+        <button onClick={() => setI((x) => Math.max(0, x - 1))} disabled={i === 0} className="text-small text-muted hover:text-text disabled:opacity-30 whitespace-nowrap">‹ {t("Back", "Zurück")}</button>
+        <button onClick={() => setI((x) => (last ? 0 : x + 1))} className="text-small text-orange hover:underline whitespace-nowrap">{last ? t("Start over", "Von vorn") : t("Next", "Weiter")} ›</button>
+      </div>
+      <div className="flex gap-1.5 flex-wrap justify-center mt-3">
+        {cards.map((_, k) => (
+          <button key={k} onClick={() => setI(k)} aria-label={`${k + 1}`} className="w-1.5 h-1.5 rounded-full transition-all" style={{ background: k === i ? THEME.orange : "rgb(var(--c-white) / .25)", transform: k === i ? "scale(1.4)" : undefined }} />
+        ))}
       </div>
     </div>
   );
@@ -525,7 +525,7 @@ export function Guide({ onClose, start }: { onClose: () => void; start?: string 
           <button onClick={close} className="text-muted hover:text-text text-lg leading-none" aria-label={t("Close", "Schließen")}>×</button>
         </div>
 
-        <div className="h-14 flex items-center mb-3">{c.art}</div>
+        <div className="min-h-14 flex items-center mb-3">{c.art}</div>
         <h2 className="text-xl font-semibold mb-3">{t(...c.term)}</h2>
         <p className="text-lead leading-relaxed mb-3">{t(...c.what)}</p>
         <div className="rounded-xl border border-orange/25 bg-orange/[0.07] px-3.5 py-2.5">

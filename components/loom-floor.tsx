@@ -20,7 +20,7 @@ const gradient = { background: "linear-gradient(135deg, rgba(248,153,29,.9), rgb
 const input = "bg-black/30 border border-white/10 rounded-xl text-text text-sm px-3 py-2 outline-none focus:border-orange/60";
 const label = "font-mono text-micro tracking-[0.14em] uppercase text-muted/80";
 
-type Tab = "workspaces" | "pursuits" | "users" | "roles" | "organization" | "license" | "agreements";
+type Tab = "workspaces" | "pursuits" | "users" | "roles" | "organization" | "license" | "agreements" | "help";
 
 function Bar({ used, max }: { used: number; max: number }) {
   const pct = Math.min(100, max ? (used / max) * 100 : 100);
@@ -170,6 +170,7 @@ export function LoomFloor({ orgs, greeting, memberIds, onOpen, children }: { org
     ["organization", t("Organization", "Organisation")],
     ["license", t("License", "Lizenz")],
     ["agreements", t("Agreements", "Vereinbarungen")],
+    ["help", t("Help", "Hilfe")],
   ];
 
   return (
@@ -440,6 +441,21 @@ export function LoomFloor({ orgs, greeting, memberIds, onOpen, children }: { org
             <p className="text-caption text-muted">{t("Need more workspaces or users, or a renewal? Write to ron@struinova.com.", "Mehr Arbeitsbereiche oder Benutzer, oder eine Verlängerung? Schreiben Sie an ron@struinova.com.")}</p>
           </div>
           <RedeemBox />
+        </div>
+      )}
+
+      {tab === "help" && (
+        <div className="grid gap-6 lg:grid-cols-2 items-start">
+          <div>
+            <div className={label + " mb-2"}>{t("Everyone: how Loom works", "Für alle: so funktioniert Loom")}</div>
+            <GuideDeck cards={GENERAL_CARDS} heading={t("HOW LOOM WORKS", "SO FUNKTIONIERT LOOM")} />
+          </div>
+          {(ov.my_role === "owner" || ov.my_role === "admin") && (
+            <div>
+              <div className={label + " mb-2 !text-orange"}>{t("Owners & administrators only", "Nur für Eigentümer & Administratoren")}</div>
+              <GuideDeck cards={ADMIN_CARDS} heading={t("RUNNING YOUR ORGANIZATION", "IHRE ORGANISATION FÜHREN")} />
+            </div>
+          )}
         </div>
       )}
 
