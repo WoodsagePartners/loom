@@ -152,10 +152,10 @@ export function WorkspaceSwitcher({
           <button
             type="button"
             role="menuitem"
-            onClick={() => router.push("/workspaces")}
+            onClick={() => router.push("/loomfloor")}
             className="w-full px-2.5 py-2 text-left text-[0.82rem] rounded-lg text-muted hover:text-text hover:bg-white/10"
           >
-            {t("← All workspaces", "← Alle Arbeitsbereiche")}
+            {t("← Return to the Loom Floor", "← Zurück zum Loom Floor")}
           </button>
         </div>
       )}

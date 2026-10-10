@@ -53,7 +53,7 @@ export function AdminView({ data }: { data: AdminData }) {
         <span className="font-semibold tracking-[0.16em] text-sm">THE <span className="text-orange">LOOM</span></span>
         <span className="text-muted/40">|</span>
         <span className="font-mono text-[0.78rem] tracking-[0.16em] text-muted">{t("ADMINISTRATOR", "ADMINISTRATOR")}</span>
-        <a href="/workspaces" className="ml-auto text-[0.78rem] text-muted hover:text-orange">{t("← Loom Floor", "← Loom Floor")}</a>
+        <a href="/loomfloor" className="ml-auto text-[0.78rem] text-muted hover:text-orange">{t("← Loom Floor", "← Loom Floor")}</a>
       </div>
       <main className="flex-1 w-full max-w-5xl mx-auto p-6 pt-10">
         <div className="flex gap-2 mb-6">

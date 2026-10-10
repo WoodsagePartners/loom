@@ -12,7 +12,8 @@ import { LockIcon } from "@/components/icons";
 import { ContentI18nProvider, Tx } from "@/lib/content-i18n";
 import type { Profile } from "@/lib/profile";
 import type { OrgView } from "@/lib/organizations";
-import { OrganizationSection, RedeemBox } from "@/components/organization-section";
+import { RedeemBox } from "@/components/organization-section";
+import { LoomFloor } from "@/components/loom-floor";
 import { LegalModal } from "@/components/legal-modal";
 import { PRIVACY, PROCESSOR, TERMS } from "@/lib/legal";
 
@@ -93,11 +94,25 @@ export function WorkspaceCards({ workspaces, profile: initialProfile, organizati
   const [list, setList] = useState(workspaces);
   const [target, setTarget] = useState<Workspace | null>(null);
   const [opening, setOpening] = useState<string | null>(null);
-  const contentTexts = useMemo(() => workspaces.flatMap((w) => [w.name, w.description ?? ""]).filter(Boolean), [workspaces]);
+  const contentTexts = useMemo(
+    () =>
+      [
+        ...workspaces.flatMap((w) => [w.name, w.description ?? ""]),
+        ...organizations.flatMap((o) => [
+          ...o.workspaces.flatMap((w) => [w.name, w.description ?? "", w.goal ?? "", ...w.processes]),
+          ...o.pursuits.flatMap((p) => [p.headline ?? "", p.workspace, p.process]),
+          ...o.roles.flatMap((r) => [r.name, r.role ?? "", r.workspace]),
+        ]),
+      ].filter(Boolean),
+    [workspaces, organizations]
+  );
   async function signOut() {
     await createClient().auth.signOut();
     window.location.assign("/");
   }
+  const firstName = (profile.name || "").trim().split(/\s+/)[0] || profile.email.split("@")[0];
+  const orgWsIds = new Set(organizations.flatMap((o) => o.workspaces.map((w) => w.id)));
+  const shown = list.filter((w) => !orgWsIds.has(w.id));
   const roleLabel = { owner: t("Owner", "Eigentümer"), admin: t("Admin", "Admin"), member: t("Member", "Mitglied") };
 
   async function open(id: string, join = false) {
@@ -113,44 +128,14 @@ export function WorkspaceCards({ workspaces, profile: initialProfile, organizati
     router.push("/dashboard");
   }
 
-  return (
-    <ContentI18nProvider texts={contentTexts}>
-    <div className="min-h-screen flex flex-col">
-      <div className="relative glass-chrome flex-none border-b border-white/10 h-[4.25rem] flex items-center gap-3 pl-5 pr-8">
-        <span className="flex items-center gap-3 font-semibold tracking-[0.16em] text-sm">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/loom-mark.svg" alt="" width={42} height={42} className="rounded-xl" />
-          <span>THE <span className="text-orange">LOOM</span></span>
-        </span>
-        <span className="text-muted/40">|</span>
-        <span className="font-mono text-[0.78rem] tracking-[0.16em] text-muted">{t("LOOM FLOOR", "LOOM FLOOR")}</span>
-        <CtaBanner />
-        <div className="ml-auto flex items-center gap-3">
-          {isAdmin && <a href="/admin" className="font-mono text-[0.68rem] tracking-[0.16em] text-muted hover:text-orange">{t("ADMIN", "ADMIN")}</a>}
-          <AccountMenu profile={profile} onAccount={() => setAccountOpen(true)} onTeam={() => {}} onGuide={() => setGuideOpen(true)} onSignOut={signOut} />
-        </div>
-      </div>
-    <main className="flex-1 flex items-start justify-center p-6 pt-12">
-      <div className="w-full max-w-3xl">
+  const freeBlock = (
+    <>
         <h1 className="text-lg font-medium mb-1">
-          {(() => {
-            const first = (profile.name || "").trim().split(/\s+/)[0] || profile.email.split("@")[0];
-            return t(`Welcome ${first}!`, `Willkommen ${first}!`);
-          })()}
+          {organizations.length > 0 ? t("Your other workspaces", "Ihre weiteren Arbeitsbereiche") : t(`Welcome ${firstName}!`, `Willkommen ${firstName}!`)}
         </h1>
-        <p className="text-muted text-sm font-light mb-6">{t("Here are your workspaces...", "Hier sind Ihre Arbeitsbereiche...")}</p>
-        {organizations.map((ov) => (
-          <OrganizationSection
-            key={ov.org.id}
-            ov={ov}
-            greeting={t(`Welcome, ${(profile.name || "").trim().split(/\s+/)[0] || profile.email.split("@")[0]}`, `Willkommen, ${(profile.name || "").trim().split(/\s+/)[0] || profile.email.split("@")[0]}`)}
-            memberIds={new Set(workspaces.map((w) => w.id))}
-            onOpen={(id, join) => open(id, join)}
-          />
-        ))}
-        {showRedeem && <RedeemBox />}
-        <div className="grid gap-3 sm:grid-cols-2">
-          {list.map((w) => (
+        {organizations.length === 0 && <p className="text-muted text-sm font-light mb-6">{t("Here are your workspaces...", "Hier sind Ihre Arbeitsbereiche...")}</p>}
+        <div className="grid gap-3 sm:grid-cols-2 mt-4">
+          {shown.map((w) => (
             <div key={w.id} className="glass rounded-2xl p-5 flex flex-col gap-4">
               <div>
                 <div className="text-[0.95rem] font-medium truncate"><Tx text={w.name} /></div>
@@ -193,7 +178,42 @@ export function WorkspaceCards({ workspaces, profile: initialProfile, organizati
           ))}
         </div>
         <button onClick={() => router.push("/onboarding")} className="mt-5 text-[0.78rem] text-muted hover:text-text">{t("+ New workspace", "+ Neuer Arbeitsbereich")}</button>
-        {!showRedeem && <button onClick={() => router.push("/workspaces?redeem=1")} className="mt-5 ml-5 text-[0.78rem] text-muted hover:text-text">{t("Have a license code?", "Lizenzcode einlösen?")}</button>}
+        {!showRedeem && organizations.length === 0 && <button onClick={() => router.push("/loomfloor?redeem=1")} className="mt-5 ml-5 text-[0.78rem] text-muted hover:text-text">{t("Have a license code?", "Lizenzcode einlösen?")}</button>}
+    </>
+  );
+
+  return (
+    <ContentI18nProvider texts={contentTexts}>
+    <div className="min-h-screen flex flex-col">
+      <div className="relative glass-chrome flex-none border-b border-white/10 h-[4.25rem] flex items-center gap-3 pl-5 pr-8">
+        <span className="flex items-center gap-3 font-semibold tracking-[0.16em] text-sm">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/loom-mark.svg" alt="" width={42} height={42} className="rounded-xl" />
+          <span>THE <span className="text-orange">LOOM</span></span>
+        </span>
+        <span className="text-muted/40">|</span>
+        <span className="font-mono text-[0.78rem] tracking-[0.16em] text-muted">{t("LOOM FLOOR", "LOOM FLOOR")}</span>
+        <CtaBanner />
+        <div className="ml-auto flex items-center gap-3">
+          {isAdmin && <a href="/admin" className="font-mono text-[0.68rem] tracking-[0.16em] text-muted hover:text-orange">{t("ADMIN", "ADMIN")}</a>}
+          <AccountMenu profile={profile} onAccount={() => setAccountOpen(true)} onTeam={() => {}} onGuide={() => setGuideOpen(true)} onSignOut={signOut} />
+        </div>
+      </div>
+    <main className={`flex-1 flex items-start justify-center p-6 ${organizations.length > 0 ? "pt-4" : "pt-12"}`}>
+      <div className="w-full max-w-3xl">
+        {organizations.length > 0 && (
+          <LoomFloor
+            orgs={organizations}
+            greeting={t(`Welcome, ${firstName}`, `Willkommen, ${firstName}`)}
+            memberIds={new Set(workspaces.map((w) => w.id))}
+            onOpen={(id, join) => open(id, join)}
+          >
+            {shown.length > 0 && freeBlock}
+          </LoomFloor>
+        )}
+        {showRedeem && organizations.length === 0 && <RedeemBox />}
+        {organizations.length === 0 && freeBlock}
+
       </div>
       {target && (
         <DeleteDialog

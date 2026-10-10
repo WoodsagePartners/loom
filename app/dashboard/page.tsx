@@ -30,7 +30,7 @@ export default async function DashboardPage() {
       locked: !!m.orgs?.locked,
     }))
     .sort((a, b) => a.name.localeCompare(b.name));
-  if (workspaces.length === 0) redirect("/workspaces");
+  if (workspaces.length === 0) redirect("/loomfloor");
 
   // The cookie is only a preference — it's honored only if it matches a
   // membership this user really has (RLS enforces the real boundary).

@@ -7,8 +7,8 @@ export default async function AdminPage() {
   const { data: { user } } = await sb.auth.getUser();
   if (!user) redirect("/login");
   const { data: pa } = await sb.from("platform_admins").select("user_id").eq("user_id", user.id).maybeSingle();
-  if (!pa) redirect("/workspaces");
+  if (!pa) redirect("/loomfloor");
   const { data, error } = await sb.rpc("admin_overview");
-  if (error || !data) redirect("/workspaces");
+  if (error || !data) redirect("/loomfloor");
   return <AdminView data={data as any} />;
 }

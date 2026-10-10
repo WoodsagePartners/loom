@@ -21,5 +21,7 @@ export async function GET(request: Request) {
   }
 
   const { data: memberships } = await supabase.from("memberships").select("org_id").eq("user_id", user.id);
-  return NextResponse.redirect(`${origin}${memberships && memberships.length > 1 ? "/workspaces" : memberships && memberships.length === 1 ? "/dashboard" : "/onboarding"}`);
+  const { count: orgCount } = await supabase.from("organization_members").select("organization_id", { count: "exact", head: true }).eq("user_id", user.id);
+  if ((orgCount ?? 0) > 0) return NextResponse.redirect(`${origin}/loomfloor`);
+  return NextResponse.redirect(`${origin}${memberships && memberships.length > 1 ? "/loomfloor" : memberships && memberships.length === 1 ? "/dashboard" : "/loomfloor"}`);
 }

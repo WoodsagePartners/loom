@@ -89,7 +89,7 @@ export default function OnboardingPage() {
             {busy ? "CREATING…" : "CREATE WORKSPACE"}
           </button>
         </form>
-        <button type="button" onClick={() => router.push("/workspaces?redeem=1")} className="mt-4 w-full text-center text-[0.78rem] text-muted hover:text-orange hover:underline">
+        <button type="button" onClick={() => router.push("/loomfloor?redeem=1")} className="mt-4 w-full text-center text-[0.78rem] text-muted hover:text-orange hover:underline">
           {t("Have a license code?", "Haben Sie einen Lizenzcode?")}
         </button>
       </div>
