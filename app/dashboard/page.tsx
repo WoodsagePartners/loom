@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { cookies } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
 import { FlowApp } from "@/components/flow/flow-app";
+import { RejoinToast } from "@/components/flow/rejoin-toast";
 import type { Actor, FlowEdge, FlowNode, Lane, PhaseNode, Roadmap, RoadmapPhase, Workflow } from "@/lib/flow";
 import { profileFromUser } from "@/lib/profile";
 import { ACTIVE_ORG_COOKIE, type Workspace, type WorkspaceRole } from "@/lib/workspaces";
@@ -15,12 +16,13 @@ export default async function DashboardPage() {
 
   const { data: memberships } = await supabase
     .from("memberships")
-    .select("org_id, role, orgs(name, locked)")
+    .select("org_id, role, orgs(name, locked, archived)")
     .eq("user_id", user.id);
 
   if (!memberships || memberships.length === 0) redirect("/onboarding");
 
   const workspaces: Workspace[] = memberships
+    .filter((m: any) => !m.orgs?.archived)
     .map((m: any) => ({
       id: m.org_id as string,
       name: (m.orgs?.name as string | undefined) ?? "Workspace",
@@ -28,6 +30,7 @@ export default async function DashboardPage() {
       locked: !!m.orgs?.locked,
     }))
     .sort((a, b) => a.name.localeCompare(b.name));
+  if (workspaces.length === 0) redirect("/workspaces");
 
   // The cookie is only a preference — it's honored only if it matches a
   // membership this user really has (RLS enforces the real boundary).
@@ -60,6 +63,8 @@ export default async function DashboardPage() {
   const buildSha = process.env.VERCEL_GIT_COMMIT_SHA?.slice(0, 7) ?? "dev";
 
   return (
+    <>
+    <RejoinToast orgName={orgName} />
     <FlowApp
       key={orgId}
       orgId={orgId}
@@ -81,5 +86,6 @@ export default async function DashboardPage() {
         phaseNodes: (pnRes.data ?? []) as unknown as PhaseNode[],
       }}
     />
+    </>
   );
 }

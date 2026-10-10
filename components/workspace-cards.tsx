@@ -11,6 +11,10 @@ import { Guide } from "@/components/guide";
 import { LockIcon } from "@/components/icons";
 import { ContentI18nProvider, Tx } from "@/lib/content-i18n";
 import type { Profile } from "@/lib/profile";
+import type { OrgView } from "@/lib/organizations";
+import { OrganizationSection, RedeemBox } from "@/components/organization-section";
+import { LegalModal } from "@/components/legal-modal";
+import { PRIVACY, PROCESSOR, TERMS } from "@/lib/legal";
 
 const KEYWORD = "DELETE";
 
@@ -79,11 +83,12 @@ function DeleteDialog({ ws, onClose, onDeleted }: { ws: Workspace; onClose: () =
   );
 }
 
-export function WorkspaceCards({ workspaces, profile: initialProfile }: { workspaces: Workspace[]; profile: Profile }) {
+export function WorkspaceCards({ workspaces, profile: initialProfile, organizations = [], isAdmin = false, showRedeem = false }: { workspaces: Workspace[]; profile: Profile; organizations?: OrgView[]; isAdmin?: boolean; showRedeem?: boolean }) {
   const t = useT();
   const [profile, setProfile] = useState(initialProfile);
   const [accountOpen, setAccountOpen] = useState(false);
   const [guideOpen, setGuideOpen] = useState(false);
+  const [legal, setLegal] = useState<"privacy" | "terms" | "processor" | null>(null);
   const router = useRouter();
   const [list, setList] = useState(workspaces);
   const [target, setTarget] = useState<Workspace | null>(null);
@@ -95,8 +100,15 @@ export function WorkspaceCards({ workspaces, profile: initialProfile }: { worksp
   }
   const roleLabel = { owner: t("Owner", "Eigentümer"), admin: t("Admin", "Admin"), member: t("Member", "Mitglied") };
 
-  async function open(id: string) {
+  async function open(id: string, join = false) {
     setOpening(id);
+    if (join) {
+      const { error } = await createClient().rpc("org_join_workspace", { p_workspace: id });
+      if (error) {
+        setOpening(null);
+        return;
+      }
+    }
     await fetch("/api/workspace/switch", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ orgId: id }) });
     router.push("/dashboard");
   }
@@ -111,14 +123,15 @@ export function WorkspaceCards({ workspaces, profile: initialProfile }: { worksp
           <span>THE <span className="text-orange">LOOM</span></span>
         </span>
         <span className="text-muted/40">|</span>
-        <span className="font-mono text-[0.78rem] tracking-[0.16em] text-muted">{t("WORKSPACES", "ARBEITSBEREICHE")}</span>
+        <span className="font-mono text-[0.78rem] tracking-[0.16em] text-muted">{t("LOOM FLOOR", "LOOM FLOOR")}</span>
         <CtaBanner />
         <div className="ml-auto flex items-center gap-3">
+          {isAdmin && <a href="/admin" className="font-mono text-[0.68rem] tracking-[0.16em] text-muted hover:text-orange">{t("ADMIN", "ADMIN")}</a>}
           <AccountMenu profile={profile} onAccount={() => setAccountOpen(true)} onTeam={() => {}} onGuide={() => setGuideOpen(true)} onSignOut={signOut} />
         </div>
       </div>
     <main className="flex-1 flex items-start justify-center p-6 pt-12">
-      <div className="w-full max-w-2xl">
+      <div className="w-full max-w-3xl">
         <h1 className="text-lg font-medium mb-1">
           {(() => {
             const first = (profile.name || "").trim().split(/\s+/)[0] || profile.email.split("@")[0];
@@ -126,6 +139,16 @@ export function WorkspaceCards({ workspaces, profile: initialProfile }: { worksp
           })()}
         </h1>
         <p className="text-muted text-sm font-light mb-6">{t("Here are your workspaces...", "Hier sind Ihre Arbeitsbereiche...")}</p>
+        {organizations.map((ov) => (
+          <OrganizationSection
+            key={ov.org.id}
+            ov={ov}
+            greeting={t(`Welcome, ${(profile.name || "").trim().split(/\s+/)[0] || profile.email.split("@")[0]}`, `Willkommen, ${(profile.name || "").trim().split(/\s+/)[0] || profile.email.split("@")[0]}`)}
+            memberIds={new Set(workspaces.map((w) => w.id))}
+            onOpen={(id, join) => open(id, join)}
+          />
+        ))}
+        {showRedeem && <RedeemBox />}
         <div className="grid gap-3 sm:grid-cols-2">
           {list.map((w) => (
             <div key={w.id} className="glass rounded-2xl p-5 flex flex-col gap-4">
@@ -170,6 +193,7 @@ export function WorkspaceCards({ workspaces, profile: initialProfile }: { worksp
           ))}
         </div>
         <button onClick={() => router.push("/onboarding")} className="mt-5 text-[0.78rem] text-muted hover:text-text">{t("+ New workspace", "+ Neuer Arbeitsbereich")}</button>
+        {!showRedeem && <button onClick={() => router.push("/workspaces?redeem=1")} className="mt-5 ml-5 text-[0.78rem] text-muted hover:text-text">{t("Have a license code?", "Lizenzcode einlösen?")}</button>}
       </div>
       {target && (
         <DeleteDialog
@@ -184,6 +208,12 @@ export function WorkspaceCards({ workspaces, profile: initialProfile }: { worksp
         />
       )}
     </main>
+    <footer className="flex-none flex flex-wrap items-center justify-center gap-x-5 gap-y-1 px-6 py-4 text-[0.72rem] text-muted/70">
+      <button type="button" onClick={() => setLegal("privacy")} className="hover:text-orange hover:underline">{t("Privacy notice", "Datenschutzhinweis")}</button>
+      <button type="button" onClick={() => setLegal("terms")} className="hover:text-orange hover:underline">{t("Terms of use", "Nutzungsbedingungen")}</button>
+      <button type="button" onClick={() => setLegal("processor")} className="hover:text-orange hover:underline">{t("Processor note", "Auftragsverarbeitung")}</button>
+    </footer>
+    {legal && <LegalModal doc={legal === "privacy" ? PRIVACY : legal === "terms" ? TERMS : PROCESSOR} slug={legal} onClose={() => setLegal(null)} />}
     {guideOpen && <Guide onClose={() => setGuideOpen(false)} />}
     {accountOpen && <AccountModal profile={profile} onClose={() => setAccountOpen(false)} onSaved={setProfile} />}
     </div>
