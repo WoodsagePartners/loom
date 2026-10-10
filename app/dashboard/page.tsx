@@ -7,7 +7,8 @@ import type { Actor, FlowEdge, FlowNode, Lane, PhaseNode, Roadmap, RoadmapPhase,
 import { profileFromUser } from "@/lib/profile";
 import { ACTIVE_ORG_COOKIE, type Workspace, type WorkspaceRole } from "@/lib/workspaces";
 
-export default async function DashboardPage() {
+export default async function DashboardPage({ searchParams }: { searchParams: Promise<{ wf?: string; pin?: string }> }) {
+  const sp = await searchParams;
   const supabase = await createClient();
   const {
     data: { user },
@@ -19,10 +20,13 @@ export default async function DashboardPage() {
     .select("org_id, role, orgs(name, locked, archived)")
     .eq("user_id", user.id);
 
-  if (!memberships || memberships.length === 0) redirect("/onboarding");
+  if (!memberships || memberships.length === 0) redirect("/loomfloor");
 
+  // Workspaces of an organization whose license term has ended are closed.
+  const { data: exp } = await supabase.rpc("my_expired_workspaces");
+  const expiredIds = new Set(((exp as any) ?? []).map((w: any) => w.id as string));
   const workspaces: Workspace[] = memberships
-    .filter((m: any) => !m.orgs?.archived)
+    .filter((m: any) => !m.orgs?.archived && !expiredIds.has(m.org_id))
     .map((m: any) => ({
       id: m.org_id as string,
       name: (m.orgs?.name as string | undefined) ?? "Workspace",
@@ -48,7 +52,7 @@ export default async function DashboardPage() {
   const wfIds = workflows.map((w) => w.id);
 
   const [actorsRes, lanesRes, nodesRes, edgesRes, countRes, rmRes, phRes, pnRes] = await Promise.all([
-    supabase.from("actors").select("id, org_id, kind, name, role, color, notes").eq("org_id", orgId).order("created_at"),
+    supabase.from("actors").select("id, org_id, kind, name, role, color, notes, enterprise_id").eq("org_id", orgId).order("created_at"),
     wfIds.length ? supabase.from("lanes").select("*").in("workflow_id", wfIds).order("position") : Promise.resolve({ data: [] }),
     wfIds.length ? supabase.from("flow_nodes").select("*").in("workflow_id", wfIds) : Promise.resolve({ data: [] }),
     wfIds.length ? supabase.from("flow_edges").select("*").in("workflow_id", wfIds) : Promise.resolve({ data: [] }),
@@ -73,6 +77,7 @@ export default async function DashboardPage() {
       role={active.role}
       orgLocked={!!active.locked}
       memberCount={countRes.count ?? 1}
+      startFocus={sp.wf && sp.pin && workflows.some((w) => w.id === sp.wf) ? { workflowId: sp.wf, pinId: sp.pin } : null}
       buildSha={buildSha}
       profile={profileFromUser(user)}
       initial={{

@@ -133,7 +133,7 @@ function TranslatingToast({ lang, pct }: { lang: Lang; pct: number }) {
   return (
     <div
       role="status"
-      className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[95] glass glass-bright glass-pop rounded-full px-4 py-2 text-[0.8rem] flex items-center gap-2.5 pointer-events-none"
+      className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[95] glass glass-bright glass-pop rounded-full px-4 py-2 text-small flex items-center gap-2.5 pointer-events-none"
       style={{ background: "var(--tint-solid)" }}
     >
       <span className="inline-block w-3 h-3 rounded-full border-2 border-orange/30 border-t-orange animate-spin" aria-hidden />

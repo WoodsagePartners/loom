@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import {
   ACTOR_KINDS,
   PALETTE,
+  ROLE_PALETTE,
   pickColor,
   NEUTRAL,
   type Actor,
@@ -20,6 +21,7 @@ import { ShapeIcon } from "@/components/flow/shapes";
 import { LockIcon, PencilIcon } from "@/components/icons";
 import { useT } from "@/lib/i18n";
 import { Tx, useTx } from "@/lib/content-i18n";
+import { THEME } from "@/lib/colors";
 
 type Props = {
   workflows: Workflow[];
@@ -84,12 +86,12 @@ function useAutoFocus() {
 const soft = (c: string | null | undefined) => (c ? `color-mix(in srgb, ${c} 58%, rgb(var(--c-text)))` : undefined);
 
 const FIELD =
-  "w-full bg-black/25 border border-white/10 rounded-md text-[0.74rem] text-text/75 placeholder:text-muted/50 px-2.5 py-1 outline-none focus:border-orange/40 focus:text-text";
+  "w-full bg-black/25 border border-white/10 rounded-md text-caption text-text/75 placeholder:text-muted/50 px-2.5 py-1 outline-none focus:border-orange/40 focus:text-text";
 
 function Swatches({ value, onPick }: { value: string | null; onPick: (c: string) => void }) {
   return (
     <div className="flex flex-nowrap gap-1.5 my-1.5 pl-0.5">
-      {PALETTE.map((c) => (
+      {ROLE_PALETTE.map((c) => (
         <button
           key={c}
           type="button"
@@ -125,16 +127,16 @@ function SectionHeader({
   return (
     <div className="flex items-center gap-2 px-3 pt-3 pb-1.5 mt-2 border-t border-white/10 first:mt-0 first:border-t-0">
       <button onClick={onToggle} aria-expanded={open} className="flex items-center gap-2 text-left group/h">
-        <span className="w-3 text-[0.8rem] leading-none text-muted group-hover/h:text-orange transition-colors">{open ? "▾" : "▸"}</span>
-        <span className="text-[0.78rem] font-medium tracking-[0.12em] uppercase text-text/90">{title}</span>
-        {count !== undefined && <span className="font-mono text-[0.72rem] text-muted/60">{count}</span>}
+        <span className="w-3 text-small leading-none text-muted group-hover/h:text-orange transition-colors">{open ? "▾" : "▸"}</span>
+        <span className="text-small font-medium tracking-[0.12em] uppercase text-text/90">{title}</span>
+        {count !== undefined && <span className="font-mono text-caption text-muted/60">{count}</span>}
       </button>
       {onHelp && (
         <button
           onClick={onHelp}
           title={t("What is this?", "Was ist das?")}
           aria-label={t("What is this?", "Was ist das?")}
-          className="w-4 h-4 rounded-full border border-white/20 text-[0.6rem] leading-none text-muted/70 hover:text-orange hover:border-orange/60 flex items-center justify-center flex-none"
+          className="w-4 h-4 rounded-full border border-white/20 text-micro leading-none text-muted/70 hover:text-orange hover:border-orange/60 flex items-center justify-center flex-none"
         >
           ?
         </button>
@@ -158,8 +160,8 @@ function EditFooter({ onDelete, deleteLabel, onDone }: { onDelete?: () => void; 
   const t = useT();
   return (
     <div className="mt-2 flex items-center justify-between">
-      {onDelete ? <button onClick={onDelete} title={deleteLabel} className="btn-danger inline-flex h-6 items-center rounded-full border px-3 text-[0.68rem] font-mono leading-none tracking-wider transition-colors">{t("DELETE", "LÖSCHEN")}</button> : <span />}
-      <button onClick={onDone} className="inline-flex h-6 items-center rounded-full border border-orange/60 bg-orange/10 px-3 text-[0.68rem] font-mono leading-none tracking-wider text-orange hover:bg-orange/20 transition-colors">{t("DONE", "FERTIG")}</button>
+      {onDelete ? <button onClick={onDelete} title={deleteLabel} className="btn-danger inline-flex h-6 items-center rounded-full border px-3 text-label font-mono leading-none tracking-wider transition-colors">{t("DELETE", "LÖSCHEN")}</button> : <span />}
+      <button onClick={onDone} className="inline-flex h-6 items-center rounded-full border border-orange/60 bg-orange/10 px-3 text-label font-mono leading-none tracking-wider text-orange hover:bg-orange/20 transition-colors">{t("DONE", "FERTIG")}</button>
     </div>
   );
 }
@@ -184,7 +186,7 @@ function AddRow({ placeholder, onSubmit, onCancel, colorSeed }: { placeholder: s
         onKeyDown={(e) => e.key === "Escape" && onCancel()}
         onBlur={() => !v && onCancel()}
         placeholder={placeholder}
-        className={FIELD + " !text-[0.72rem] !py-0.5"}
+        className={FIELD + " !text-caption !py-0.5"}
       />
       <Swatches value={color} onPick={setColor} />
     </form>
@@ -198,10 +200,13 @@ export function LeftNav(p: Props) {
   const [hover, setHover] = useState(false);
   const [suppress, setSuppress] = useState(false); // after clicking Collapse, ignore hover until the pointer leaves
   const [showAllRoles, setShowAllRoles] = useState(false);
+  const [entCollapsed, setEntCollapsed] = useState(false);
+  const [ownCollapsed, setOwnCollapsed] = useState(false);
   const initialActorIds = useRef<Set<string> | null>(null);
   if (initialActorIds.current === null && p.actors.length) initialActorIds.current = new Set(p.actors.map((a) => a.id));
-  const roleShown = (a: { id: string }) => p.usedActorIds.includes(a.id) || !(initialActorIds.current?.has(a.id) ?? true); // new roles stay visible
+  const roleShown = (a: { id: string; enterprise_id?: string | null }) => !!a.enterprise_id || p.usedActorIds.includes(a.id) || !(initialActorIds.current?.has(a.id) ?? true); // new roles stay visible
   const [open, setOpen] = useState<Record<SectionKey, boolean>>({ workflows: true, lanes: true, actors: true, roadmaps: true, team: true });
+  const shownActors = (showAllRoles ? p.actors : p.actors.filter(roleShown)).slice().sort((x, y) => Number(!!y.enterprise_id) - Number(!!x.enterprise_id));
   const [adding, setAddingRaw] = useState<string | null>(null);
   const [editing, setEditingRaw] = useState<string | null>(null);
   // Locked process / workspace: nothing opens for editing or adding.
@@ -316,7 +321,7 @@ export function LeftNav(p: Props) {
                   />
                 )}
                 {p.workflows.length === 0 && adding !== "workflows" && (
-                  <div className="pl-8 pr-3 py-1 text-[0.76rem] text-muted/70">{t("No processes yet.", "Noch keine Prozesse.")}</div>
+                  <div className="pl-8 pr-3 py-1 text-caption text-muted/70">{t("No processes yet.", "Noch keine Prozesse.")}</div>
                 )}
                 {p.workflows.map((w, wi) => (
                   <div key={w.id}>
@@ -325,7 +330,7 @@ export function LeftNav(p: Props) {
                       onClick={() => p.onSelectWorkflow(w.id)}
                     >
                       <span className="w-2 h-2 rounded-full flex-none" style={{ background: w.color ?? NEUTRAL }} />
-                      <span title={tx(w.name)} className="flex-1 truncate text-[0.76rem] ink-text" style={{ color: soft(w.color) }}><Tx text={w.name} d={wi * 160} /></span>
+                      <span title={tx(w.name)} className="flex-1 truncate text-caption ink-text" style={{ color: soft(w.color) }}><Tx text={w.name} d={wi * 160} /></span>
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
@@ -371,7 +376,7 @@ export function LeftNav(p: Props) {
                         />
                         <Swatches value={w.color} onPick={(c) => p.onPatchWorkflow(w.id, { color: c })} />
                         <div className="flex flex-col items-start gap-2">
-                          <button onClick={() => p.onDuplicateWorkflow(w.id)} title={t("Duplicate this process", "Diesen Prozess duplizieren")} className="rounded-full border border-white/25 text-text/85 hover:border-orange/60 hover:text-orange font-mono text-[0.68rem] tracking-wider px-3 py-1">
+                          <button onClick={() => p.onDuplicateWorkflow(w.id)} title={t("Duplicate this process", "Diesen Prozess duplizieren")} className="rounded-full border border-white/25 text-text/85 hover:border-orange/60 hover:text-orange font-mono text-label tracking-wider px-3 py-1">
                             {t("CLONE", "KLONEN")}
                           </button>
                           <div className="w-full"><EditFooter onDelete={() => p.onDeleteWorkflow(w.id)} deleteLabel={t("Delete process", "Prozess löschen")} onDone={() => setEditing(null)} /></div>
@@ -395,7 +400,7 @@ export function LeftNav(p: Props) {
             />
             {open.lanes && (
               <div>
-                                {!p.activeWorkflowId && <div className="pl-8 pr-3 py-1 text-[0.76rem] text-muted/70">{t("Pick a process first.", "Wählen Sie zuerst einen Prozess.")}</div>}
+                                {!p.activeWorkflowId && <div className="pl-8 pr-3 py-1 text-caption text-muted/70">{t("Pick a process first.", "Wählen Sie zuerst einen Prozess.")}</div>}
                 {adding === "lanes" && (
                   <AddRow
                     placeholder={t("Name the lane (e.g. Order intake)…", "Bahn benennen (z. B. Auftragseingang)…")}
@@ -408,8 +413,8 @@ export function LeftNav(p: Props) {
                   <div key={l.id}>
                     <div className={`group flex items-center gap-2 pl-8 pr-3 py-px leading-tight hover:bg-white/5 cursor-pointer ${isLens("lane", l.id) ? "bg-white/10" : ""}`} onClick={() => p.onLens(isLens("lane", l.id) ? null : { kind: "lane", id: l.id })}>
                       <span className="w-1.5 h-3 rounded-sm flex-none" style={{ background: l.color ?? NEUTRAL }} />
-                      <span title={tx(l.name)} className="flex-1 truncate text-[0.76rem] ink-text" style={{ color: soft(l.color) }}><Tx text={l.name} d={160 + i * 160} /></span>
-                      <span className={`${procL ? "!hidden" : "hidden group-hover:flex"} flex-none text-[0.7rem] leading-none text-muted/70`} onClick={(e) => e.stopPropagation()}>
+                      <span title={tx(l.name)} className="flex-1 truncate text-caption ink-text" style={{ color: soft(l.color) }}><Tx text={l.name} d={160 + i * 160} /></span>
+                      <span className={`${procL ? "!hidden" : "hidden group-hover:flex"} flex-none text-label leading-none text-muted/70`} onClick={(e) => e.stopPropagation()}>
                         <button disabled={i === 0} onClick={() => p.onMoveLane(l.id, -1)} className="px-0.5 hover:text-text disabled:opacity-30" title={t("Move up", "Nach oben")}>↑</button>
                         <button disabled={i === p.lanes.length - 1} onClick={() => p.onMoveLane(l.id, 1)} className="px-0.5 hover:text-text disabled:opacity-30" title={t("Move down", "Nach unten")}>↓</button>
                         <button onClick={() => p.onDuplicateLane(l.id)} className="px-0.5 hover:text-orange" title={t("Duplicate lane", "Bahn duplizieren")}>⧉</button>
@@ -476,53 +481,59 @@ export function LeftNav(p: Props) {
                           onClick={() => setNewActor({ ...newActor, kind: k.key })}
                           className={`rounded-md border py-1.5 flex justify-center ${newActor.kind === k.key ? "border-orange/70 bg-orange/10" : "border-white/10"}`}
                         >
-                          <ShapeIcon kind={k.key} color={newActor.kind === k.key ? "#f8991d" : "#93a5b6"} size={24} />
+                          <ShapeIcon kind={k.key} color={newActor.kind === k.key ? THEME.orange : THEME.slate} size={24} />
                         </button>
                       ))}
                     </div>
-                    <div className="text-[0.72rem] text-muted mt-1">
+                    <div className="text-caption text-muted mt-1">
                       {(() => { const k = ACTOR_KINDS.find((x) => x.key === newActor.kind)!; return `${t(k.en, k.de)} — ${t(k.hint, k.hintDe)}`; })()}
                     </div>
                     <div className="flex gap-2 mt-2.5">
-                      <button className="rounded-full border border-orange/60 bg-orange/15 text-orange hover:bg-orange/25 text-[0.72rem] font-mono tracking-wider px-3 py-1 transition-colors">{t("ADD", "HINZUFÜGEN")}</button>
-                      <button type="button" onClick={() => setNewActor(null)} className="text-[0.74rem] text-muted hover:text-text">{t("Cancel", "Abbrechen")}</button>
+                      <button className="rounded-full border border-orange/60 bg-orange/15 text-orange hover:bg-orange/25 text-caption font-mono tracking-wider px-3 py-1 transition-colors">{t("ADD", "HINZUFÜGEN")}</button>
+                      <button type="button" onClick={() => setNewActor(null)} className="text-caption text-muted hover:text-text">{t("Cancel", "Abbrechen")}</button>
                     </div>
                   </form>
                 )}
                 {p.actors.length > 0 && p.actors.some((a) => !roleShown(a)) && (
-                  <button onClick={() => setShowAllRoles((v) => !v)} className="pl-8 pr-3 py-0.5 text-[0.72rem] text-muted hover:text-orange text-left">
+                  <button onClick={() => setShowAllRoles((v) => !v)} className="pl-8 pr-3 py-0.5 text-caption text-muted hover:text-orange text-left">
                     {showAllRoles ? t("Hide unused roles", "Ungenutzte Rollen ausblenden") : t(`Show all (${p.actors.length})`, `Alle anzeigen (${p.actors.length})`)}
                   </button>
                 )}
                 {p.actors.length === 0 && !newActor && (
-                  <div className="pl-8 pr-3 py-1 text-[0.76rem] text-muted/70">{t("Add the roles in your process: people, teams, systems.", "Fügen Sie die Rollen Ihres Prozesses hinzu: Personen, Teams, Systeme.")}</div>
+                  <div className="pl-8 pr-3 py-1 text-caption text-muted/70">{t("Add the roles in your process: people, teams, systems.", "Fügen Sie die Rollen Ihres Prozesses hinzu: Personen, Teams, Systeme.")}</div>
                 )}
-                {(showAllRoles ? p.actors : p.actors.filter(roleShown)).map((a, ai) => (
+                {shownActors.map((a, ai) => { const canEditThis = p.canManageRoles && !a.enterprise_id; return (
                   <div key={a.id}>
-                    <div className={`group flex items-center gap-2 pl-8 pr-3 py-px leading-tight hover:bg-white/5 cursor-pointer ${isLens("actor", a.id) ? "bg-white/10" : ""}`} onClick={() => p.onLens(isLens("actor", a.id) ? null : { kind: "actor", id: a.id })}>
+                    {ai === 0 || !!a.enterprise_id !== !!shownActors[ai - 1].enterprise_id ? (
+                      <button onClick={() => (a.enterprise_id ? setEntCollapsed((v) => !v) : setOwnCollapsed((v) => !v))} className={`w-full text-left flex items-center gap-1.5 pl-8 pr-3 py-0.5 text-label font-mono tracking-wider uppercase text-muted hover:text-orange ${ai > 0 ? "mt-1.5 border-t border-white/20 pt-1.5" : ""}`}>
+                        <span>{(a.enterprise_id ? entCollapsed : ownCollapsed) ? "▸" : "▾"}</span>
+                        {a.enterprise_id ? t("Enterprise roles", "Enterprise-Rollen") : t("This workspace", "Dieser Arbeitsbereich")} ({shownActors.filter((x) => !!x.enterprise_id === !!a.enterprise_id).length})
+                      </button>
+                    ) : null}
+                    {!(a.enterprise_id ? entCollapsed : ownCollapsed) && <div className={`group flex items-center gap-2 pl-8 pr-3 py-px leading-tight hover:bg-white/5 cursor-pointer ${isLens("actor", a.id) ? "bg-white/10" : ""}`} onClick={() => p.onLens(isLens("actor", a.id) ? null : { kind: "actor", id: a.id })}>
                       <ShapeIcon kind={a.kind} color={a.color ?? NEUTRAL} size={16} />
                       <span className="flex-1 min-w-0">
-                        <span title={tx(a.name)} className="block truncate text-[0.76rem] ink-text" style={{ color: soft(a.color) }}><Tx text={a.name} d={320 + ai * 160} /></span>
+                        <span title={tx(a.name)} className="block truncate text-caption ink-text" style={{ color: soft(a.color) }}><Tx text={a.name} d={320 + ai * 160} /></span>
                       </span>
                       <button onClick={(e) => { e.stopPropagation(); setEditing(editing === a.id ? null : a.id); }} className={`${procL ? "!hidden" : "hidden group-hover:block"} leading-none px-0.5 text-muted/50 hover:text-text text-xs`} title={t("Edit", "Bearbeiten")}><PencilIcon size={11} /></button>
-                    </div>
-                    {editing === a.id && (
+                    </div>}
+                    {editing === a.id && !(a.enterprise_id ? entCollapsed : ownCollapsed) && (
                       <div className="pl-8 pr-3 pb-3 bg-white/[0.03]" onKeyDown={(e) => e.key === "Escape" && setEditing(null)}>
-                        {p.canManageRoles && <input defaultValue={a.name} onBlur={(e) => e.target.value.trim() && e.target.value.trim() !== a.name && p.onPatchActor(a.id, { name: e.target.value.trim() })} className={FIELD + " mt-2"} />}
-                        {!p.canManageRoles && <div className="mt-2 text-[0.72rem] text-muted/80">{t("Roles are shared across your organization. You can change this role's color.", "Rollen gelten für Ihre gesamte Organisation. Sie können die Farbe dieser Rolle ändern.")}</div>}
-                        {p.canManageRoles && <div className="grid grid-cols-5 gap-1.5 mt-2">
+                        {canEditThis && <input defaultValue={a.name} onBlur={(e) => e.target.value.trim() && e.target.value.trim() !== a.name && p.onPatchActor(a.id, { name: e.target.value.trim() })} className={FIELD + " mt-2"} />}
+                        {!canEditThis && <div className="mt-2 text-caption text-muted/80">{a.enterprise_id ? t("Enterprise role: shared by every workspace. You can change its color here.", "Enterprise-Rolle: gilt für alle Arbeitsbereiche. Hier können Sie die Farbe ändern.") : t("Only owners and admins can edit roles. You can change this role's color.", "Nur Eigentümer und Admins können Rollen bearbeiten. Sie können die Farbe dieser Rolle ändern.")}</div>}
+                        {canEditThis && <div className="grid grid-cols-5 gap-1.5 mt-2">
                           {ACTOR_KINDS.map((k) => (
                             <button key={k.key} type="button" title={t(k.en, k.de)} onClick={() => p.onPatchActor(a.id, { kind: k.key })} className={`rounded-md border py-1.5 flex justify-center ${a.kind === k.key ? "border-orange/70 bg-orange/10" : "border-white/10"}`}>
-                              <ShapeIcon kind={k.key} color={a.kind === k.key ? "#f8991d" : "#93a5b6"} size={24} />
+                              <ShapeIcon kind={k.key} color={a.kind === k.key ? THEME.orange : THEME.slate} size={24} />
                             </button>
                           ))}
                         </div>}
                         <Swatches value={a.color} onPick={(c) => p.onPatchActor(a.id, { color: c })} />
-                        <EditFooter onDelete={p.canManageRoles ? () => p.onDeleteActor(a.id) : undefined} deleteLabel={t("Delete role", "Rolle löschen")} onDone={() => setEditing(null)} />
+                        <EditFooter onDelete={canEditThis ? () => p.onDeleteActor(a.id) : undefined} deleteLabel={t("Delete role", "Rolle löschen")} onDone={() => setEditing(null)} />
                       </div>
                     )}
                   </div>
-                ))}
+                ); })}
               </div>
             )}
 
@@ -536,22 +547,22 @@ export function LeftNav(p: Props) {
             />
             {open.roadmaps && (
               <div className="pb-1">
-                {!p.activeWorkflowId && <div className="pl-8 pr-3 py-1 text-[0.76rem] text-muted/70">{t("Pick a process first.", "Wählen Sie zuerst einen Prozess.")}</div>}
+                {!p.activeWorkflowId && <div className="pl-8 pr-3 py-1 text-caption text-muted/70">{t("Pick a process first.", "Wählen Sie zuerst einen Prozess.")}</div>}
                 {p.activeWorkflowId && p.pursuits.length === 0 && (
-                  <div className="pl-8 pr-3 py-1 text-[0.76rem] text-muted/70">{t("Open Intelligence → Insights, then press Pursue on a signal, question, finding or idea. It collects here, with where it came from.", "Öffnen Sie Intelligenz → Erkenntnisse und wählen Sie bei einem Signal, einer Frage, einem Befund oder einer Idee „Verfolgen“. Es sammelt sich hier, samt Herkunft.")}</div>
+                  <div className="pl-8 pr-3 py-1 text-caption text-muted/70">{t("Open Intelligence → Insights, then press Pursue on a signal, question, finding or idea. It collects here, with where it came from.", "Öffnen Sie Intelligenz → Erkenntnisse und wählen Sie bei einem Signal, einer Frage, einem Befund oder einer Idee „Verfolgen“. Es sammelt sich hier, samt Herkunft.")}</div>
                 )}
                 {p.pursuits.map((pu) => (
                   <div key={pu.id} className="group flex items-start hover:bg-white/5 transition-colors">
                     <button onClick={() => p.onOpenPursuit(pu.id)} title={t("Open to edit", "Zum Bearbeiten öffnen")} className="flex-1 min-w-0 text-left pl-8 pr-1 py-1">
                       <span className="flex items-start gap-2">
-                        <span className="w-4 text-center flex-none text-[0.72rem] leading-snug" style={{ color: PIN_KINDS[pu.kind].color }}>{PIN_KINDS[pu.kind].glyph}</span>
-                        <span className="flex-1 text-[0.8rem] font-medium leading-snug text-text/90 truncate">{pu.headline ? <Tx text={pu.headline} /> : <span className="text-muted/70 font-normal"><Tx text={pu.body} /></span>}</span>
+                        <span className="w-4 text-center flex-none text-caption leading-snug" style={{ color: PIN_KINDS[pu.kind].color }}>{PIN_KINDS[pu.kind].glyph}</span>
+                        <span className="flex-1 text-small font-medium leading-snug text-text/90 truncate">{pu.headline ? <Tx text={pu.headline} /> : <span className="text-muted/70 font-normal"><Tx text={pu.body} /></span>}</span>
                       </span>
                       {pu.lineage && pu.lineage.length > 0 && (
-                        <span className="block pl-6 mt-0.5 text-[0.62rem] leading-snug text-muted/70 truncate"><LineageTrail lineage={pu.lineage} limit={18} /></span>
+                        <span className="block pl-6 mt-0.5 text-micro leading-snug text-muted/70 truncate"><LineageTrail lineage={pu.lineage} limit={18} /></span>
                       )}
                     </button>
-                    <button onClick={() => p.onShowPursuit(pu.id)} title={t("Show it on the map", "Auf der Karte zeigen")} aria-label={t("Show it on the map", "Auf der Karte zeigen")} className="flex-none w-6 h-6 mt-0.5 mr-2 rounded-full text-muted hover:text-orange hover:bg-white/10 text-[0.8rem] leading-none">⌖</button>
+                    <button onClick={() => p.onShowPursuit(pu.id)} title={t("Show it on the map", "Auf der Karte zeigen")} aria-label={t("Show it on the map", "Auf der Karte zeigen")} className="flex-none w-6 h-6 mt-0.5 mr-2 rounded-full text-muted hover:text-orange hover:bg-white/10 text-small leading-none">⌖</button>
                   </div>
                 ))}
               </div>
@@ -571,14 +582,14 @@ export function LeftNav(p: Props) {
               <div className="pb-2">
                 {p.members.map((m) => (
                   <div key={m.id} className="flex items-center gap-2 pl-8 pr-3 py-px leading-tight" title={m.email}>
-                    <span className="w-4 h-4 rounded-full flex-none flex items-center justify-center text-[0.58rem] font-medium text-white/90" style={{ background: pickColor((m.name || m.email).length) }}>
+                    <span className="w-4 h-4 rounded-full flex-none flex items-center justify-center text-nano font-medium text-white/90" style={{ background: pickColor((m.name || m.email).length) }}>
                       {((m.name || m.email)[0] ?? "?").toUpperCase()}
                     </span>
-                    <span className="flex-1 truncate text-[0.76rem] text-text/85">{m.name || m.email.split("@")[0]}</span>
-                    {m.role !== "member" && <span className="font-mono text-[0.58rem] tracking-wider uppercase text-muted/60">{m.role === "owner" ? t("Owner", "Eigent.") : "Admin"}</span>}
+                    <span className="flex-1 truncate text-caption text-text/85">{m.name || m.email.split("@")[0]}</span>
+                    {m.role !== "member" && <span className="font-mono text-nano tracking-wider uppercase text-muted/60">{m.role === "owner" ? t("Owner", "Eigent.") : "Admin"}</span>}
                   </div>
                 ))}
-                <button onClick={p.onOpenTeam} className="pl-8 pr-3 pt-1.5 text-left text-[0.72rem] text-muted hover:text-orange transition-colors">
+                <button onClick={p.onOpenTeam} className="pl-8 pr-3 pt-1.5 text-left text-caption text-muted hover:text-orange transition-colors">
                   {t("Manage team", "Team verwalten")}
                 </button>
               </div>
@@ -589,7 +600,7 @@ export function LeftNav(p: Props) {
               <button
                 onClick={togglePin}
                 title={pinned ? t("Collapse the menu", "Menü einklappen") : t("Keep the menu open", "Menü offen halten")}
-                className={`font-mono text-[0.58rem] tracking-[0.08em] uppercase px-2 py-0.5 rounded-full border ${
+                className={`font-mono text-nano tracking-[0.08em] uppercase px-2 py-0.5 rounded-full border ${
                   pinned ? "border-white/15 text-muted hover:text-orange hover:border-orange/50" : "border-orange/50 text-orange bg-orange/10"
                 }`}
               >
@@ -602,7 +613,7 @@ export function LeftNav(p: Props) {
                   setAdding(null);
                 }}
                 title={t("Fold or unfold every section", "Alle Bereiche ein- oder ausklappen")}
-                className="font-mono text-[0.58rem] tracking-[0.08em] uppercase px-2 py-0.5 rounded-full border border-white/15 text-muted hover:text-orange hover:border-orange/50"
+                className="font-mono text-nano tracking-[0.08em] uppercase px-2 py-0.5 rounded-full border border-white/15 text-muted hover:text-orange hover:border-orange/50"
               >
                 {Object.values(open).some(Boolean) ? t("Roll up ⌃", "Zuklappen ⌃") : t("Unroll ⌄", "Aufklappen ⌄")}
               </button>

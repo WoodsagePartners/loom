@@ -24,11 +24,11 @@ export function RedeemBox() {
   }
   return (
     <div className="glass rounded-2xl p-5 mb-6">
-      <div className="font-mono text-[0.66rem] tracking-[0.14em] uppercase text-orange mb-2">{t("License code", "Lizenzcode")}</div>
-      <p className="text-[0.85rem] text-muted mb-3">{t("Have an enterprise license code? Enter it to open your organization.", "Haben Sie einen Enterprise-Lizenzcode? Geben Sie ihn ein, um Ihre Organisation zu öffnen.")}</p>
+      <div className="font-mono text-label tracking-[0.14em] uppercase text-orange mb-2">{t("License code", "Lizenzcode")}</div>
+      <p className="text-body text-muted mb-3">{t("Have an enterprise license code? Enter it to open your organization.", "Haben Sie einen Enterprise-Lizenzcode? Geben Sie ihn ein, um Ihre Organisation zu öffnen.")}</p>
       <div className="flex gap-2">
         <input value={code} onChange={(e) => setCode(e.target.value.toUpperCase())} placeholder="XXXX-XXXX-XXXX" className={input + " flex-1 font-mono tracking-wider"} />
-        <button disabled={busy || code.trim().length < 8} onClick={go} className="rounded-full text-white text-[0.72rem] font-mono tracking-wider px-4 py-2 disabled:opacity-40" style={{ background: "linear-gradient(135deg, rgba(248,153,29,.9), rgba(194,87,27,.85))" }}>
+        <button disabled={busy || code.trim().length < 8} onClick={go} className="rounded-full text-white text-caption font-mono tracking-wider px-4 py-2 disabled:opacity-40" style={{ background: "linear-gradient(135deg, rgba(248,153,29,.9), rgba(194,87,27,.85))" }}>
           {busy ? t("CHECKING…", "PRÜFE…") : t("REDEEM", "EINLÖSEN")}
         </button>
       </div>

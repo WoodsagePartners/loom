@@ -20,11 +20,23 @@ export default {
         voice: "#7fd88f",
         port: "#ffd75e",
         wire: "#d9a63f",
+        onorange: "#1a0f05", // dark text on orange buttons
+        panel: "#0b1020", // opaque dropdown/option background
       },
       fontFamily: {
         sans: ["Poppins", "sans-serif"],
         hand: ["Caveat", "cursive"],
         mono: ["JetBrains Mono", "monospace"],
+      },
+      // Type scale: the ONLY font sizes the UI should use (rem; html is 106.25%).
+      fontSize: {
+        nano: "0.58rem", // chart ticks, tiny badges
+        micro: "0.62rem", // mono caps labels, column headers
+        label: "0.68rem", // buttons, tags, status chips
+        caption: "0.74rem", // hints, meta, secondary info
+        small: "0.8rem", // compact body, table rows, form fields
+        body: "0.86rem", // default UI text
+        lead: "0.92rem", // card titles, emphasis
       },
       backdropBlur: { xs: "2px" },
     },

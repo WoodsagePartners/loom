@@ -5,6 +5,7 @@ import { useLang, useT } from "@/lib/i18n";
 import { useTx } from "@/lib/content-i18n";
 import { HelpTip } from "@/components/flow/help-tip";
 import type { FlowEdge, FlowNode, FlowPin, Lineage, PhaseNode, PinKind, Roadmap, RoadmapPhase } from "@/lib/flow";
+import { THEME } from "@/lib/colors";
 
 export type Plans = { roadmaps: Roadmap[]; phases: RoadmapPhase[]; phaseNodes: PhaseNode[] };
 
@@ -17,7 +18,7 @@ export const isUnsupported = (p: FlowPin, all: FlowPin[]) =>
 // Clicking a signal turns it into a real Question (or dismisses it).
 
 export const PIN_KINDS: Record<PinKind, { en: string; de: string; color: string; glyph: string }> = {
-  question: { en: "Question", de: "Frage", color: "#f8991d", glyph: "?" },
+  question: { en: "Question", de: "Frage", color: THEME.orange, glyph: "?" },
   finding: { en: "Finding", de: "Befund", color: "#60a5fa", glyph: "◆" },
   idea: { en: "Idea", de: "Idee", color: "#5eead4", glyph: "✦" },
 };
@@ -189,7 +190,7 @@ export function PinLayer({
         return (
           <Fragment key={gk}>
             {/* anchor dot + the thread the pins hang on */}
-            <div style={{ position: "absolute", left: a.x - 3, top: a.y - 3, width: 6, height: 6, borderRadius: 3, background: "#f8991d", opacity: 0.8, pointerEvents: "none", zIndex: 40 }} />
+            <div style={{ position: "absolute", left: a.x - 3, top: a.y - 3, width: 6, height: 6, borderRadius: 3, background: THEME.orange, opacity: 0.8, pointerEvents: "none", zIndex: 40 }} />
             <div style={{ position: "absolute", left: a.x, top: a.y - 0.5, width: 16 + (slots - 1) * STEP + D / 2, height: 1, background: "rgba(248,153,29,.4)", pointerEvents: "none", zIndex: 39 }} />
             {shown.map((it, i) => {
               const cx = x0 + i * STEP;
@@ -247,7 +248,7 @@ export function PinLayer({
                   style={{ position: "absolute", left: x0 + shown.length * STEP - D / 2, top: a.y - D / 2, width: D, height: D, borderRadius: D, pointerEvents: "auto", zIndex: 41 }}
                   title={t("Show all", "Alle anzeigen")}
                 >
-                  <span className="flex items-center justify-center w-full h-full rounded-full border border-white/30 bg-[#0c101a] text-[0.62rem] font-mono text-text/80">+{more}</span>
+                  <span className="flex items-center justify-center w-full h-full rounded-full border border-white/30 bg-[#0c101a] text-micro font-mono text-text/80">+{more}</span>
                 </button>
                 {openKey === `more:${gk}` && (
                   <Card x={x0 + shown.length * STEP} y={a.y} onClose={() => setOpenKey(null)}>
@@ -255,7 +256,7 @@ export function PinLayer({
                       {g.items.map((it) => (
                         <button key={itemKey(it)} onClick={() => setOpenKey(itemKey(it))} className="flex items-center gap-2 text-left rounded-md px-1.5 py-1 hover:bg-white/10">
                           <span className="inline-block w-2.5 h-2.5 rounded-full flex-none" style={{ background: it.type === "pin" ? PIN_KINDS[it.pin.kind].color : it.sig.level === "high" ? SIGNAL_HIGH : SIGNAL_WARN, opacity: it.type === "sig" ? 0.6 : 1 }} />
-                          <span className="text-[0.72rem] text-text/90 truncate">{it.type === "pin" ? (it.pin.body ? tx(it.pin.body) : t("(empty)", "(leer)")) : t(it.sig.en, it.sig.de)}</span>
+                          <span className="text-caption text-text/90 truncate">{it.type === "pin" ? (it.pin.body ? tx(it.pin.body) : t("(empty)", "(leer)")) : t(it.sig.en, it.sig.de)}</span>
                         </button>
                       ))}
                     </div>
@@ -273,7 +274,7 @@ export function PinLayer({
                   title={t("Add a Question, Finding or Idea here", "Frage, Befund oder Idee hier hinzufügen")}
                   style={{ position: "absolute", left: x0 + (shown.length + (more > 0 ? 1 : 0)) * STEP - D / 2, top: a.y - D / 2, width: D, height: D, borderRadius: D, pointerEvents: "auto", zIndex: 41 }}
                 >
-                  <span className="flex items-center justify-center w-full h-full rounded-full border border-dashed border-orange/70 text-orange text-[0.95rem] leading-none bg-[#0c101a]">+</span>
+                  <span className="flex items-center justify-center w-full h-full rounded-full border border-dashed border-orange/70 text-orange text-lead leading-none bg-[#0c101a]">+</span>
                 </button>
                 {openKey === `add:${gk}` && (
                   <Card x={x0 + (shown.length + (more > 0 ? 1 : 0)) * STEP} y={a.y} onClose={() => setOpenKey(null)} width={170}>
@@ -287,8 +288,8 @@ export function PinLayer({
                           }}
                           className="flex items-center gap-2 rounded-md px-1.5 py-1 hover:bg-white/10 text-left"
                         >
-                          <span className="inline-flex items-center justify-center w-5 h-5 rounded-full border text-[0.7rem]" style={{ borderColor: PIN_KINDS[k].color, color: PIN_KINDS[k].color }}>{PIN_KINDS[k].glyph}</span>
-                          <span className="text-[0.76rem] text-text/90">{t(PIN_KINDS[k].en, PIN_KINDS[k].de)}</span>
+                          <span className="inline-flex items-center justify-center w-5 h-5 rounded-full border text-label" style={{ borderColor: PIN_KINDS[k].color, color: PIN_KINDS[k].color }}>{PIN_KINDS[k].glyph}</span>
+                          <span className="text-caption text-text/90">{t(PIN_KINDS[k].en, PIN_KINDS[k].de)}</span>
                         </button>
                       ))}
                     </div>
@@ -366,23 +367,23 @@ function SignalCard({ sig, x, y, onClose, onAsk, onPursue, onPromote, onDismiss 
   const color = sig.level === "high" ? SIGNAL_HIGH : SIGNAL_WARN;
   return (
     <Card x={x} y={y} onClose={onClose}>
-      <div className="font-mono text-[0.7rem] tracking-[0.14em]" style={{ color }}>▲ {t("SIGNAL", "SIGNAL")} · {sig.level === "high" ? t("LIKELY HURTING", "VERMUTLICH SCHÄDLICH") : t("WORTH A LOOK", "BEACHTENSWERT")}</div>
-      <div className="mt-1.5 text-[0.95rem] text-text/90 leading-snug">{t(sig.en, sig.de)}</div>
-      <div className="mt-1 text-[0.82rem] text-muted">{t("Loom spotted this from your map. It's only a suggestion until you act on it.", "Loom hat das in Ihrer Karte entdeckt. Es bleibt ein Vorschlag, bis Sie handeln.")}</div>
+      <div className="font-mono text-label tracking-[0.14em]" style={{ color }}>▲ {t("SIGNAL", "SIGNAL")} · {sig.level === "high" ? t("LIKELY HURTING", "VERMUTLICH SCHÄDLICH") : t("WORTH A LOOK", "BEACHTENSWERT")}</div>
+      <div className="mt-1.5 text-lead text-text/90 leading-snug">{t(sig.en, sig.de)}</div>
+      <div className="mt-1 text-small text-muted">{t("Loom spotted this from your map. It's only a suggestion until you act on it.", "Loom hat das in Ihrer Karte entdeckt. Es bleibt ein Vorschlag, bis Sie handeln.")}</div>
       {busy ? (
-        <div className="mt-2.5 flex items-center gap-2 text-[0.9rem] text-orange">
+        <div className="mt-2.5 flex items-center gap-2 text-lead text-orange">
           <span className="inline-block w-3 h-3 rounded-full border-2 border-orange/30 border-t-orange animate-spin" aria-hidden />
           {t("Loom is phrasing a question…", "Loom formuliert eine Frage …")}
         </div>
       ) : (
         <div className="mt-2.5 flex flex-col gap-1.5">
-          <button onClick={async () => { setBusy(true); await onAsk(); setBusy(false); }} className="rounded-full border border-orange/60 bg-orange/10 text-orange text-[0.88rem] px-3 py-1.5 hover:bg-orange/20 text-left">
+          <button onClick={async () => { setBusy(true); await onAsk(); setBusy(false); }} className="rounded-full border border-orange/60 bg-orange/10 text-orange text-body px-3 py-1.5 hover:bg-orange/20 text-left">
             ✦ {t("Ask Loom to make this a question…", "Loom bitten, daraus eine Frage zu machen …")}
           </button>
-          <button onClick={onPursue} className="rounded-full border border-amber-300/50 text-amber-200 text-[0.88rem] px-3 py-1.5 hover:bg-amber-300/10 text-left">
+          <button onClick={onPursue} className="rounded-full border border-amber-300/50 text-amber-200 text-body px-3 py-1.5 hover:bg-amber-300/10 text-left">
             ☆ {t("Pursue this as it is", "So verfolgen, wie es ist")}
           </button>
-          <div className="flex gap-3 text-[0.82rem] text-muted px-1">
+          <div className="flex gap-3 text-small text-muted px-1">
             <button onClick={onPromote} className="hover:text-text">{t("Use as written", "So übernehmen")}</button>
             <button onClick={onDismiss} className="hover:text-text">{t("Dismiss", "Verwerfen")}</button>
           </div>
@@ -443,9 +444,9 @@ function PinCard({ pin, pins, x, y, onPursue, onUnpursue, onPatch, onDelete, onC
   return (
     <Card x={x} y={y} onClose={onClose}>
       <div className="flex items-center gap-2 pr-4">
-        <span className="font-mono text-[0.7rem] tracking-[0.14em]" style={{ color: k.color }}>{k.glyph} {t(k.en, k.de).toUpperCase()}</span>
+        <span className="font-mono text-label tracking-[0.14em]" style={{ color: k.color }}>{k.glyph} {t(k.en, k.de).toUpperCase()}</span>
         {pin.kind === "idea" && !supported && (
-          <span className="font-mono text-[0.68rem] tracking-wider text-amber-300/80 border border-amber-300/30 rounded-full px-1.5 py-px">{t("NO EVIDENCE YET", "NOCH KEIN BELEG")}</span>
+          <span className="font-mono text-label tracking-wider text-amber-300/80 border border-amber-300/30 rounded-full px-1.5 py-px">{t("NO EVIDENCE YET", "NOCH KEIN BELEG")}</span>
         )}
       </div>
       <textarea
@@ -456,10 +457,10 @@ function PinCard({ pin, pins, x, y, onPursue, onUnpursue, onPatch, onDelete, onC
         onBlur={() => { const v = draft.trim(); if (v !== pin.body && v) onPatch(pin.id, { body: v }); }}
         rows={Math.min(9, Math.max(3, Math.ceil(draft.length / 30)))}
         placeholder={pin.kind === "question" ? t("What do we want to understand?", "Was möchten wir verstehen?") : pin.kind === "finding" ? t("What did we find? Add the evidence.", "Was haben wir gefunden? Belege ergänzen.") : t("What could we change?", "Was könnten wir ändern?")}
-        className="mt-2 w-full resize-none bg-black/40 border border-white/15 rounded-md text-[0.95rem] text-text px-2 py-1.5 outline-none focus:border-orange/60 placeholder:text-text/40"
+        className="mt-2 w-full resize-none bg-black/40 border border-white/15 rounded-md text-body leading-snug text-text px-2 py-1.5 outline-none focus:border-orange/60 placeholder:text-text/40"
       />
       {draft.trim() && tx(draft) !== draft.trim() && (
-        <div className="mt-1.5 text-[0.88rem] text-text/70 leading-snug italic">{tx(draft)}</div>
+        <div className="mt-1.5 text-body text-text/70 leading-snug italic">{tx(draft)}</div>
       )}
       {pin.kind === "idea" && !pin.parent_id && (
         <input
@@ -467,11 +468,11 @@ function PinCard({ pin, pins, x, y, onPursue, onUnpursue, onPatch, onDelete, onC
           onChange={(e) => setWhy(e.target.value)}
           onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); onClose(); } }}
           placeholder={t("Because… (a reason or some evidence)", "Weil … (ein Grund oder ein Beleg)")}
-          className="mt-1.5 w-full bg-black/30 border border-white/10 rounded-md text-[0.9rem] text-text px-2 py-1 outline-none focus:border-orange/60 placeholder:text-text/35"
+          className="mt-1.5 w-full bg-black/30 border border-white/10 rounded-md text-lead text-text px-2 py-1 outline-none focus:border-orange/60 placeholder:text-text/35"
         />
       )}
       {statuses.length > 0 && (
-        <div className="mt-2 flex rounded-full border border-white/15 overflow-hidden text-[0.8rem]">
+        <div className="mt-2 flex rounded-full border border-white/15 overflow-hidden text-body">
           {statuses.map((st) => (
             <button
               key={st.key}
@@ -485,7 +486,7 @@ function PinCard({ pin, pins, x, y, onPursue, onUnpursue, onPatch, onDelete, onC
       )}
       <div className="mt-2">
         {pin.pursued_at ? (
-          <div className="rounded-lg border border-amber-300/50 bg-amber-300/10 px-2 py-1.5 text-[0.88rem]">
+          <div className="rounded-lg border border-amber-300/50 bg-amber-300/10 px-2 py-1.5 text-body">
             <div className="flex items-center gap-2 text-amber-200">
               <span>★ {t("Pursued", "Verfolgt")}</span>
               <button onClick={() => onUnpursue(pin)} className="ml-auto text-amber-200/70 hover:text-text">{t("Remove", "Entfernen")}</button>
@@ -497,13 +498,13 @@ function PinCard({ pin, pins, x, y, onPursue, onUnpursue, onPatch, onDelete, onC
             onClick={() => { const v = draft.trim(); if (v && v !== pin.body) onPatch(pin.id, { body: v }); onPursue({ ...pin, body: v || pin.body }); }}
             disabled={!draft.trim()}
             title={t("Collect this in Pursuits, with where it came from", "In den Vorhaben sammeln, samt Herkunft")}
-            className="w-full rounded-full border border-amber-300/50 text-amber-200 hover:bg-amber-300/10 disabled:opacity-40 disabled:hover:bg-transparent text-[0.9rem] py-1"
+            className="w-full rounded-full border border-amber-300/50 text-amber-200 hover:bg-amber-300/10 disabled:opacity-40 disabled:hover:bg-transparent text-body py-1"
           >
             ☆ {t("Pursue", "Verfolgen")}
           </button>
         )}
       </div>
-      <div className="mt-2 flex items-center gap-2 text-[0.82rem]">
+      <div className="mt-2 flex items-center gap-3 text-body">
         {pin.kind === "question" && (
           <>
             <button onClick={() => child("finding")} className="text-muted hover:text-text">+ {t("Finding", "Befund")}</button>
@@ -514,7 +515,7 @@ function PinCard({ pin, pins, x, y, onPursue, onUnpursue, onPatch, onDelete, onC
         {pin.kind === "idea" && !pin.parent_id && !hasFinding && <button onClick={() => child("finding")} className="text-muted hover:text-text">+ {t("Finding", "Befund")}</button>}
         <button onClick={() => { onDelete(pin.id); onClose(); }} className="ml-auto text-muted hover:text-red-300">{t("Delete", "Löschen")}</button>
       </div>
-      {pin.author_name && <div className="mt-1 text-[0.72rem] text-muted/70">{pin.author_name}</div>}
+      {pin.author_name && <div className="mt-1.5 text-small text-muted/80">{pin.author_name}</div>}
     </Card>
   );
 }
@@ -564,7 +565,7 @@ export function LayerLegend({ pins, signals }: { pins: FlowPin[]; signals: Signa
     </div>
   );
   const dot = (color: string, glyph: string, dashed = false) => (
-    <span className="inline-flex items-center justify-center w-5 h-5 rounded-full text-[0.62rem] flex-none" style={{ border: `1.5px ${dashed ? "dashed" : "solid"} ${color}`, color, opacity: dashed ? 0.75 : 1 }}>{glyph}</span>
+    <span className="inline-flex items-center justify-center w-5 h-5 rounded-full text-micro flex-none" style={{ border: `1.5px ${dashed ? "dashed" : "solid"} ${color}`, color, opacity: dashed ? 0.75 : 1 }}>{glyph}</span>
   );
   return (
     <div className="px-1 text-text/85 flex flex-col gap-1.5">
@@ -604,7 +605,7 @@ export function HopBar({ index, total, label, onPrev, onNext }: { index: number;
   if (!total) return null;
   const btn = "w-6 h-6 rounded-full border border-white/20 text-text/80 hover:text-orange hover:border-orange/60 leading-none";
   return (
-    <div className="flex items-center gap-2 text-[0.72rem]">
+    <div className="flex items-center gap-2 text-caption">
       <button onClick={onPrev} className={btn} aria-label={t("Previous insight", "Vorherige Erkenntnis")}>‹</button>
       <span className="font-mono text-muted">{index >= 0 ? index + 1 : "–"}/{total}</span>
       <button onClick={onNext} className={btn} aria-label={t("Next insight", "Nächste Erkenntnis")}>›</button>

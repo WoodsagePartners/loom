@@ -1,0 +1,4 @@
+-- Applied via MCP 2026-10-10. Kept for the record.
+-- 1. admin_move_workspace now links/copies the destination's enterprise roles into the moved workspace.
+-- 2. admin_overview returns workspace_list per organization (admin can move org->org).
+-- 3. NGR Enterprise created (owner: Ron); NGR Demo moved in; its 16 roles became enterprise roles (actors linked via enterprise_id).

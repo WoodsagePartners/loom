@@ -1,6 +1,7 @@
 "use client";
 
 import type { ActorKind } from "@/lib/flow";
+import { THEME } from "@/lib/colors";
 
 // Shape = what KIND of actor owns a step (the owner's name/color ride on top).
 //   person   → pill          team     → rounded rectangle
@@ -78,7 +79,7 @@ export function ShapeIcon({ kind, color, size = 26 }: { kind: ActorKind; color: 
 }
 
 /** Electrical-ground symbol: where a workflow ends. */
-export function GroundSymbol({ color = "#93a5b6", size = 22 }: { color?: string; size?: number }) {
+export function GroundSymbol({ color = THEME.slate, size = 22 }: { color?: string; size?: number }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round">
       <line x1="12" y1="2" x2="12" y2="10" />

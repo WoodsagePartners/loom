@@ -1,4 +1,5 @@
 // Loom v2 model: workspace > workflows > lanes / nodes / edges, plus actors.
+import { THEME } from "@/lib/colors";
 // See supabase migrations workflow_model_*.
 
 export type ActorKind = "person" | "team" | "system" | "ai" | "external";
@@ -12,6 +13,8 @@ export type Actor = {
   role: string | null;
   color: string | null;
   notes: string | null;
+  /** Set when this role is an enterprise role shared by every workspace in the organization. */
+  enterprise_id?: string | null;
 };
 
 export type Workflow = {
@@ -86,9 +89,9 @@ export const EDGE_KINDS: {
   dash: string | undefined;
   color: string;
 }[] = [
-  { key: "flow", en: "Flow", de: "Ablauf", hint: "Work moves forward", hintDe: "Die Arbeit geht weiter", dash: undefined, color: "#93a5b6" },
+  { key: "flow", en: "Flow", de: "Ablauf", hint: "Work moves forward", hintDe: "Die Arbeit geht weiter", dash: undefined, color: THEME.slate },
   { key: "info", en: "Info", de: "Info", hint: "Information or a document is passed along; no work moves", hintDe: "Information oder Dokument wird weitergereicht; keine Arbeit bewegt sich", dash: "8 6", color: "#8fa6ff" },
-  { key: "exception", en: "Rework", de: "Nacharbeit", hint: "An exception, a loop back, or when things go wrong", hintDe: "Ausnahme, Rückschleife oder wenn etwas schiefgeht", dash: "2 6", color: "#f87171" },
+  { key: "exception", en: "Rework", de: "Nacharbeit", hint: "An exception, a loop back, or when things go wrong", hintDe: "Ausnahme, Rückschleife oder wenn etwas schiefgeht", dash: "2 6", color: THEME.danger },
 ];
 export const edgeKindInfo = (k: EdgeKind | null | undefined) => EDGE_KINDS.find((x) => x.key === k) ?? EDGE_KINDS[0];
 
@@ -121,7 +124,7 @@ export type EdgePatch = Partial<Pick<FlowEdge, "label" | "kind" | "color" | "pay
 export const FRICTIONS: { key: Friction; en: string; de: string; color: string }[] = [
   { key: "none", en: "None", de: "Keine", color: "#4ade80" },
   { key: "some", en: "Some", de: "Etwas", color: "#fbbf24" },
-  { key: "painful", en: "Painful", de: "Schmerzhaft", color: "#f87171" },
+  { key: "painful", en: "Painful", de: "Schmerzhaft", color: THEME.danger },
 ];
 export const CHANNELS: { en: string; de: string }[] = [
   { en: "Email", de: "E-Mail" },
@@ -143,7 +146,9 @@ export function waitParts(m: number | null | undefined): { v: string; unit: (typ
 }
 
 // ---- palette: 8 colors usable for actors, lanes and workflows -------------
-export const PALETTE = ["#60a5fa", "#f8991d", "#5eead4", "#c084fc", "#f472b6", "#a3e635", "#fb7185", "#22d3ee"];
+export const PALETTE = ["#60a5fa", THEME.orange, "#5eead4", "#c084fc", "#f472b6", "#a3e635", "#fb7185", "#22d3ee"];
+/** Muted palette for roles (same family as the NGR demo roles). PALETTE above stays for lanes, processes and members. */
+export const ROLE_PALETTE = ["#5f8bb3", "#5a8a6b", "#d08a3c", "#8a7bb0", "#b5677d", "#8f9a4f", "#b8765a", "#6b8f94"];
 export const NEUTRAL = "#64748b";
 export const pickColor = (i: number) => PALETTE[i % PALETTE.length];
 

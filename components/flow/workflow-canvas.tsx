@@ -67,6 +67,7 @@ import { useT } from "@/lib/i18n";
 import { Tx, useTx } from "@/lib/content-i18n";
 import { HandIcon, LockIcon, PointerIcon, UnlockIcon } from "@/components/icons";
 import { useTheme } from "@/lib/theme";
+import { THEME } from "@/lib/colors";
 import { GroundSymbol, ShapeBody } from "@/components/flow/shapes";
 import { HopBar, LayerLegend, PIN_KINDS, PinLayer, computeSignals, type Signal } from "@/components/flow/pin-layer";
 import { BirdsEye } from "@/components/flow/birds-eye";
@@ -127,7 +128,7 @@ const TYPE_SHORT: Record<NodeType, [string, string]> = {
 };
 
 const INPUT_CLS =
-  "nodrag nopan nowheel w-full bg-black/40 border border-white/15 rounded-md text-text text-[0.8rem] px-2 py-1.5 outline-none focus:border-orange/60";
+  "nodrag nopan nowheel w-full bg-black/40 border border-white/15 rounded-md text-text text-small px-2 py-1.5 outline-none focus:border-orange/60";
 
 // ------------------------------------------------------------- node view --
 
@@ -163,8 +164,8 @@ function CardFooter({ onDelete, onDone }: { onDelete?: () => void; onDone: () =>
   const t = useT();
   return (
     <div className="mt-3 flex items-center justify-between">
-      {onDelete ? <button type="button" onClick={onDelete} className="btn-danger inline-flex h-6 items-center rounded-full border px-3 text-[0.68rem] font-mono leading-none tracking-wider transition-colors">{t("DELETE", "LÖSCHEN")}</button> : <span />}
-      <button type="button" onClick={onDone} className="inline-flex h-6 items-center rounded-full border border-orange/60 bg-orange/10 px-3 text-[0.68rem] font-mono leading-none tracking-wider text-orange hover:bg-orange/20 transition-colors">{t("DONE", "FERTIG")}</button>
+      {onDelete ? <button type="button" onClick={onDelete} className="btn-danger inline-flex h-6 items-center rounded-full border px-3 text-label font-mono leading-none tracking-wider transition-colors">{t("DELETE", "LÖSCHEN")}</button> : <span />}
+      <button type="button" onClick={onDone} className="inline-flex h-6 items-center rounded-full border border-orange/60 bg-orange/10 px-3 text-label font-mono leading-none tracking-wider text-orange hover:bg-orange/20 transition-colors">{t("DONE", "FERTIG")}</button>
     </div>
   );
 }
@@ -177,7 +178,7 @@ function DragGrip({ bind }: { bind: ReturnType<typeof useDragCard>["bind"] }) {
       title={t("Drag to move this card", "Zum Verschieben ziehen")}
       className="nodrag nopan -mx-3 -mt-3 mb-2 h-5 rounded-t-xl cursor-grab active:cursor-grabbing flex items-center justify-center select-none touch-none bg-white/[0.06] hover:bg-white/[0.1] transition-colors"
     >
-      <span className="font-mono text-[0.6rem] tracking-[0.35em] text-muted/60 leading-none">⋮⋮⋮</span>
+      <span className="font-mono text-micro tracking-[0.35em] text-muted/60 leading-none">⋮⋮⋮</span>
     </div>
   );
 }
@@ -217,7 +218,7 @@ const FlowNodeView = memo(function FlowNodeView({ data, selected, dragging, posi
 
   const isStart = node.type === "start";
   const isEnd = node.type === "end";
-  const color = isStart ? "#f8991d" : isEnd ? "#93a5b6" : (actor?.color ?? NEUTRAL);
+  const color = isStart ? THEME.orange : isEnd ? THEME.slate : (actor?.color ?? NEUTRAL);
   const w = NODE_W;
   const h = NODE_H;
 
@@ -243,13 +244,13 @@ const FlowNodeView = memo(function FlowNodeView({ data, selected, dragging, posi
         if (e.key === "Escape") data.onCancelEdit();
       }}
       onFocus={(e) => e.currentTarget.select()}
-      className="nodrag nopan w-full bg-transparent text-center text-[0.81rem] leading-tight outline-none border-b border-orange/60"
+      className="nodrag nopan w-full bg-transparent text-center text-small leading-tight outline-none border-b border-orange/60"
       placeholder={t("Name this step", "Schritt benennen")}
     />
   ) : (
     <div
       title={node.label ? tx(node.label) : undefined}
-      className={`w-full text-center text-[0.81rem] leading-tight truncate ${
+      className={`w-full text-center text-small leading-tight truncate ${
         node.label ? "" : "text-muted/60 italic"
       }`}
     >
@@ -301,10 +302,10 @@ const FlowNodeView = memo(function FlowNodeView({ data, selected, dragging, posi
           }}
           onDoubleClick={(e) => e.stopPropagation()}
           title={data.commentCount > 0 ? t("Comments on this step", "Kommentare zu diesem Schritt") : t("Add a comment", "Kommentar hinzufügen")}
-          className="nodrag nopan absolute -top-3 -right-3 z-10 h-6 min-w-6 px-1.5 rounded-full flex items-center justify-center gap-1 text-[0.68rem] font-mono border transition-colors"
+          className="nodrag nopan absolute -top-3 -right-3 z-10 h-6 min-w-6 px-1.5 rounded-full flex items-center justify-center gap-1 text-label font-mono border transition-colors"
           style={
             data.commentCount > 0
-              ? { background: "#f8991d", color: "#14161c", borderColor: "rgba(0,0,0,.35)" }
+              ? { background: THEME.orange, color: "#14161c", borderColor: "rgba(0,0,0,.35)" }
               : { background: "var(--tint-solid)", color: "var(--muted, #93a5b6)", borderColor: "rgba(255,255,255,.2)" }
           }
         >
@@ -323,9 +324,9 @@ const FlowNodeView = memo(function FlowNodeView({ data, selected, dragging, posi
       )}
       {data.selecting && (
         <div
-          className="absolute -top-2 -left-2 w-5 h-5 rounded-full border-2 flex items-center justify-center text-[0.65rem] font-bold pointer-events-none"
+          className="absolute -top-2 -left-2 w-5 h-5 rounded-full border-2 flex items-center justify-center text-micro font-bold pointer-events-none"
           style={{
-            borderColor: data.ring ?? "#f8991d",
+            borderColor: data.ring ?? THEME.orange,
             background: data.ring ? data.ring : "var(--tint-ring)",
             color: data.ring ? "#0a1119" : "transparent",
           }}
@@ -362,12 +363,12 @@ const FlowNodeView = memo(function FlowNodeView({ data, selected, dragging, posi
           {labelEl}
           {!isStart && !isEnd && (
             <div className="mt-1 w-full min-w-0 flex flex-col items-center gap-0.5">
-              <div className="flex items-center gap-1.5 font-mono text-[0.74rem] tracking-[0.06em] uppercase text-muted whitespace-nowrap">
+              <div className="flex items-center gap-1.5 font-mono text-caption tracking-[0.06em] uppercase text-muted whitespace-nowrap">
                 <span style={{ color }}>{info.glyph}</span>
                 <span>{t(info.en, info.de)}</span>
               </div>
               {actor && (
-                <div className="w-full truncate text-center text-[0.8rem] leading-none" style={{ color }} title={tx(actor.name)}>
+                <div className="w-full truncate text-center text-small leading-none" style={{ color }} title={tx(actor.name)}>
                   <Tx text={actor.name} d={wave + 120} />
                 </div>
               )}
@@ -400,8 +401,8 @@ const FlowNodeView = memo(function FlowNodeView({ data, selected, dragging, posi
       </NodeToolbar>
 
       <NodeToolbar position={flipUp ? Position.Top : Position.Bottom} offset={14} isVisible={hoverNode && !quiet && !selected && !dragging && !editing}>
-        <div className="glass glass-bright glass-dense glass-pop w-72 rounded-xl p-3 text-[0.8rem] pointer-events-none">
-          <div className="font-medium text-[0.86rem] mb-1">{node.label ? tx(node.label) : t("Untitled step", "Schritt ohne Namen")}</div>
+        <div className="glass glass-bright glass-dense glass-pop w-72 rounded-xl p-3 text-small pointer-events-none">
+          <div className="font-medium text-body mb-1">{node.label ? tx(node.label) : t("Untitled step", "Schritt ohne Namen")}</div>
           <div className="flex gap-2"><span className="text-text/60 w-14 flex-none">{t("Type", "Typ")}</span><span>{info.glyph} {t(info.en, info.de)}</span></div>
           <div className="flex gap-2"><span className="text-text/60 w-14 flex-none">{t("Owner", "Zuständig")}</span><span style={actor?.color ? { color: actor.color } : undefined}>{actor ? tx(actor.name) : t("— no owner yet —", "— noch niemand —")}</span></div>
           {node.description && <div className="mt-2 pt-2 border-t border-white/10 text-text/80 whitespace-pre-wrap">{tx(node.description)}</div>}
@@ -410,14 +411,14 @@ const FlowNodeView = memo(function FlowNodeView({ data, selected, dragging, posi
 
       <NodeToolbar position={flipUp ? Position.Top : Position.Bottom} offset={14} isVisible={selected && !quiet && !dragging}>
         <div
-          className="nodrag nopan glass glass-bright glass-dense glass-pop w-72 max-h-[70vh] overflow-y-auto rounded-xl p-3 text-[0.8rem]"
+          className="nodrag nopan glass glass-bright glass-dense glass-pop w-72 max-h-[70vh] overflow-y-auto rounded-xl p-3 text-small"
           style={{ position: "relative", left: card.o.x, top: card.o.y }}
           onDoubleClick={(e) => e.stopPropagation()}
         >
           <DragGrip bind={card.bind} />
-          {lockN && <div className="mb-2 rounded-md border border-orange/40 bg-orange/10 px-2 py-1 text-[0.7rem] text-orange">{t("Locked — view only", "Gesperrt – nur Ansicht")}</div>}
+          {lockN && <div className="mb-2 rounded-md border border-orange/40 bg-orange/10 px-2 py-1 text-label text-orange">{t("Locked — view only", "Gesperrt – nur Ansicht")}</div>}
           <fieldset disabled={lockN} className="contents">
-          <div className="font-mono text-[0.62rem] tracking-[0.14em] text-muted/80 mb-1">{t("STEP NAME", "SCHRITTNAME")}</div>
+          <div className="font-mono text-micro tracking-[0.14em] text-muted/80 mb-1">{t("STEP NAME", "SCHRITTNAME")}</div>
           <input
             key={node.id + node.label}
             defaultValue={node.label}
@@ -428,9 +429,9 @@ const FlowNodeView = memo(function FlowNodeView({ data, selected, dragging, posi
               if (v !== node.label) data.onPatch(node.id, { label: v });
             }}
             onKeyDown={(e) => e.key === "Enter" && (e.target as HTMLInputElement).blur()}
-            className={INPUT_CLS + " mb-3 !text-[0.86rem] font-medium"}
+            className={INPUT_CLS + " mb-3 !text-body font-medium"}
           />
-          <div className="font-mono text-[0.62rem] tracking-[0.14em] text-muted/80 mb-1.5">{t("TYPE", "TYP")}</div>
+          <div className="font-mono text-micro tracking-[0.14em] text-muted/80 mb-1.5">{t("TYPE", "TYP")}</div>
           <div className="flex gap-1 mb-3">
             {NODE_TYPES.map((nt) => {
               // a workflow's Start is created with it; no other step can become one
@@ -453,19 +454,19 @@ const FlowNodeView = memo(function FlowNodeView({ data, selected, dragging, posi
                         : "border-white/10 text-muted hover:text-text"
                   }`}
                 >
-                  <span className="font-mono text-[0.56rem] tracking-[0.02em] uppercase">{t(TYPE_SHORT[nt.key][0], TYPE_SHORT[nt.key][1])}</span>
-                  <span className="text-[0.95rem]">{nt.glyph}</span>
+                  <span className="font-mono text-nano tracking-[0.02em] uppercase">{t(TYPE_SHORT[nt.key][0], TYPE_SHORT[nt.key][1])}</span>
+                  <span className="text-lead">{nt.glyph}</span>
                 </button>
               );
             })}
           </div>
-          <div className="text-[0.72rem] text-muted mb-2 -mt-1.5">
+          <div className="text-caption text-muted mb-2 -mt-1.5">
             {t(info.en, info.de)} — {t(info.hint, info.hintDe)}
           </div>
 
           {!isStart && !isEnd && (
             <>
-              <div className="font-mono text-[0.62rem] tracking-[0.14em] text-muted/80 mb-1">{t("OWNER", "ZUSTÄNDIG")}</div>
+              <div className="font-mono text-micro tracking-[0.14em] text-muted/80 mb-1">{t("OWNER", "ZUSTÄNDIG")}</div>
               <select
                 value={node.actor_id ?? ""}
                 onChange={(e) => setErr(data.onPatch(node.id, { actor_id: e.target.value || null }))}
@@ -473,7 +474,7 @@ const FlowNodeView = memo(function FlowNodeView({ data, selected, dragging, posi
               >
                 <option value="">{t("— no owner yet —", "— noch niemand —")}</option>
                 {actors.map((a) => (
-                  <option key={a.id} value={a.id} className="bg-[#0b1020]">
+                  <option key={a.id} value={a.id} className="bg-panel">
                     {tx(a.name)}
                     {a.role ? ` · ${tx(a.role)}` : ""}
                   </option>
@@ -488,7 +489,7 @@ const FlowNodeView = memo(function FlowNodeView({ data, selected, dragging, posi
               <TimeField key={node.id + "w"} label={t("WAITS BEFORE IT STARTS", "WARTET VOR DEM START")} minutes={node.wait_minutes} onSave={(m) => setErr(data.onPatch(node.id, { wait_minutes: m }))} />
             </>
           )}
-          <div className="font-mono text-[0.62rem] tracking-[0.14em] text-muted/80 mb-1">{t("DESCRIPTION", "BESCHREIBUNG")}</div>
+          <div className="font-mono text-micro tracking-[0.14em] text-muted/80 mb-1">{t("DESCRIPTION", "BESCHREIBUNG")}</div>
           <textarea
             key={node.id + node.description + tx(node.description)}
             defaultValue={tx(node.description)}
@@ -506,7 +507,7 @@ const FlowNodeView = memo(function FlowNodeView({ data, selected, dragging, posi
             className={INPUT_CLS + " resize-none"}
           />
           </fieldset>
-          {err && <div className="mt-2 text-[0.75rem] text-red-300">{err}</div>}
+          {err && <div className="mt-2 text-caption text-red-300">{err}</div>}
           <CardFooter onDelete={lockN ? undefined : () => data.onDelete(node.id)} onDone={data.onClose} />
         </div>
       </NodeToolbar>
@@ -528,12 +529,12 @@ function TimeField({ label, minutes, onSave }: { label: string; minutes: number 
   };
   return (
     <div className="mb-3">
-      <div className="font-mono text-[0.62rem] tracking-[0.14em] text-muted/80 mb-1">{label}</div>
+      <div className="font-mono text-micro tracking-[0.14em] text-muted/80 mb-1">{label}</div>
       <div className="flex gap-1.5">
         <input value={v} inputMode="decimal" onChange={(e) => setV(e.target.value)} onBlur={() => save(v, u)} onKeyDown={(e) => e.key === "Enter" && (e.target as HTMLInputElement).blur()} placeholder="0" className={INPUT_CLS + " !w-16"} />
         <select value={u} onChange={(e) => { setU(e.target.value as any); save(v, e.target.value); }} className={INPUT_CLS + " flex-1"}>
           {WAIT_UNITS.map((x) => (
-            <option key={x.key} value={x.key} className="bg-[#0b1020]">{t(x.en, x.de)}</option>
+            <option key={x.key} value={x.key} className="bg-panel">{t(x.en, x.de)}</option>
           ))}
         </select>
       </div>
@@ -547,8 +548,8 @@ function fmtWait(m: number | null | undefined, lang: (en: string, de: string) =>
   return `${v} ${lang(unit.en, unit.de)}`;
 }
 
-const SM_LABEL = "font-mono text-[0.62rem] tracking-[0.14em] uppercase text-text/70 mb-1";
-const SM_FIELD = "nodrag nopan nowheel w-full bg-black/40 border border-white/15 rounded-md text-[0.8rem] text-text px-2 py-1.5 outline-none focus:border-orange/60 placeholder:text-text/40";
+const SM_LABEL = "font-mono text-micro tracking-[0.14em] uppercase text-text/70 mb-1";
+const SM_FIELD = "nodrag nopan nowheel w-full bg-black/40 border border-white/15 rounded-md text-small text-text px-2 py-1.5 outline-none focus:border-orange/60 placeholder:text-text/40";
 
 /** Editor for the "smarts" on a line: what moves, how, wait, friction, note. */
 function SmartsEditor({ id, data, readOnly }: { id: string; data: EdgeData; readOnly?: boolean }) {
@@ -569,9 +570,9 @@ function SmartsEditor({ id, data, readOnly }: { id: string; data: EdgeData; read
     if (m !== (s.wait_minutes ?? null)) data.onSmarts(id, { wait_minutes: m });
   };
   return (
-    <div className="absolute left-1/2 -translate-x-1/2 top-4 w-72 glass glass-bright glass-dense glass-pop rounded-xl p-3 text-left text-[0.8rem] space-y-3 whitespace-normal" style={{ marginLeft: card.o.x, marginTop: card.o.y }} onMouseDown={(e) => e.stopPropagation()}>
+    <div className="absolute left-1/2 -translate-x-1/2 top-4 w-72 glass glass-bright glass-dense glass-pop rounded-xl p-3 text-left text-small space-y-3 whitespace-normal" style={{ marginLeft: card.o.x, marginTop: card.o.y }} onMouseDown={(e) => e.stopPropagation()}>
       <DragGrip bind={card.bind} />
-      {readOnly && <div className="rounded-md border border-orange/40 bg-orange/10 px-2 py-1 text-[0.7rem] text-orange">{t("Locked — view only", "Gesperrt – nur Ansicht")}</div>}
+      {readOnly && <div className="rounded-md border border-orange/40 bg-orange/10 px-2 py-1 text-label text-orange">{t("Locked — view only", "Gesperrt – nur Ansicht")}</div>}
       <fieldset disabled={readOnly} className="contents">
       <div>
         <div className={SM_LABEL}>{t("What moves", "Was wird übergeben")}</div>
@@ -605,7 +606,7 @@ function SmartsEditor({ id, data, readOnly }: { id: string; data: EdgeData; read
               key={f.key}
               type="button"
               onClick={() => data.onSmarts(id, { friction: s.friction === f.key ? null : f.key })}
-              className="flex-1 rounded-full border py-0.5 text-[0.68rem] transition-colors"
+              className="flex-1 rounded-full border py-0.5 text-label transition-colors"
               style={s.friction === f.key ? { borderColor: f.color, color: f.color, background: `${f.color}22` } : { borderColor: "rgb(var(--c-white) / .2)", color: "rgb(var(--c-text) / .75)" }}
             >
               {t(f.en, f.de)}
@@ -621,7 +622,7 @@ function SmartsEditor({ id, data, readOnly }: { id: string; data: EdgeData; read
               key={w.key}
               type="button"
               onClick={() => data.onSmarts(id, { weight: s.weight === w.key ? null : w.key })}
-              className={`flex-1 rounded-full border py-0.5 text-[0.68rem] transition-colors ${s.weight === w.key ? "border-orange text-orange bg-orange/15" : "border-white/20 text-text/75"}`}
+              className={`flex-1 rounded-full border py-0.5 text-label transition-colors ${s.weight === w.key ? "border-orange text-orange bg-orange/15" : "border-white/20 text-text/75"}`}
             >
               {t(w.en, w.de)}
             </button>
@@ -681,9 +682,9 @@ function InfoTip({ title, body, how, side = "below", children }: { title: string
           className={`absolute z-50 w-60 rounded-xl p-3 text-left pointer-events-none glass glass-bright ${side === "left" ? "right-full mr-2 top-0" : side === "above" ? "right-0 bottom-full mb-2" : "left-0 top-full mt-2"}`}
           style={{ background: theme === "light" ? "rgba(255,255,255,0.98)" : "rgba(12,16,26,0.98)" }}
         >
-          <div className="font-mono text-[0.62rem] tracking-[0.14em] text-orange uppercase">{title}</div>
-          <div className="mt-1 text-[0.76rem] leading-snug text-text/90 normal-case font-normal tracking-normal">{body}</div>
-          {how && <div className="mt-1.5 text-[0.7rem] leading-snug text-muted normal-case font-normal tracking-normal">{how}</div>}
+          <div className="font-mono text-micro tracking-[0.14em] text-orange uppercase">{title}</div>
+          <div className="mt-1 text-caption leading-snug text-text/90 normal-case font-normal tracking-normal">{body}</div>
+          {how && <div className="mt-1.5 text-label leading-snug text-muted normal-case font-normal tracking-normal">{how}</div>}
         </div>
       )}
     </div>
@@ -702,7 +703,7 @@ function SmartsCard({ data, label }: { data: EdgeData; label: string | null }) {
     [t("Wait", "Wartezeit"), fmtWait(s.wait_minutes, t)],
   ];
   return (
-    <div className="absolute left-1/2 -translate-x-1/2 bottom-full mb-4 w-72 glass glass-bright glass-dense glass-pop rounded-xl p-3 text-left text-[0.8rem] whitespace-normal pointer-events-none z-10">
+    <div className="absolute left-1/2 -translate-x-1/2 bottom-full mb-4 w-72 glass glass-bright glass-dense glass-pop rounded-xl p-3 text-left text-small whitespace-normal pointer-events-none z-10">
       {label && <div className="font-medium mb-1.5">{tx(label)}</div>}
       <div className="space-y-1">
         {rows.filter(([, v]) => v).map(([k, v]) => (
@@ -794,7 +795,7 @@ const FlowEdgeView = memo(function FlowEdgeView(props: EdgeProps<RFEdge>) {
                   key={k.key}
                   title={`${t(k.en, k.de)} — ${t(k.hint, k.hintDe)}`}
                   onClick={() => data?.onKind(id, k.key)}
-                  className={`flex items-center gap-1.5 rounded-full px-2 py-0.5 text-[0.68rem] ${
+                  className={`flex items-center gap-1.5 rounded-full px-2 py-0.5 text-label ${
                     (data?.kind ?? "flow") === k.key ? "bg-orange/20 text-orange" : "text-muted hover:text-text"
                   }`}
                 >
@@ -809,7 +810,7 @@ const FlowEdgeView = memo(function FlowEdgeView(props: EdgeProps<RFEdge>) {
               <button
                 title={t("Automatic color (by line type)", "Automatische Farbe (nach Linienart)")}
                 onClick={() => data?.onColor(id, null)}
-                className="w-[18px] h-[18px] rounded-full border-2 text-[0.55rem] leading-none text-muted"
+                className="w-[18px] h-[18px] rounded-full border-2 text-nano leading-none text-muted"
                 style={{ borderColor: !data?.color ? "#fff" : "rgba(255,255,255,.25)" }}
               >
                 A
@@ -839,13 +840,13 @@ const FlowEdgeView = memo(function FlowEdgeView(props: EdgeProps<RFEdge>) {
                 if (e.key === "Escape") setEditing(false);
               }}
               placeholder={t("e.g. approved", "z. B. genehmigt")}
-              className="glass w-28 rounded-full !border-orange/60 px-2.5 py-1 text-[0.78rem] text-center outline-none"
+              className="glass w-28 rounded-full !border-orange/60 px-2.5 py-1 text-small text-center outline-none"
             />
           ) : data?.label ? (
             <button
               onClick={() => data?.onSelect(id)}
               onDoubleClick={() => !lockE && setEditing(true)}
-              className="glass rounded-full px-2.5 py-0.5 text-[0.78rem] text-text inline-flex items-center gap-1.5"
+              className="glass rounded-full px-2.5 py-0.5 text-small text-text inline-flex items-center gap-1.5"
             >
               {frColor && <span className="w-1.5 h-1.5 rounded-full flex-none" style={{ background: frColor }} />}
               <Tx text={data.label} d={400} />
@@ -854,7 +855,7 @@ const FlowEdgeView = memo(function FlowEdgeView(props: EdgeProps<RFEdge>) {
           ) : selected && !lockE ? (
             <button
               onClick={() => setEditing(true)}
-              className="glass rounded-full !border-orange/50 px-2.5 py-0.5 text-[0.75rem] text-orange"
+              className="glass rounded-full !border-orange/50 px-2.5 py-0.5 text-caption text-orange"
             >
               + {t("label", "Beschriftung")}
             </button>
@@ -942,7 +943,7 @@ function Inner(props: CanvasProps) {
   const [drawer, setDrawer] = useState<null | "inquiry" | "intelligence" | "innovation">(null);
   const circuitRaw = useMemo(() => {
     if (!probe.a) return null;
-    const ring = "#f8991d";
+    const ring = THEME.orange;
     if (!probe.b) return { none: false as const, pending: true as const, focus: { ids: new Set([probe.a]), ring, badges: new Map<string, string[]>(), selecting: false } as Focus };
     const flowEdges = edges.filter((e) => e.kind !== "info");
     const reach = (start: string, forward: boolean) => {
@@ -1031,7 +1032,7 @@ function Inner(props: CanvasProps) {
       const n = routeOrder.length;
       const k = n ? Math.max(1, Math.round((n * (trav ?? 0)) / 100)) : 0;
       const ids = n ? new Set(routeOrder.slice(0, k)) : new Set([probe.a, probe.b]);
-      return { none: false as const, pending: true as const, focus: { ids, ring: "#f8991d", badges: new Map<string, string[]>(), selecting: false } as Focus };
+      return { none: false as const, pending: true as const, focus: { ids, ring: THEME.orange, badges: new Map<string, string[]>(), selecting: false } as Focus };
     }
     return circuitRaw;
   }, [circuitRaw, pairKey, travKey, probe.a, probe.b, routeOrder, trav]);
@@ -1051,7 +1052,7 @@ function Inner(props: CanvasProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pickTool]);
   const gaps = useMemo(() => (gapsOn ? nodes.filter((n) => n.type !== "start" && n.type !== "end" && !n.duration_minutes) : null), [gapsOn, nodes]);
-  const gapFocus = useMemo(() => (gaps && gaps.length ? ({ ids: new Set(gaps.map((n) => n.id)), ring: "#f8991d", badges: new Map<string, string[]>(), selecting: false } as Focus) : null), [gaps]);
+  const gapFocus = useMemo(() => (gaps && gaps.length ? ({ ids: new Set(gaps.map((n) => n.id)), ring: THEME.orange, badges: new Map<string, string[]>(), selecting: false } as Focus) : null), [gaps]);
   const focus = circuit?.focus ?? gapFocus ?? focusProp;
   const fmtDur = (m: number) => {
     if (!m) return "0";
@@ -1171,7 +1172,7 @@ function Inner(props: CanvasProps) {
           onClose: () => closeRef.current(),
           onAddNext: (id) => addNextRef.current(id),
           dim: (!!focus && !focus.selecting && !focus.ids.has(n.id)) || (searching && !matchIds.has(n.id)), // while picking steps, nothing is hidden
-          ring: focus && focus.ids.has(n.id) ? focus.ring : searching && matchIds.has(n.id) ? "#f8991d" : null,
+          ring: focus && focus.ids.has(n.id) ? focus.ring : searching && matchIds.has(n.id) ? THEME.orange : null,
           badges: focus?.badges.get(n.id) ?? [],
           selecting: !!focus?.selecting,
           soft: !!circuit?.pending, // first probe placed: keep everything pickable
@@ -1644,8 +1645,8 @@ function Inner(props: CanvasProps) {
       {props.canProbe && (
         <div className="absolute top-3 right-3 z-30 flex items-start gap-2">
           {drawer && (
-            <div className="glass glass-bright rounded-xl p-3 w-[20rem] text-[0.76rem]" style={{ background: theme === "light" ? "rgba(255,255,255,0.98)" : "rgba(12,16,26,0.98)" }}>
-              <div className="font-mono text-[0.6rem] tracking-[0.16em] text-orange mb-2">
+            <div className="glass glass-bright rounded-xl p-3 w-[20rem] text-caption" style={{ background: theme === "light" ? "rgba(255,255,255,0.98)" : "rgba(12,16,26,0.98)" }}>
+              <div className="font-mono text-micro tracking-[0.16em] text-orange mb-2">
                 {drawer === "inquiry" ? t("INQUIRY", "UNTERSUCHUNG") : drawer === "intelligence" ? t("INTELLIGENCE", "INTELLIGENZ") : t("INNOVATION", "INNOVATION")}
               </div>
               {drawer === "inquiry" ? (
@@ -1659,10 +1660,10 @@ function Inner(props: CanvasProps) {
                       <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" className="flex-none"><circle cx="3" cy="8" r="2" fill="currentColor" /><circle cx="13" cy="8" r="2" fill="currentColor" /><path d="M5 8h6" stroke="currentColor" strokeWidth="1.5" strokeDasharray="2 1.5" /></svg>
                       <span className="flex-1">
                         <span className="block font-medium">{t("Circuit Tester", "Schaltkreis-Prüfer")}</span>
-                        <span className="block text-muted text-[0.68rem]">{t("Pick two steps to light the route between them.", "Zwei Schritte wählen, um den Weg dazwischen zu zeigen.")}</span>
+                        <span className="block text-muted text-label">{t("Pick two steps to light the route between them.", "Zwei Schritte wählen, um den Weg dazwischen zu zeigen.")}</span>
                       </span>
                       <HelpTip title={t("Circuit Tester", "Schaltkreis-Prüfer")} body={t("Pick any two steps and Loom lights the route between them, then adds up the steps, hand-offs, lanes and time along it.", "Wählen Sie zwei Schritte, und Loom zeigt den Weg dazwischen samt Schritten, Übergaben, Bahnen und Zeit.")} how={t("Use it to answer “how long does it really take from here to there?”", "Beantwortet: „Wie lange dauert es wirklich von hier bis dort?“")} />
-                      <span className="text-[0.6rem] font-mono">{probeOn ? t("ON", "AN") : t("OFF", "AUS")}</span>
+                      <span className="text-micro font-mono">{probeOn ? t("ON", "AN") : t("OFF", "AUS")}</span>
                     </button>
                     {probeOn && (
                       <div className="mt-2 px-1 text-text/85">
@@ -1683,7 +1684,7 @@ function Inner(props: CanvasProps) {
                                   </div>
                                 </>
                               )}
-                        {circuit && <button onClick={() => setProbe({ a: null, b: null })} className="mt-1.5 block text-[0.68rem] text-muted hover:text-orange">{t("Reset probes", "Sonden zurücksetzen")}</button>}
+                        {circuit && <button onClick={() => setProbe({ a: null, b: null })} className="mt-1.5 block text-label text-muted hover:text-orange">{t("Reset probes", "Sonden zurücksetzen")}</button>}
                       </div>
                     )}
                   </div>
@@ -1696,10 +1697,10 @@ function Inner(props: CanvasProps) {
                       <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" className="flex-none"><rect x="1.5" y="3" width="13" height="10" rx="1.5" fill="none" stroke="currentColor" strokeWidth="1.4" strokeDasharray="2.5 1.5" /><path d="M5 8h6M8 5v6" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" /></svg>
                       <span className="flex-1">
                         <span className="block font-medium">{t("Selection Totals", "Auswahl-Summen")}</span>
-                        <span className="block text-muted text-[0.68rem]">{t("Add up the time in whatever you select.", "Die Zeit in der Auswahl zusammenzählen.")}</span>
+                        <span className="block text-muted text-label">{t("Add up the time in whatever you select.", "Die Zeit in der Auswahl zusammenzählen.")}</span>
                       </span>
                       <HelpTip title={t("Selection Totals", "Auswahl-Summen")} body={t("Select several steps and Loom totals the time in them: working time, waiting time and the overall total.", "Mehrere Schritte wählen, und Loom summiert die Zeit: Arbeitszeit, Wartezeit und Gesamtzeit.")} how={t("Drag a box on the canvas, or Ctrl-click steps to add them to the selection.", "Rechteck auf der Fläche ziehen oder Schritte mit Strg anklicken.")} />
-                      <span className="text-[0.6rem] font-mono">{tallyOn ? t("ON", "AN") : t("OFF", "AUS")}</span>
+                      <span className="text-micro font-mono">{tallyOn ? t("ON", "AN") : t("OFF", "AUS")}</span>
                     </button>
                     {tallyOn && tally && (
                       <div className="mt-2 px-1 text-text/85">
@@ -1711,7 +1712,7 @@ function Inner(props: CanvasProps) {
                             <div className="mt-1 text-muted">
                               {t("In steps", "In Schritten")} <span className="text-text">{fmtDur(tally.inSteps)}</span> · {t("Waiting", "Wartezeit")} <span className="text-text">{fmtDur(tally.waiting)}</span> · {t("Total", "Gesamt")} <span className="text-orange">{fmtDur(tally.total)}</span>
                             </div>
-                            {tally.untimed > 0 && <div className="mt-1 text-[0.68rem] text-muted">{tally.untimed} {t("steps have no time entered.", "Schritte ohne Zeitangabe.")}</div>}
+                            {tally.untimed > 0 && <div className="mt-1 text-label text-muted">{tally.untimed} {t("steps have no time entered.", "Schritte ohne Zeitangabe.")}</div>}
                           </>
                         )}
                       </div>
@@ -1726,10 +1727,10 @@ function Inner(props: CanvasProps) {
                       <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" className="flex-none"><circle cx="8" cy="8" r="6" fill="none" stroke="currentColor" strokeWidth="1.4" strokeDasharray="2.5 2" /><path d="M8 4.5V8l2.2 1.4" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" /></svg>
                       <span className="flex-1">
                         <span className="block font-medium">{t("Time Gaps", "Zeitlücken")}</span>
-                        <span className="block text-muted text-[0.68rem]">{t("Find the steps with no time entered.", "Schritte ohne Zeitangabe finden.")}</span>
+                        <span className="block text-muted text-label">{t("Find the steps with no time entered.", "Schritte ohne Zeitangabe finden.")}</span>
                       </span>
                       <HelpTip title={t("Time Gaps", "Zeitlücken")} body={t("Lists the steps that have no time entered, so your totals aren't quietly missing something.", "Listet Schritte ohne Zeitangabe, damit Ihre Summen nichts Wichtiges verschweigen.")} how={t("Click a step in the list to jump to it and add its time.", "Einen Schritt in der Liste anklicken, um hinzuspringen und die Zeit zu ergänzen.")} />
-                      <span className="text-[0.6rem] font-mono">{gapsOn ? t("ON", "AN") : t("OFF", "AUS")}</span>
+                      <span className="text-micro font-mono">{gapsOn ? t("ON", "AN") : t("OFF", "AUS")}</span>
                     </button>
                     {gapsOn && gaps && (
                       <div className="mt-2 px-1 text-text/85">
@@ -1743,7 +1744,7 @@ function Inner(props: CanvasProps) {
                                 <li key={n.id}>
                                   <button
                                     onClick={() => setCenter(n.x + NODE_W / 2, (laneIdx.get(n.lane_id ?? "") ?? 0) * LANE_H + n.y_offset + NODE_H / 2, { zoom: Math.max(getViewport().zoom, 0.8), duration: 300 })}
-                                    className="w-full truncate text-left text-[0.72rem] text-muted hover:text-orange"
+                                    className="w-full truncate text-left text-caption text-muted hover:text-orange"
                                   >
                                     {n.label || t("(unnamed step)", "(unbenannter Schritt)")}
                                   </button>
@@ -1765,14 +1766,14 @@ function Inner(props: CanvasProps) {
                     <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" className="flex-none"><path d="M2 5l6-3 6 3-6 3-6-3z" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinejoin="round" /><path d="M2 9l6 3 6-3M2 12l6 3 6-3" fill="none" stroke="currentColor" strokeWidth="1.2" strokeLinejoin="round" opacity=".6" /></svg>
                     <span className="flex-1">
                       <span className="block font-medium">{t("Insights", "Erkenntnisse")}</span>
-                      <span className="block text-muted text-[0.68rem]">{t("Loom reads your process and flags what looks off. Pin your own questions and ideas. Editing pauses.", "Loom liest Ihren Prozess und markiert Auffälliges. Heften Sie eigene Fragen und Ideen an. Bearbeiten pausiert.")}</span>
+                      <span className="block text-muted text-label">{t("Loom reads your process and flags what looks off. Pin your own questions and ideas. Editing pauses.", "Loom liest Ihren Prozess und markiert Auffälliges. Heften Sie eigene Fragen und Ideen an. Bearbeiten pausiert.")}</span>
                     </span>
                     <HelpTip title={t("Insights", "Erkenntnisse")} body={t("Look behind your process. Loom flags what looks off (signals); you pin questions, findings and ideas, and pursue the ones worth chasing.", "Der Blick hinter den Prozess. Loom markiert Auffälliges (Signale); Sie heften Fragen, Befunde und Ideen an und verfolgen, was sich lohnt.")} how={t("Editing pauses while Insights is on. Press Esc to return.", "Bearbeiten pausiert, solange Erkenntnisse an ist. Esc zum Zurückkehren.")} />
-                    <span className="text-[0.6rem] font-mono">{peerOn ? t("ON", "AN") : t("OFF", "AUS")}</span>
+                    <span className="text-micro font-mono">{peerOn ? t("ON", "AN") : t("OFF", "AUS")}</span>
                   </button>
                   {peerOn && (
                     <>
-                      <label className="flex items-center gap-2 px-1 text-[0.8rem] text-text/85 cursor-pointer select-none">
+                      <label className="flex items-center gap-2 px-1 text-small text-text/85 cursor-pointer select-none">
                         <input type="checkbox" checked={editWhile} onChange={(e) => setEditWhile(e.target.checked)} className="accent-[#f8991d]" />
                         {t("Keep editing on", "Bearbeiten bleibt aktiv")}
                       </label>
@@ -1781,13 +1782,13 @@ function Inner(props: CanvasProps) {
                         onClick={() => setScanReq((n) => n + 1)}
                         disabled={scan !== null}
                         title={t("Have Loom read the process again", "Loom den Prozess erneut lesen lassen")}
-                        className="self-start text-[0.7rem] text-muted hover:text-orange disabled:opacity-40 disabled:hover:text-muted px-1"
+                        className="self-start text-label text-muted hover:text-orange disabled:opacity-40 disabled:hover:text-muted px-1"
                       >
                         ↻ {t("Scan again", "Erneut scannen")}
                       </button>
                       <div className="relative">
                         {eyeMap(224, 220)}
-                        <button onClick={() => setEyeBig(true)} title={t("Enlarge the map", "Karte vergrößern")} className="absolute top-1 right-1 w-5 h-5 rounded bg-black/50 text-text/80 hover:text-orange text-[0.7rem] leading-none">⤢</button>
+                        <button onClick={() => setEyeBig(true)} title={t("Enlarge the map", "Karte vergrößern")} className="absolute top-1 right-1 w-5 h-5 rounded bg-black/50 text-text/80 hover:text-orange text-label leading-none">⤢</button>
                       </div>
                       <HopBar
                         index={hopItems.findIndex((h) => h.key === pinOpen)}
@@ -1829,7 +1830,7 @@ function Inner(props: CanvasProps) {
         </div>
       )}
       {resumeNote !== null && (
-        <div className="absolute top-3 left-1/2 -translate-x-1/2 z-40 glass glass-bright rounded-full px-4 py-1.5 text-[0.82rem] flex items-center gap-3" style={{ background: "var(--tint-solid)" }}>
+        <div className="absolute top-3 left-1/2 -translate-x-1/2 z-40 glass glass-bright rounded-full px-4 py-1.5 text-small flex items-center gap-3" style={{ background: "var(--tint-solid)" }}>
           <span className="text-text/85">{t("Back where you left off", "Weiter, wo Sie aufgehört haben")}{resumeNote ? ` · ${resumeNote}` : ""}</span>
           <button onClick={startFresh} className="text-orange hover:underline">{t("Start fresh", "Neu beginnen")}</button>
         </div>
@@ -1837,19 +1838,19 @@ function Inner(props: CanvasProps) {
       {peerOn && eyeBig && (
         <div className="absolute left-4 bottom-4 z-40 glass glass-bright rounded-xl p-2.5" style={{ background: "var(--tint-solid)" }}>
           <div className="flex items-center mb-1.5">
-            <span className="font-mono text-[0.6rem] tracking-[0.14em] text-orange">{t("BIRD'S-EYE VIEW", "VOGELPERSPEKTIVE")}</span>
+            <span className="font-mono text-micro tracking-[0.14em] text-orange">{t("BIRD'S-EYE VIEW", "VOGELPERSPEKTIVE")}</span>
             <button onClick={() => setEyeBig(false)} className="ml-auto text-muted hover:text-text text-sm leading-none" aria-label="Close">×</button>
           </div>
           {eyeMap(Math.min(760, Math.max(420, (boxRef.current?.clientWidth ?? 900) - 120)), 360)}
         </div>
       )}
       {peerOn && scan === null && props.pins.length === 0 && selNodeIds.length === 0 && !selEdge && (
-        <div className="absolute left-1/2 -translate-x-1/2 top-4 z-30 glass glass-bright rounded-full px-4 py-2 text-[0.78rem] text-text/90 pointer-events-none" style={{ background: "var(--tint-solid)" }}>
+        <div className="absolute left-1/2 -translate-x-1/2 top-4 z-30 glass glass-bright rounded-full px-4 py-2 text-small text-text/90 pointer-events-none" style={{ background: "var(--tint-solid)" }}>
           {t("Click a step or line, then press ", "Schritt oder Linie anklicken, dann ")}<span className="inline-flex items-center justify-center w-5 h-5 rounded-full border border-dashed border-orange/70 text-orange align-middle mx-0.5">+</span>{t(" to pin a Question, Finding or Idea.", " drücken, um eine Frage, einen Befund oder eine Idee anzuheften.")}
         </div>
       )}
       {trav !== null && (
-        <div role="status" className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[95] glass glass-bright glass-pop rounded-full px-4 py-2 text-[0.8rem] flex items-center gap-2.5 pointer-events-none" style={{ background: "var(--tint-solid)" }}>
+        <div role="status" className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[95] glass glass-bright glass-pop rounded-full px-4 py-2 text-small flex items-center gap-2.5 pointer-events-none" style={{ background: "var(--tint-solid)" }}>
           <span className="inline-block w-3 h-3 rounded-full border-2 border-orange/30 border-t-orange animate-spin" aria-hidden />
           {t("Traversing the process…", "Der Prozess wird durchlaufen …")}
           <span className="font-mono text-muted">{trav}%</span>
@@ -1858,7 +1859,7 @@ function Inner(props: CanvasProps) {
       {peerOn && scan !== null && (
         <>
           <div className="absolute inset-y-0 pointer-events-none" style={{ left: `${scan}%`, width: 140, transform: "translateX(-100%)", zIndex: 30, background: "linear-gradient(90deg, rgba(248,153,29,0), rgba(248,153,29,.16))", borderRight: "2px solid rgba(248,153,29,.55)" }} />
-          <div role="status" className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[95] glass glass-bright glass-pop rounded-full px-4 py-2 text-[0.8rem] flex items-center gap-2.5 pointer-events-none" style={{ background: "var(--tint-solid)" }}>
+          <div role="status" className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[95] glass glass-bright glass-pop rounded-full px-4 py-2 text-small flex items-center gap-2.5 pointer-events-none" style={{ background: "var(--tint-solid)" }}>
             <span className="inline-block w-3 h-3 rounded-full border-2 border-orange/30 border-t-orange animate-spin" aria-hidden />
             {scan < 25 ? t("Reading your steps…", "Ihre Schritte werden gelesen …") : scan < 50 ? t("Measuring waits and handoffs…", "Wartezeiten und Übergaben werden gemessen …") : scan < 75 ? t("Looking for rework and bounces…", "Nacharbeit und Rückläufe werden gesucht …") : t("Weighing what matters…", "Das Wesentliche wird gewichtet …")}
             <span className="font-mono text-muted">{scan}%</span>
@@ -2009,11 +2010,11 @@ function Inner(props: CanvasProps) {
                 }}
                 placeholder={t("Find a step…", "Schritt suchen …")}
                 aria-label={t("Find a step", "Schritt suchen")}
-                className="nodrag nopan bg-transparent outline-none text-[0.8rem] font-normal w-32 placeholder:text-muted/70"
+                className="nodrag nopan bg-transparent outline-none text-small font-normal w-32 placeholder:text-muted/70"
               />
               {searching && (
                 <>
-                  <span className="font-mono text-[0.68rem] text-muted whitespace-nowrap">
+                  <span className="font-mono text-label text-muted whitespace-nowrap">
                     {matches.length ? `${matchPos + 1}/${matches.length}` : t("none", "keine")}
                   </span>
                   <button onClick={() => setQuery("")} aria-label={t("Clear search", "Suche löschen")} className="w-5 h-5 text-muted hover:text-text leading-none">✕</button>
@@ -2047,14 +2048,14 @@ function Inner(props: CanvasProps) {
                 className={`glass rounded-full h-8 flex items-center justify-center gap-1.5 transition-colors disabled:cursor-default ${locked ? "px-3 text-orange border !border-orange/50 bg-orange/10" : "w-8 text-text/80 hover:text-orange disabled:opacity-40 disabled:hover:text-text/80"}`}
               >
                 {locked ? <LockIcon size={14} /> : <UnlockIcon size={14} />}
-                {locked && <span className="font-mono text-[0.62rem] tracking-wider">{t("LOCKED", "GESPERRT")}</span>}
+                {locked && <span className="font-mono text-micro tracking-wider">{t("LOCKED", "GESPERRT")}</span>}
               </button>
             </InfoTip>
             <InfoTip title={t("Help","Hilfe")} body={t("How Loom works, with a quick tour of every tool.","So funktioniert Loom, mit einer kurzen Tour durch alle Werkzeuge.")} how={t("Shortcuts: H hand, V select, Ctrl+C / V / D copy, paste, duplicate. Ctrl+Z undo. Ctrl-click adds to a selection.","Kürzel: H Hand, V Auswahl, Strg+C / V / D kopieren, einfügen, duplizieren. Strg+Z rückgängig. Strg-Klick erweitert die Auswahl.")}>
               <button
                 onClick={() => props.onGuide?.()}
                 aria-label={t("Help","Hilfe")}
-                className="glass rounded-full w-8 h-8 flex items-center justify-center text-[0.9rem] font-medium leading-none text-text/80 hover:text-orange transition-colors"
+                className="glass rounded-full w-8 h-8 flex items-center justify-center text-lead font-medium leading-none text-text/80 hover:text-orange transition-colors"
               >
                 ?
               </button>
@@ -2070,7 +2071,7 @@ function Inner(props: CanvasProps) {
               </button>
             </InfoTip>
             <InfoTip side="above" title={t("Zoom level","Zoomstufe")} body={t("Click to jump back to 100%.","Klicken, um auf 100 % zurückzukehren.")}>
-              <button onClick={() => zoomTo(1, { duration: 200 })} aria-label={t("Reset zoom","Zoom zurücksetzen")} className="rounded-full h-8 px-2 font-mono text-[0.68rem] text-muted hover:text-orange transition-colors">
+              <button onClick={() => zoomTo(1, { duration: 200 })} aria-label={t("Reset zoom","Zoom zurücksetzen")} className="rounded-full h-8 px-2 font-mono text-label text-muted hover:text-orange transition-colors">
                 {Math.round(zoom * 100)}%
               </button>
             </InfoTip>
@@ -2089,7 +2090,7 @@ function Inner(props: CanvasProps) {
 <button
               onClick={toggleGrid}
               aria-label={t("Toggle grid", "Raster ein/aus")}
-              className="glass rounded-full w-8 h-8 text-[0.95rem] leading-none text-text/80 hover:text-orange transition-colors"
+              className="glass rounded-full w-8 h-8 text-lead leading-none text-text/80 hover:text-orange transition-colors"
               style={{ opacity: grid ? 1 : 0.6 }}
             >
               ▦
@@ -2100,7 +2101,7 @@ function Inner(props: CanvasProps) {
               onClick={exportPng}
               disabled={exporting || lanes.length === 0}
               aria-label={t("Export as image (PNG)", "Als Bild exportieren (PNG)")}
-              className="glass rounded-full w-8 h-8 text-[0.95rem] leading-none text-text/80 hover:text-orange disabled:opacity-40 transition-colors"
+              className="glass rounded-full w-8 h-8 text-lead leading-none text-text/80 hover:text-orange disabled:opacity-40 transition-colors"
             >
               {exporting ? "…" : "⤓"}
             </button>
@@ -2152,7 +2153,7 @@ function Inner(props: CanvasProps) {
                 <div style={{ width: LANE_LABEL_W, height: "100%", position: "relative", display: "flex", alignItems: "center" }}>
                   <span
                     title={tx(l.name)}
-                    className="ink-text font-mono tracking-[0.1em] uppercase text-[0.82rem] leading-snug text-right"
+                    className="ink-text font-mono tracking-[0.1em] uppercase text-small leading-snug text-right"
                     style={{ color: `color-mix(in srgb, ${c} 58%, rgb(var(--c-text)))`, position: "absolute", width: 136, left: LANE_LABEL_W - 40 - 136, top: "50%", transform: "translateY(-50%) rotate(-45deg)", transformOrigin: "100% 50%", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", pointerEvents: "auto" }}
                   >
                     <Tx text={l.name} d={0} />
@@ -2183,7 +2184,7 @@ function Inner(props: CanvasProps) {
 
       {pending && (
         <div className="absolute z-40 w-64 glass glass-bright glass-dense glass-pop rounded-xl p-3" style={{ left: pending.px, top: pending.py }} onDoubleClick={(e) => e.stopPropagation()}>
-          <div className="font-mono text-[0.62rem] tracking-[0.14em] text-muted/80 mb-1.5">{t("NEW STEP — NAME IT", "NEUER SCHRITT – BENENNEN")}</div>
+          <div className="font-mono text-micro tracking-[0.14em] text-muted/80 mb-1.5">{t("NEW STEP — NAME IT", "NEUER SCHRITT – BENENNEN")}</div>
           <input
             autoFocus
             maxLength={120}
@@ -2195,7 +2196,7 @@ function Inner(props: CanvasProps) {
             }}
             onBlur={(e) => (e.target.value.trim() ? createPending(e.target.value) : setPending(null))}
           />
-          <div className="mt-1.5 text-[0.68rem] text-muted/70">{t("Enter to add · Esc to cancel", "Enter zum Hinzufügen · Esc zum Abbrechen")}</div>
+          <div className="mt-1.5 text-label text-muted/70">{t("Enter to add · Esc to cancel", "Enter zum Hinzufügen · Esc zum Abbrechen")}</div>
         </div>
       )}
 
@@ -2203,7 +2204,7 @@ function Inner(props: CanvasProps) {
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
           <div className="glass glass-bright rounded-2xl px-6 py-5 text-center max-w-sm">
             <div className="text-base mb-1">{t("Add a lane to begin", "Fügen Sie eine Bahn hinzu")}</div>
-            <div className="text-[0.85rem] text-muted">
+            <div className="text-body text-muted">
               {t("Lanes group related steps. Add one from the menu on the left.", "Bahnen gruppieren zusammengehörige Schritte. Fügen Sie links im Menü eine hinzu.")}
             </div>
           </div>
@@ -2211,8 +2212,8 @@ function Inner(props: CanvasProps) {
       )}
 
       {lanes.length > 0 && showCoach && (
-        <div className="absolute bottom-6 left-1/2 -translate-x-1/2 glass glass-bright rounded-2xl px-5 py-3.5 text-[0.88rem] max-w-xl pointer-events-none">
-          <div className="font-mono text-[0.68rem] tracking-[0.14em] text-orange mb-1.5">{t("HOW THIS WORKS", "SO FUNKTIONIERT ES")}</div>
+        <div className="absolute bottom-6 left-1/2 -translate-x-1/2 glass glass-bright rounded-2xl px-5 py-3.5 text-body max-w-xl pointer-events-none">
+          <div className="font-mono text-label tracking-[0.14em] text-orange mb-1.5">{t("HOW THIS WORKS", "SO FUNKTIONIERT ES")}</div>
           <ol className="space-y-1 text-muted list-decimal list-inside">
             <li>{t("Press + STEP (top left) or double-click empty space in a lane to add a step.", "Klicken Sie auf + SCHRITT (oben links) oder doppelklicken Sie auf freie Fläche in einer Bahn.")}</li>
             <li>{t("Select a step and press the + beside it to add the next one — already connected.", "Wählen Sie einen Schritt und klicken Sie das + daneben – der nächste Schritt entsteht schon verbunden.")}</li>

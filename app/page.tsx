@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { THEME } from "@/lib/colors";
 
 // Public landing page. Signed-in visitors skip straight to their dashboard;
 // everyone else sees the Why/What-before-How pitch and the data model, with
@@ -215,12 +216,12 @@ export default async function Home() {
               <figure className="diagram">
                 <svg viewBox="0 0 900 450" role="img" aria-label="A mapped process in Loom: four lanes (Customer, Sales, Finance, Fulfilment) hold steps drawn in role shapes, joined by lines of different weight. One handoff shows a three-day wait, one step carries two comments, and a dashed red line loops back for rework.">
 <defs>
-<marker id="arr-g" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="9" markerHeight="9" markerUnits="userSpaceOnUse" orient="auto-start-reverse"><path d="M1 1 L9 5 L1 9 z" fill="#d9b74a" /></marker>
-<marker id="arr-r" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="9" markerHeight="9" markerUnits="userSpaceOnUse" orient="auto-start-reverse"><path d="M1 1 L9 5 L1 9 z" fill="#f87171" /></marker>
+<marker id="arr-g" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="9" markerHeight="9" markerUnits="userSpaceOnUse" orient="auto-start-reverse"><path d="M1 1 L9 5 L1 9 z" fill={THEME.gold} /></marker>
+<marker id="arr-r" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="9" markerHeight="9" markerUnits="userSpaceOnUse" orient="auto-start-reverse"><path d="M1 1 L9 5 L1 9 z" fill={THEME.danger} /></marker>
 </defs>
 <g fontSize="11" fontFamily="IBM Plex Mono, monospace">
-<rect x="20" y="14" width="74" height="26" rx="13" fill="none" stroke="#f8991d" strokeOpacity="0.6" />
-<text x="57" y="31" textAnchor="middle" fill="#f8991d">+ STEP</text>
+<rect x="20" y="14" width="74" height="26" rx="13" fill="none" stroke={THEME.orange} strokeOpacity="0.6" />
+<text x="57" y="31" textAnchor="middle" fill={THEME.orange}>+ STEP</text>
 <circle cx="112" cy="27" r="13" fill="none" stroke="currentColor" strokeOpacity="0.25" /><text x="112" y="31" textAnchor="middle" fill="currentColor" opacity="0.7">↶</text>
 <circle cx="142" cy="27" r="13" fill="none" stroke="currentColor" strokeOpacity="0.25" /><text x="142" y="31" textAnchor="middle" fill="currentColor" opacity="0.7">↷</text>
 <rect x="164" y="14" width="150" height="26" rx="13" fill="none" stroke="currentColor" strokeOpacity="0.25" />
@@ -229,31 +230,31 @@ export default async function Home() {
 </g>
 <text x="880" y="31" textAnchor="end" fontSize="13" fontWeight="600" fill="currentColor" opacity="0.85">Order to delivery <tspan fontWeight="400" opacity="0.5" fontSize="11"> · Process</tspan></text>
 <rect x="20" y="58" width="860" height="82" rx="10" fill="#ffffff" fillOpacity="0.025" stroke="currentColor" strokeOpacity="0.12" />
-<rect x="20" y="58" width="4" height="82" rx="2" fill="#f87171" fillOpacity="0.8" />
+<rect x="20" y="58" width="4" height="82" rx="2" fill={THEME.danger} fillOpacity="0.8" />
 <text x="34" y="73" fontSize="11" fill="currentColor" opacity="0.6">Customer</text>
 <rect x="20" y="146" width="860" height="82" rx="10" fill="#ffffff" fillOpacity="0.025" stroke="currentColor" strokeOpacity="0.12" />
-<rect x="20" y="146" width="4" height="82" rx="2" fill="#f8991d" fillOpacity="0.8" />
+<rect x="20" y="146" width="4" height="82" rx="2" fill={THEME.orange} fillOpacity="0.8" />
 <text x="34" y="161" fontSize="11" fill="currentColor" opacity="0.6">Sales</text>
 <rect x="20" y="234" width="860" height="82" rx="10" fill="#ffffff" fillOpacity="0.025" stroke="currentColor" strokeOpacity="0.12" />
 <rect x="20" y="234" width="4" height="82" rx="2" fill="#7fa8ff" fillOpacity="0.8" />
 <text x="34" y="249" fontSize="11" fill="currentColor" opacity="0.6">Finance</text>
 <rect x="20" y="322" width="860" height="82" rx="10" fill="#ffffff" fillOpacity="0.025" stroke="currentColor" strokeOpacity="0.12" />
-<rect x="20" y="322" width="4" height="82" rx="2" fill="#d9b74a" fillOpacity="0.8" />
+<rect x="20" y="322" width="4" height="82" rx="2" fill={THEME.gold} fillOpacity="0.8" />
 <text x="34" y="337" fontSize="11" fill="currentColor" opacity="0.6">Fulfilment</text>
-<path d="M220 100.0 C235.0 100.0 235.0 188.0 250 188.0" fill="none" stroke="#d9b74a" strokeWidth="5" strokeLinecap="round" markerEnd="url(#arr-g)" />
-<path d="M370 188.0 C385.0 188.0 385.0 276.0 400 276.0" fill="none" stroke="#d9b74a" strokeWidth="5" strokeLinecap="round" markerEnd="url(#arr-g)" />
-<path d="M520 276.0 C535.0 276.0 535.0 364.0 550 364.0" fill="none" stroke="#d9b74a" strokeWidth="2.6" strokeLinecap="round" markerEnd="url(#arr-g)" />
-<path d="M520 276.0 C540.0 276.0 540.0 188.0 560 188.0" fill="none" stroke="#d9b74a" strokeWidth="1.4" strokeLinecap="round" markerEnd="url(#arr-g)" />
-<path d="M670 364.0 C685.0 364.0 685.0 364.0 700 364.0" fill="none" stroke="#d9b74a" strokeWidth="5" strokeLinecap="round" markerEnd="url(#arr-g)" />
-<path d="M760.0 342 C760.0 232.0 800.0 232.0 800.0 122" fill="none" stroke="#d9b74a" strokeWidth="2.6" strokeLinecap="round" markerEnd="url(#arr-g)" />
-<path d="M610 386 C610 440 310 440 310 210" fill="none" stroke="#f87171" strokeWidth="2" strokeDasharray="2 5" strokeLinecap="round" markerEnd="url(#arr-r)" />
-<text x="455" y="432" textAnchor="middle" fontSize="10.5" fill="#f87171" opacity="0.9">rework</text>
-<g><rect x="346" y="233" width="78" height="22" rx="11" fill="#3b1d1d" stroke="#f87171" strokeOpacity="0.8" /><text x="385" y="248" textAnchor="middle" fontSize="10.5" fill="#fca5a5">waits 3 days</text></g>
-<polygon points="114,78 220,78 206,122 100,122" fill="#16212f" stroke="#f87171" strokeWidth="1.8" />
+<path d="M220 100.0 C235.0 100.0 235.0 188.0 250 188.0" fill="none" stroke={THEME.gold} strokeWidth="5" strokeLinecap="round" markerEnd="url(#arr-g)" />
+<path d="M370 188.0 C385.0 188.0 385.0 276.0 400 276.0" fill="none" stroke={THEME.gold} strokeWidth="5" strokeLinecap="round" markerEnd="url(#arr-g)" />
+<path d="M520 276.0 C535.0 276.0 535.0 364.0 550 364.0" fill="none" stroke={THEME.gold} strokeWidth="2.6" strokeLinecap="round" markerEnd="url(#arr-g)" />
+<path d="M520 276.0 C540.0 276.0 540.0 188.0 560 188.0" fill="none" stroke={THEME.gold} strokeWidth="1.4" strokeLinecap="round" markerEnd="url(#arr-g)" />
+<path d="M670 364.0 C685.0 364.0 685.0 364.0 700 364.0" fill="none" stroke={THEME.gold} strokeWidth="5" strokeLinecap="round" markerEnd="url(#arr-g)" />
+<path d="M760.0 342 C760.0 232.0 800.0 232.0 800.0 122" fill="none" stroke={THEME.gold} strokeWidth="2.6" strokeLinecap="round" markerEnd="url(#arr-g)" />
+<path d="M610 386 C610 440 310 440 310 210" fill="none" stroke={THEME.danger} strokeWidth="2" strokeDasharray="2 5" strokeLinecap="round" markerEnd="url(#arr-r)" />
+<text x="455" y="432" textAnchor="middle" fontSize="10.5" fill={THEME.danger} opacity="0.9">rework</text>
+<g><rect x="346" y="233" width="78" height="22" rx="11" fill="#3b1d1d" stroke={THEME.danger} strokeOpacity="0.8" /><text x="385" y="248" textAnchor="middle" fontSize="10.5" fill="#fca5a5">waits 3 days</text></g>
+<polygon points="114,78 220,78 206,122 100,122" fill="#16212f" stroke={THEME.danger} strokeWidth="1.8" />
 <text x="160.0" y="104.0" textAnchor="middle" fontSize="11.5" fill="#e6edf3">Places order</text>
-<rect x="250" y="166" width="120" height="44" rx="22" fill="#16212f" stroke="#f8991d" strokeWidth="1.8" />
+<rect x="250" y="166" width="120" height="44" rx="22" fill="#16212f" stroke={THEME.orange} strokeWidth="1.8" />
 <text x="310.0" y="192.0" textAnchor="middle" fontSize="11.5" fill="#e6edf3">Confirm order</text>
-<rect x="400" y="254" width="120" height="44" rx="2" fill="#16212f" stroke="#d9b74a" strokeWidth="1.8" />
+<rect x="400" y="254" width="120" height="44" rx="2" fill="#16212f" stroke={THEME.gold} strokeWidth="1.8" />
 <text x="460.0" y="280.0" textAnchor="middle" fontSize="11.5" fill="#e6edf3">Credit check</text>
 <rect x="550" y="342" width="120" height="44" rx="10" fill="#16212f" stroke="#7fa8ff" strokeWidth="1.8" />
 <text x="610.0" y="368.0" textAnchor="middle" fontSize="11.5" fill="#e6edf3">Pick &amp; pack</text>
@@ -261,9 +262,9 @@ export default async function Home() {
 <text x="760.0" y="368.0" textAnchor="middle" fontSize="11.5" fill="#e6edf3">Ship</text>
 <polygon points="574,166 666,166 680,188.0 666,210 574,210 560,188.0" fill="#16212f" stroke="#e6edf3" strokeWidth="1.8" />
 <text x="620.0" y="192.0" textAnchor="middle" fontSize="11.5" fill="#e6edf3">Notify customer</text>
-<polygon points="754,78 860,78 846,122 740,122" fill="#16212f" stroke="#f87171" strokeWidth="1.8" />
+<polygon points="754,78 860,78 846,122 740,122" fill="#16212f" stroke={THEME.danger} strokeWidth="1.8" />
 <text x="800.0" y="104.0" textAnchor="middle" fontSize="11.5" fill="#e6edf3">Delivery confirmed</text>
-<g><circle cx="520" cy="254" r="10" fill="#f8991d" stroke="#0a1119" strokeOpacity="0.4" /><text x="520" y="257.8" textAnchor="middle" fontSize="10.5" fontWeight="700" fill="#14161c">2</text></g>
+<g><circle cx="520" cy="254" r="10" fill={THEME.orange} stroke="#0a1119" strokeOpacity="0.4" /><text x="520" y="257.8" textAnchor="middle" fontSize="10.5" fontWeight="700" fill="#14161c">2</text></g>
 </svg>
                 <figcaption>
                   A process as Loom draws it: Lanes are the rows, Steps wear the shape of the Role doing them, and Lines

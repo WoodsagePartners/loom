@@ -7,8 +7,6 @@ import { avatarSrc, colorOf, initialsOf, type Profile } from "@/lib/profile";
 import { useT } from "@/lib/i18n";
 import { LangToggle } from "@/components/lang-toggle";
 import { ThemeToggle } from "@/components/theme-toggle";
-import { LegalModal } from "@/components/legal-modal";
-import { PRIVACY, PROCESSOR, TERMS } from "@/lib/legal";
 
 export function Avatar({ p, size = 30, online }: { p: { id: string; name: string; email: string; avatarColor: string | null; avatarUrl?: string | null }; size?: number; online?: boolean }) {
   const c = colorOf(p);
@@ -117,12 +115,12 @@ function PhotoAdjuster({ adj, onCancel, onSave, busy }: { adj: Adj; onCancel: ()
         <input type="range" min={1} max={4} step={0.01} value={z} onChange={(e) => setZoom(parseFloat(e.target.value))} className="flex-1 accent-orange" aria-label={t("Zoom", "Zoom")} />
         <span className="text-muted text-xs">+</span>
       </div>
-      <div className="text-[0.72rem] text-muted">{t("Drag to reposition · scroll or slide to zoom", "Ziehen zum Verschieben · Scrollen oder Regler zum Zoomen")}</div>
+      <div className="text-caption text-muted">{t("Drag to reposition · scroll or slide to zoom", "Ziehen zum Verschieben · Scrollen oder Regler zum Zoomen")}</div>
       <div className="flex items-center gap-3">
-        <button type="button" disabled={busy} onClick={save} className="rounded-full px-4 py-1.5 text-[0.74rem] font-mono font-semibold tracking-wider text-[#1a0f05] disabled:opacity-60" style={{ background: "linear-gradient(135deg, #f8991d, #e0771a)" }}>
+        <button type="button" disabled={busy} onClick={save} className="rounded-full px-4 py-1.5 text-caption font-mono font-semibold tracking-wider text-onorange disabled:opacity-60" style={{ background: "linear-gradient(135deg, #f8991d, #e0771a)" }}>
           {t("SAVE PHOTO", "FOTO SPEICHERN")}
         </button>
-        <button type="button" disabled={busy} onClick={onCancel} className="text-[0.74rem] text-muted hover:text-text">
+        <button type="button" disabled={busy} onClick={onCancel} className="text-caption text-muted hover:text-text">
           {t("Cancel", "Abbrechen")}
         </button>
       </div>
@@ -155,28 +153,28 @@ export function AccountMenu({ profile, onAccount, onSignOut, onTeam, onGuide }: 
       document.removeEventListener("keydown", key);
     };
   }, [open]);
-  const row = "w-full text-left px-3 py-2 text-[0.82rem] rounded-lg hover:bg-white/10 transition-colors";
+  const row = "w-full text-left px-3 py-2 text-small rounded-lg hover:bg-white/10 transition-colors";
   return (
     <div className="relative" ref={ref} onMouseEnter={hoverOpen} onMouseLeave={hoverClose}>
       <button onClick={hoverOpen} aria-haspopup="menu" aria-expanded={open} title={t("Account", "Konto")} className="flex flex-col items-center gap-0.5 rounded-xl px-1 py-0.5 hover:scale-105 transition-transform">
         <Avatar p={profile} size={38} />
-        <span className="max-w-[4.5rem] truncate text-[0.66rem] leading-none text-muted">{(profile.name || profile.email.split("@")[0]).split(" ")[0]}</span>
+        <span className="max-w-[4.5rem] truncate text-label leading-none text-muted">{(profile.name || profile.email.split("@")[0]).split(" ")[0]}</span>
       </button>
       {open && (
         <div role="menu" style={{ background: "var(--tint-solid)" }} className="absolute right-0 top-[3.6rem] z-50 w-60 glass glass-bright glass-clear rounded-2xl p-1.5">
           <div className="px-3 pt-2 pb-2.5 border-b border-white/10 mb-1">
-            <div className="text-[0.86rem] font-medium truncate">{profile.name || profile.email.split("@")[0]}</div>
+            <div className="text-body font-medium truncate">{profile.name || profile.email.split("@")[0]}</div>
           </div>
           <button role="menuitem" className={row} onClick={() => { setOpen(false); onAccount(); }}>
             {t("Account", "Konto")}
           </button>
           <div className="border-t border-white/10 my-1.5" />
           <div className="flex items-center justify-between px-3 py-1.5">
-            <span className="text-[0.74rem] text-muted">{t("Language", "Sprache")}</span>
+            <span className="text-caption text-muted">{t("Language", "Sprache")}</span>
             <LangToggle />
           </div>
           <div className="flex items-center justify-between px-3 py-1.5">
-            <span className="text-[0.74rem] text-muted">{t("Theme", "Darstellung")}</span>
+            <span className="text-caption text-muted">{t("Theme", "Darstellung")}</span>
             <ThemeToggle />
           </div>
           <div className="border-t border-white/10 my-1.5" />
@@ -190,8 +188,8 @@ export function AccountMenu({ profile, onAccount, onSignOut, onTeam, onGuide }: 
 }
 
 const FIELD =
-  "w-full bg-black/25 border border-white/10 rounded-lg text-[0.84rem] px-3 py-2 outline-none focus:border-orange/50 placeholder:text-muted/50";
-const LABEL = "block font-mono text-[0.62rem] tracking-[0.14em] uppercase text-muted/80 mb-1";
+  "w-full bg-black/25 border border-white/10 rounded-lg text-body px-3 py-2 outline-none focus:border-orange/50 placeholder:text-muted/50";
+const LABEL = "block font-mono text-micro tracking-[0.14em] uppercase text-muted/80 mb-1";
 
 export function AccountModal({ profile, onClose, onSaved }: { profile: Profile; onClose: () => void; onSaved: (p: Profile) => void }) {
   const t = useT();
@@ -205,7 +203,6 @@ export function AccountModal({ profile, onClose, onSaved }: { profile: Profile; 
   const [pw2, setPw2] = useState("");
   const [msg, setMsg] = useState<{ kind: "ok" | "err"; text: string } | null>(null);
   const [busy, setBusy] = useState(false);
-  const [legal, setLegal] = useState<"privacy" | "terms" | "processor" | null>(null);
   const [photo, setPhoto] = useState<string | null>(profile.avatarUrl);
   const fileRef = useRef<HTMLInputElement>(null);
   useEffect(() => {
@@ -331,7 +328,7 @@ export function AccountModal({ profile, onClose, onSaved }: { profile: Profile; 
           <div className="flex items-center gap-4">
             <Avatar p={draft} size={56} />
             <div>
-              <div className="text-[0.8rem] tracking-[0.14em] text-muted/70">{t("ACCOUNT", "KONTO")}</div>
+              <div className="text-small tracking-[0.14em] text-muted/70">{t("ACCOUNT", "KONTO")}</div>
               <div className="text-base font-semibold">{name.trim() || profile.email.split("@")[0]}</div>
             </div>
           </div>
@@ -340,16 +337,16 @@ export function AccountModal({ profile, onClose, onSaved }: { profile: Profile; 
 
         <div className="mb-4 flex items-center gap-2">
           <input ref={fileRef} type="file" accept="image/png,image/jpeg,image/webp" className="hidden" onChange={(e) => pickPhoto(e.target.files?.[0])} />
-          <button type="button" disabled={busy} onClick={() => fileRef.current?.click()} className="rounded-full border border-white/20 px-4 py-1.5 text-[0.74rem] font-mono tracking-wider hover:border-orange/50 disabled:opacity-50">
+          <button type="button" disabled={busy} onClick={() => fileRef.current?.click()} className="rounded-full border border-white/20 px-4 py-1.5 text-caption font-mono tracking-wider hover:border-orange/50 disabled:opacity-50">
             {photo ? t("CHANGE PHOTO", "FOTO ÄNDERN") : t("ADD PHOTO", "FOTO HINZUFÜGEN")}
           </button>
           {photo && !adj && (
-            <button type="button" disabled={busy} onClick={adjustCurrent} className="text-[0.74rem] text-muted hover:text-orange">
+            <button type="button" disabled={busy} onClick={adjustCurrent} className="text-caption text-muted hover:text-orange">
               {t("Adjust", "Anpassen")}
             </button>
           )}
           {photo && (
-            <button type="button" disabled={busy} onClick={removePhoto} className="text-[0.74rem] text-muted hover:text-red-300">
+            <button type="button" disabled={busy} onClick={removePhoto} className="text-caption text-muted hover:text-red-300">
               {t("Remove", "Entfernen")}
             </button>
           )}
@@ -382,12 +379,12 @@ export function AccountModal({ profile, onClose, onSaved }: { profile: Profile; 
             <input className={FIELD} type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+43 …" />
           </div>
         </div>
-        <button onClick={saveProfile} disabled={busy} className="rounded-full px-5 py-2 text-[0.78rem] font-mono font-semibold tracking-wider text-[#1a0f05] disabled:opacity-60" style={{ background: "linear-gradient(135deg, #f8991d, #e0771a)" }}>
+        <button onClick={saveProfile} disabled={busy} className="rounded-full px-5 py-2 text-small font-mono font-semibold tracking-wider text-onorange disabled:opacity-60" style={{ background: "linear-gradient(135deg, #f8991d, #e0771a)" }}>
           {t("SAVE PROFILE", "PROFIL SPEICHERN")}
         </button>
 
         <div className="border-t border-white/10 mt-6 pt-5">
-          <div className="text-[0.8rem] tracking-[0.14em] text-muted/70 mb-3">{t("PASSWORD", "PASSWORT")}</div>
+          <div className="text-small tracking-[0.14em] text-muted/70 mb-3">{t("PASSWORD", "PASSWORT")}</div>
           <div className="grid grid-cols-2 gap-3 mb-3">
             <div>
               <label className={LABEL}>{t("New password", "Neues Passwort")}</label>
@@ -398,7 +395,7 @@ export function AccountModal({ profile, onClose, onSaved }: { profile: Profile; 
               <input className={FIELD} type="password" autoComplete="new-password" value={pw2} onChange={(e) => setPw2(e.target.value)} />
             </div>
           </div>
-          <button onClick={savePassword} disabled={busy || !pw} className="rounded-full border border-white/20 px-5 py-2 text-[0.78rem] font-mono tracking-wider hover:border-orange/50 disabled:opacity-50">
+          <button onClick={savePassword} disabled={busy || !pw} className="rounded-full border border-white/20 px-5 py-2 text-small font-mono tracking-wider hover:border-orange/50 disabled:opacity-50">
             {t("SET PASSWORD", "PASSWORT SETZEN")}
           </button>
         </div>
@@ -410,13 +407,7 @@ export function AccountModal({ profile, onClose, onSaved }: { profile: Profile; 
             </div>
           )}
         </div>
-
-        <div className="border-t border-white/10 pt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-[0.7rem] text-muted/80">
-          <button type="button" onClick={() => setLegal("privacy")} className="hover:text-orange hover:underline">{t("Privacy notice", "Datenschutzhinweis")}</button>
-          <button type="button" onClick={() => setLegal("terms")} className="hover:text-orange hover:underline">{t("Terms of use", "Nutzungsbedingungen")}</button>
-        </div>
       </div>
-      {legal && <LegalModal doc={legal === "privacy" ? PRIVACY : legal === "terms" ? TERMS : PROCESSOR} slug={legal} onClose={() => setLegal(null)} />}
     </div>
   );
 }

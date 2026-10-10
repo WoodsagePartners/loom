@@ -5,6 +5,7 @@ import { EDGE_KINDS, NODE_TYPES, PALETTE } from "@/lib/flow";
 import { ShapeIcon } from "@/components/flow/shapes";
 import { useT } from "@/lib/i18n";
 import { HandIcon, LockIcon, PencilIcon, PointerIcon } from "@/components/icons";
+import { THEME } from "@/lib/colors";
 
 const SEEN = "loom_guide_seen";
 export const guideSeen = () => {
@@ -36,7 +37,7 @@ function WeightArt() {
     <svg width="150" height="34" aria-hidden>
       {rows.map(([w, en, de], i) => (
         <g key={i}>
-          <line x1="4" x2="46" y1={6 + i * 11} y2={6 + i * 11} stroke="#f8991d" strokeWidth={w} strokeLinecap="round" />
+          <line x1="4" x2="46" y1={6 + i * 11} y2={6 + i * 11} stroke={THEME.orange} strokeWidth={w} strokeLinecap="round" />
           <text x="56" y={9.5 + i * 11} fontSize="9.5" fill="currentColor" opacity="0.8">{t(en, de)}</text>
         </g>
       ))}
@@ -54,15 +55,15 @@ function InsightsArt() {
   const tr = useT();
   const rows: [string, string, string, string, boolean][] = [
     ["▲", "#fbbf24", tr("Signal", "Signal"), tr("Loom noticed a 2-day wait", "Loom sah 2 Tage Wartezeit"), true],
-    ["?", "#f8991d", tr("Question", "Frage"), tr("Why does work wait here?", "Warum wartet die Arbeit hier?"), false],
+    ["?", THEME.orange, tr("Question", "Frage"), tr("Why does work wait here?", "Warum wartet die Arbeit hier?"), false],
     ["◆", "#60a5fa", tr("Finding", "Befund"), tr("Approvals batch up weekly", "Freigaben laufen wöchentlich"), false],
     ["✦", "#5eead4", tr("Idea", "Idee"), tr("Approve daily instead", "Täglich freigeben"), false],
   ];
   return (
-    <div className="w-52 flex flex-col gap-1 text-[0.68rem]">
+    <div className="w-52 flex flex-col gap-1 text-label">
       {rows.map(([g, c, k, txt, dashed]) => (
         <div key={k} className="flex items-center gap-2">
-          <span className="w-5 h-5 rounded-full flex items-center justify-center flex-none text-[0.62rem]" style={{ border: `1.5px ${dashed ? "dashed" : "solid"} ${c}`, color: c }}>{g}</span>
+          <span className="w-5 h-5 rounded-full flex items-center justify-center flex-none text-micro" style={{ border: `1.5px ${dashed ? "dashed" : "solid"} ${c}`, color: c }}>{g}</span>
           <span className="flex-1 truncate text-text/85">{txt}</span>
         </div>
       ))}
@@ -73,18 +74,18 @@ function InsightsArt() {
 function PursuitArt() {
   const tr = useT();
   return (
-    <div className="w-52 rounded-md border border-white/15 bg-white/[0.04] py-1.5 text-left text-[0.7rem]">
-      <div className="px-2.5 pb-1 text-[0.55rem] font-mono tracking-wider text-muted/70">{tr("PURSUITS", "VORHABEN")}</div>
+    <div className="w-52 rounded-md border border-white/15 bg-white/[0.04] py-1.5 text-left text-label">
+      <div className="px-2.5 pb-1 text-nano font-mono tracking-wider text-muted/70">{tr("PURSUITS", "VORHABEN")}</div>
       <div className="px-2.5 py-0.5">
         <div className="flex items-center gap-2"><span style={{ color: "#5eead4" }}>✦</span><span className="text-text/90">{tr("Approve daily instead", "Täglich freigeben")}</span></div>
-        <div className="pl-5 text-[0.58rem] text-muted/70"><span style={{ color: "#fbbf24" }}>▲</span> {tr("Signal", "Signal")} › <span style={{ color: "#f8991d" }}>?</span> {tr("Question", "Frage")} › <span style={{ color: "#5eead4" }}>✦</span> {tr("Idea", "Idee")}</div>
+        <div className="pl-5 text-nano text-muted/70"><span style={{ color: "#fbbf24" }}>▲</span> {tr("Signal", "Signal")} › <span style={{ color: THEME.orange }}>?</span> {tr("Question", "Frage")} › <span style={{ color: "#5eead4" }}>✦</span> {tr("Idea", "Idee")}</div>
       </div>
     </div>
   );
 }
 
 function InquiryArt({ kind }: { kind: "circuit" | "totals" | "gaps" }) {
-  const o = "#f8991d";
+  const o = THEME.orange;
   const box = (x: number, y: number, on = true, dashed = false) => (
     <rect x={x} y={y} width="26" height="16" rx="4" fill="none" stroke={on ? o : "currentColor"} strokeOpacity={on ? 1 : 0.35} strokeWidth="1.6" strokeDasharray={dashed ? "3 2" : undefined} />
   );
@@ -177,6 +178,42 @@ const CARDS: Card[] = [
     art: <PursuitArt />,
   },
   {
+    term: ["Enterprise roles and your own roles", "Enterprise-Rollen und eigene Rollen"],
+    what: [
+      "If your organization has enterprise roles, every workspace starts with them, listed first under “Enterprise roles”. You can change an enterprise role's color here, but not its name or shape. Under “This workspace” you add roles of your own. Click a group's heading to fold it away.",
+      "Hat Ihre Organisation Enterprise-Rollen, beginnt jeder Arbeitsbereich damit; sie stehen zuerst unter „Enterprise-Rollen“. Die Farbe einer Enterprise-Rolle können Sie hier ändern, Name und Form nicht. Unter „Dieser Arbeitsbereich“ ergänzen Sie eigene Rollen. Ein Klick auf die Überschrift klappt die Gruppe zu.",
+    ],
+    why: [
+      "Shared roles keep every team speaking the same language, while each workspace still has room for what is special about its own work.",
+      "Gemeinsame Rollen sorgen dafür, dass alle Teams dieselbe Sprache sprechen, und jeder Arbeitsbereich behält Platz für das Besondere seiner Arbeit.",
+    ],
+    art: <span className="flex gap-2"><ShapeIcon kind="team" color="#5f8bb3" size={28} /><ShapeIcon kind="system" color="#5a8a6b" size={28} /><ShapeIcon kind="person" color="#d08a3c" size={28} /></span>,
+  },
+  {
+    term: ["Hide unused roles", "Ungenutzte Rollen ausblenden"],
+    what: [
+      "The roles list shows only roles that are used in your processes, plus any you just added. Choose “Show all” to see every role, and “Hide unused roles” to tidy up again. Enterprise roles always stay visible.",
+      "Die Rollenliste zeigt nur Rollen, die in Ihren Prozessen vorkommen, plus gerade neu angelegte. „Alle anzeigen“ zeigt jede Rolle, „Ungenutzte Rollen ausblenden“ räumt wieder auf. Enterprise-Rollen bleiben immer sichtbar.",
+    ],
+    why: [
+      "A long list of roles nobody uses hides the few that matter. Hiding is only a view; nothing is deleted.",
+      "Eine lange Liste ungenutzter Rollen verdeckt die wenigen wichtigen. Ausblenden ändert nur die Ansicht; nichts wird gelöscht.",
+    ],
+    art: <span className="font-mono text-label rounded-full border border-white/25 px-3 py-1 text-muted">Show all (12)</span>,
+  },
+  {
+    term: ["Take me there", "Dorthin springen"],
+    what: [
+      "In the Loom Floor's Pursuits tab, “Take me there” opens the right workspace and process, flies to the step, and opens the pursuit's card. You can also bookmark the address you land on and come back to the same spot.",
+      "Im Reiter „Vorhaben“ des Loom Floor öffnet „Dorthin springen“ den richtigen Arbeitsbereich und Prozess, fliegt zum Schritt und öffnet die Karte des Vorhabens. Die Adresse, auf der Sie landen, können Sie als Lesezeichen speichern.",
+    ],
+    why: [
+      "Nobody should have to remember which workspace, process and step a question lives in.",
+      "Niemand soll sich merken müssen, in welchem Arbeitsbereich, Prozess und Schritt eine Frage steckt.",
+    ],
+    art: <span className="text-3xl text-orange">➜</span>,
+  },
+  {
     term: ["Focus", "Fokus"],
     what: ["Click a lane or a role in the menu and everything else dims, so only what matters stays lit.", "Klicken Sie im Menü auf eine Bahn oder Rolle – alles andere wird abgedunkelt, nur das Wichtige bleibt hell."],
     why: ["It answers “what does Finance touch?” or “what happens in Logistics?” in a single click — ideal for a workshop.", "So beantworten Sie „Was berührt die Finanzabteilung?“ oder „Was passiert in der Logistik?“ mit einem Klick – ideal für Workshops."],
@@ -194,7 +231,7 @@ const CARDS: Card[] = [
     why: ["Hand-offs are where time and errors hide. A few facts per line show where to start improving — and give the AI what it needs to suggest fixes.", "Übergaben sind der Ort, an dem Zeit und Fehler versickern. Wenige Fakten pro Linie zeigen, wo die Verbesserung beginnt – und geben der KI, was sie für Vorschläge braucht."],
     art: (
       <div className="flex gap-1.5">
-        {["#4ade80", "#fbbf24", "#f87171"].map((c) => (
+        {["#4ade80", "#fbbf24", THEME.danger].map((c) => (
           <span key={c} className="w-4 h-4 rounded-full" style={{ background: c }} />
         ))}
       </div>
@@ -219,7 +256,7 @@ const CARDS: Card[] = [
     art: (
       <svg width="64" height="30" aria-hidden>
         <rect x="6" y="6" width="44" height="20" rx="8" fill="none" stroke="#7fa8ff" strokeWidth="1.8" />
-        <circle cx="50" cy="6" r="7" fill="#f8991d" />
+        <circle cx="50" cy="6" r="7" fill={THEME.orange} />
         <text x="50" y="9.2" fontSize="9" fontWeight="700" textAnchor="middle" fill="#14161c">2</text>
       </svg>
     ),
@@ -249,8 +286,8 @@ const CARDS: Card[] = [
     art: (
       <svg width="64" height="30" aria-hidden>
         <rect x="4" y="6" width="56" height="18" rx="9" fill="none" stroke="currentColor" strokeOpacity="0.4" />
-        <circle cx="16" cy="15" r="4" fill="none" stroke="#f8991d" strokeWidth="1.6" />
-        <path d="M19 18 L23 22" stroke="#f8991d" strokeWidth="1.6" strokeLinecap="round" />
+        <circle cx="16" cy="15" r="4" fill="none" stroke={THEME.orange} strokeWidth="1.6" />
+        <path d="M19 18 L23 22" stroke={THEME.orange} strokeWidth="1.6" strokeLinecap="round" />
       </svg>
     ),
   },
@@ -336,7 +373,7 @@ const CARDS: Card[] = [
       "Abbilden heißt ausprobieren. Mit „Rückgängig“ lässt sich gefahrlos experimentieren – man probiert aus, statt zu zögern.",
     ],
     art: (
-      <div className="flex gap-1.5 font-mono text-[0.7rem]">
+      <div className="flex gap-1.5 font-mono text-label">
         {["Ctrl", "Z"].map((k) => (
           <span key={k} className="rounded-md border border-white/25 px-2 py-1">{k}</span>
         ))}
@@ -344,6 +381,113 @@ const CARDS: Card[] = [
     ),
   },
 ];
+
+/** Slides for organization owners and administrators (shown in the Loom Floor's Help tab). */
+export const ADMIN_CARDS: Card[] = [
+  {
+    term: ["The Loom Floor", "Der Loom Floor"],
+    what: [
+      "The Loom Floor is your organization's control room. Tabs across the top: Workspaces, Pursuits, Users, Roles, Organization, License and Agreements. You see it because you are an owner or administrator.",
+      "Der Loom Floor ist die Schaltzentrale Ihrer Organisation. Reiter oben: Arbeitsbereiche, Vorhaben, Benutzer, Rollen, Organisation, Lizenz und Vereinbarungen. Sie sehen ihn als Eigentümer oder Administrator.",
+    ],
+    why: [
+      "One place to see what is happening across every workspace, without opening each one.",
+      "Ein Ort, um zu sehen, was in allen Arbeitsbereichen passiert, ohne jeden einzeln zu öffnen.",
+    ],
+    art: <span className="text-3xl text-orange">▦</span>,
+  },
+  {
+    term: ["Manage workspaces", "Arbeitsbereiche verwalten"],
+    what: [
+      "Each workspace has a card with its purpose, goal, processes, members, pursuits and last edit. OPEN enters it. LOCK makes it view only. ARCHIVE hides it from daily use but keeps a license seat; RESTORE brings it back. DELETE removes it for good and frees the seat, and asks you to type DELETE first. “New workspace” adds one while you have seats left.",
+      "Jeder Arbeitsbereich hat eine Karte mit Zweck, Ziel, Prozessen, Mitgliedern, Vorhaben und letzter Änderung. ÖFFNEN geht hinein. SPERREN macht ihn schreibgeschützt. ARCHIVIEREN nimmt ihn aus dem Alltag, behält aber einen Lizenzplatz; WIEDERHERSTELLEN holt ihn zurück. LÖSCHEN entfernt ihn endgültig, gibt den Platz frei und verlangt vorher die Eingabe von DELETE. „Neuer Arbeitsbereich“ legt einen an, solange Plätze frei sind.",
+    ],
+    why: [
+      "Archive is the safe choice when you are unsure. Delete cannot be undone.",
+      "Archivieren ist die sichere Wahl bei Unsicherheit. Löschen lässt sich nicht rückgängig machen.",
+    ],
+    art: <span className="text-orange"><LockIcon size={30} /></span>,
+  },
+  {
+    term: ["Users: deactivate or remove", "Benutzer: deaktivieren oder entfernen"],
+    what: [
+      "DEACTIVATE blocks a person's access and frees their user seat, but keeps everything they created; they see a notice with your contact details, in case it was a mistake. REACTIVATE gives access back. REMOVE takes them out of every workspace in the organization after a confirmation. Their authored work stays. Only owners can remove other owners, and owners can add administrators.",
+      "DEAKTIVIEREN sperrt den Zugang und gibt den Benutzerplatz frei, behält aber alles Erstellte; die Person sieht einen Hinweis mit Ihren Kontaktdaten, falls es ein Irrtum war. REAKTIVIEREN gibt den Zugang zurück. ENTFERNEN nimmt die Person nach Bestätigung aus allen Arbeitsbereichen der Organisation. Ihre Inhalte bleiben. Nur Eigentümer können andere Eigentümer entfernen, und Eigentümer können Administratoren hinzufügen.",
+    ],
+    why: [
+      "When someone leaves, you close the door without losing the maps they built.",
+      "Wenn jemand geht, schließen Sie die Tür, ohne die erstellten Landkarten zu verlieren.",
+    ],
+    art: <span className="text-3xl text-orange">⚇</span>,
+  },
+  {
+    term: ["Roles for the whole organization", "Rollen für die ganze Organisation"],
+    what: [
+      "In the Roles tab, “Enterprise roles” apply to every workspace: add one with + ADD ENTERPRISE ROLE, choosing name, title, type and color. New workspaces start with them, and people in a workspace can change only their color. Below, “Roles added by individual workspaces” shows what teams created themselves; you can edit those too. Each section folds away.",
+      "Im Reiter „Rollen“ gelten „Enterprise-Rollen“ für jeden Arbeitsbereich: Mit + ENTERPRISE-ROLLE legen Sie eine an (Name, Titel, Typ, Farbe). Neue Arbeitsbereiche starten damit; in einem Arbeitsbereich lässt sich nur die Farbe ändern. Darunter zeigt „Von einzelnen Arbeitsbereichen ergänzte Rollen“, was Teams selbst angelegt haben; auch diese können Sie bearbeiten. Jeder Abschnitt lässt sich zuklappen.",
+    ],
+    why: [
+      "A shared vocabulary of roles makes processes from different teams comparable.",
+      "Ein gemeinsames Vokabular an Rollen macht Prozesse verschiedener Teams vergleichbar.",
+    ],
+    art: <span className="flex gap-2"><ShapeIcon kind="team" color="#5f8bb3" size={28} /><ShapeIcon kind="ai" color="#8a7bb0" size={28} /></span>,
+  },
+  {
+    term: ["License and term", "Lizenz und Laufzeit"],
+    what: [
+      "The License tab shows how many workspaces and users you are using out of your license, and when the term ends. A license code from Struinova adds a new organization to your account. When the term ends, workspaces pause and only this tab stays open until the license is renewed. Nothing is deleted.",
+      "Der Reiter „Lizenz“ zeigt, wie viele Arbeitsbereiche und Benutzer Sie von Ihrer Lizenz nutzen und wann die Laufzeit endet. Ein Lizenzcode von Struinova fügt Ihrem Konto eine Organisation hinzu. Nach Ablauf pausieren die Arbeitsbereiche, und nur dieser Reiter bleibt bis zur Verlängerung offen. Es wird nichts gelöscht.",
+    ],
+    why: [
+      "No surprises: you can see your headroom, and expiry never costs you your data.",
+      "Keine Überraschungen: Sie sehen Ihren Spielraum, und ein Ablauf kostet Sie nie Ihre Daten.",
+    ],
+    art: <span className="text-3xl text-orange">◷</span>,
+  },
+  {
+    term: ["Agreements", "Vereinbarungen"],
+    what: [
+      "The Agreements tab holds the processor note, privacy notice and terms of use. READ opens each in plain language. ACKNOWLEDGE records who accepted it, when, and which version. The card shows the name of the person who accepted.",
+      "Der Reiter „Vereinbarungen“ enthält die Auftragsverarbeitungs-Notiz, den Datenschutzhinweis und die Nutzungsbedingungen. LESEN öffnet jede in einfacher Sprache. BESTÄTIGEN hält fest, wer sie wann und in welcher Version akzeptiert hat. Auf der Karte steht der Name der Person.",
+    ],
+    why: [
+      "You keep a dated record of who agreed to what, which is what auditors and customers ask for.",
+      "Sie haben einen datierten Nachweis, wer was akzeptiert hat, wonach Prüfer und Kunden fragen.",
+    ],
+    art: <span className="text-3xl text-orange">✓</span>,
+  },
+];
+
+/** A guide shown inline (no pop-up), for the Loom Floor's Help tab. */
+export function GuideDeck({ cards, heading }: { cards: Card[]; heading: string }) {
+  const t = useT();
+  const [i, setI] = useState(0);
+  const c = cards[i];
+  const last = i === cards.length - 1;
+  return (
+    <div className="glass rounded-2xl p-5">
+      <div className="font-mono text-label tracking-[0.16em] text-muted/80 mb-4">{heading} · {i + 1}/{cards.length}</div>
+      <div className="h-12 flex items-center mb-2">{c.art}</div>
+      <h3 className="text-lg font-semibold mb-2">{t(...c.term)}</h3>
+      <p className="text-body leading-relaxed mb-3">{t(...c.what)}</p>
+      <div className="rounded-xl border border-orange/25 bg-orange/[0.07] px-3.5 py-2.5">
+        <div className="font-mono text-micro tracking-[0.14em] text-orange mb-1">{t("WHY IT MATTERS", "WARUM ES WICHTIG IST")}</div>
+        <p className="text-small leading-relaxed text-text/90">{t(...c.why)}</p>
+      </div>
+      <div className="flex items-center justify-between mt-5">
+        <button onClick={() => setI((x) => Math.max(0, x - 1))} disabled={i === 0} className="text-small text-muted hover:text-text disabled:opacity-30">‹ {t("Back", "Zurück")}</button>
+        <div className="flex gap-1.5 flex-wrap justify-center">
+          {cards.map((_, k) => (
+            <button key={k} onClick={() => setI(k)} aria-label={`${k + 1}`} className="w-1.5 h-1.5 rounded-full transition-all" style={{ background: k === i ? THEME.orange : "rgb(var(--c-white) / .25)", transform: k === i ? "scale(1.4)" : undefined }} />
+          ))}
+        </div>
+        <button onClick={() => setI((x) => (last ? 0 : x + 1))} className="text-small text-orange hover:underline">{last ? t("Start over", "Von vorn") : t("Next", "Weiter")} ›</button>
+      </div>
+    </div>
+  );
+}
+
+export const GENERAL_CARDS = CARDS;
 
 export function Guide({ onClose, start }: { onClose: () => void; start?: string }) {
   const t = useT();
@@ -375,7 +519,7 @@ export function Guide({ onClose, start }: { onClose: () => void; start?: string 
     <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/55 backdrop-blur-[4px] p-4" onMouseDown={(e) => e.target === e.currentTarget && close()}>
       <div className="w-full max-w-md glass glass-bright glass-clear rounded-2xl p-6" style={{ background: "var(--tint-solid)" }} role="dialog" aria-label={t("How Loom works", "So funktioniert Loom")}>
         <div className="flex items-center justify-between mb-5">
-          <div className="font-mono text-[0.66rem] tracking-[0.16em] text-muted/80">
+          <div className="font-mono text-label tracking-[0.16em] text-muted/80">
             {t("HOW LOOM WORKS", "SO FUNKTIONIERT LOOM")} · {i + 1}/{CARDS.length}
           </div>
           <button onClick={close} className="text-muted hover:text-text text-lg leading-none" aria-label={t("Close", "Schließen")}>×</button>
@@ -383,24 +527,24 @@ export function Guide({ onClose, start }: { onClose: () => void; start?: string 
 
         <div className="h-14 flex items-center mb-3">{c.art}</div>
         <h2 className="text-xl font-semibold mb-3">{t(...c.term)}</h2>
-        <p className="text-[0.9rem] leading-relaxed mb-3">{t(...c.what)}</p>
+        <p className="text-lead leading-relaxed mb-3">{t(...c.what)}</p>
         <div className="rounded-xl border border-orange/25 bg-orange/[0.07] px-3.5 py-2.5">
-          <div className="font-mono text-[0.6rem] tracking-[0.14em] text-orange mb-1">{t("WHY IT MATTERS", "WARUM ES WICHTIG IST")}</div>
-          <p className="text-[0.84rem] leading-relaxed text-text/90">{t(...c.why)}</p>
+          <div className="font-mono text-micro tracking-[0.14em] text-orange mb-1">{t("WHY IT MATTERS", "WARUM ES WICHTIG IST")}</div>
+          <p className="text-body leading-relaxed text-text/90">{t(...c.why)}</p>
         </div>
 
         <div className="flex items-center justify-between mt-6">
-          <button onClick={() => setI((x) => Math.max(0, x - 1))} disabled={i === 0} className="text-[0.8rem] text-muted hover:text-text disabled:opacity-30">
+          <button onClick={() => setI((x) => Math.max(0, x - 1))} disabled={i === 0} className="text-small text-muted hover:text-text disabled:opacity-30">
             ‹ {t("Back", "Zurück")}
           </button>
           <div className="flex gap-1.5">
             {CARDS.map((_, k) => (
-              <button key={k} onClick={() => setI(k)} aria-label={`${k + 1}`} className="w-1.5 h-1.5 rounded-full transition-all" style={{ background: k === i ? "#f8991d" : "rgb(var(--c-white) / .25)", transform: k === i ? "scale(1.4)" : undefined }} />
+              <button key={k} onClick={() => setI(k)} aria-label={`${k + 1}`} className="w-1.5 h-1.5 rounded-full transition-all" style={{ background: k === i ? THEME.orange : "rgb(var(--c-white) / .25)", transform: k === i ? "scale(1.4)" : undefined }} />
             ))}
           </div>
           <button
             onClick={() => (last ? close() : setI((x) => x + 1))}
-            className="rounded-full px-4 py-1.5 text-[0.76rem] font-mono font-semibold tracking-wider text-[#1a0f05]"
+            className="rounded-full px-4 py-1.5 text-caption font-mono font-semibold tracking-wider text-onorange"
             style={{ background: "linear-gradient(135deg, #f8991d, #e0771a)" }}
           >
             {last ? t("GOT IT", "VERSTANDEN") : t("NEXT", "WEITER")}

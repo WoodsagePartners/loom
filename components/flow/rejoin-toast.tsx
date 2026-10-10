@@ -22,7 +22,7 @@ export function RejoinToast({ orgName }: { orgName: string }) {
   }, []);
   if (!show) return null;
   return (
-    <div className="fixed top-20 left-1/2 -translate-x-1/2 z-[95] rounded-full glass glass-bright px-5 py-2 text-[0.82rem] text-text shadow-lg" role="status">
+    <div className="fixed top-20 left-1/2 -translate-x-1/2 z-[95] rounded-full glass glass-bright px-5 py-2 text-small text-text shadow-lg" role="status">
       {t(`You're securely rejoining ${orgName}.`, `Sie kehren sicher zu ${orgName} zurück.`)}
     </div>
   );

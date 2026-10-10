@@ -41,6 +41,7 @@ import type { Profile } from "@/lib/profile";
 import { useT } from "@/lib/i18n";
 import { ContentI18nProvider, Tx } from "@/lib/content-i18n";
 import { PursuitModal } from "@/components/flow/pursuit-modal";
+import { THEME } from "@/lib/colors";
 
 type Initial = {
   workflows: Workflow[];
@@ -63,6 +64,7 @@ export function FlowApp({
   buildSha,
   profile: initialProfile,
   initial,
+  startFocus = null,
 }: {
   orgId: string;
   orgName: string;
@@ -73,6 +75,8 @@ export function FlowApp({
   buildSha: string;
   profile: Profile;
   initial: Initial;
+  /** Deep link from the Loom Floor: open this process and jump to this signal/pursuit. */
+  startFocus?: { workflowId: string; pinId: string } | null;
 }) {
   const t = useT();
   const sb = useMemo(() => createClient(), []);
@@ -241,6 +245,14 @@ export function FlowApp({
     [wfPins]
   );
   const [focusPin, setFocusPin] = useState<{ id: string; n: number } | null>(null);
+  // Deep link (Loom Floor → Pursuits): choose the process, give its pins a moment to load, then jump to the pin.
+  useEffect(() => {
+    if (!startFocus || !initial.workflows.some((w) => w.id === startFocus.workflowId)) return;
+    setActiveId(startFocus.workflowId);
+    const id = setTimeout(() => setFocusPin({ id: startFocus.pinId, n: Date.now() }), 1100);
+    return () => clearTimeout(id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   const [pursuitOpen, setPursuitOpen] = useState<string | null>(null);
   const addPin = useCallback(
     async (a: { node_id?: string | null; edge_id?: string | null; kind: PinKind; body?: string; parent_id?: string | null; origin?: string | null; status?: FlowPin["status"]; pursued_at?: string | null; lineage?: FlowPin["lineage"] }) => {
@@ -1043,9 +1055,9 @@ export function FlowApp({
                   if (firstName.trim()) createWorkflow(firstName.trim());
                 }}
               >
-                <div className="font-mono text-[0.7rem] tracking-[0.14em] text-orange mb-2">{t("LET'S BEGIN", "LOS GEHT'S")}</div>
+                <div className="font-mono text-label tracking-[0.14em] text-orange mb-2">{t("LET'S BEGIN", "LOS GEHT'S")}</div>
                 <h1 className="text-xl mb-2">{t("What process do you want to map?", "Welchen Prozess möchten Sie abbilden?")}</h1>
-                <p className="text-[0.9rem] text-muted mb-5">
+                <p className="text-lead text-muted mb-5">
                   {t(
                     "Pick one process that matters, such as “Customer order to delivery” or “Hiring a new employee”. You'll add the steps, who owns each one, and how they connect.",
                     "Wählen Sie einen wichtigen Prozess, etwa „Kundenauftrag bis Lieferung“ oder „Neue Mitarbeiter einstellen“. Sie fügen Schritte, Zuständigkeiten und Verbindungen hinzu."
@@ -1056,10 +1068,10 @@ export function FlowApp({
                   value={firstName}
                   onChange={(e) => setFirstName(e.target.value)}
                   placeholder={t("Name your process…", "Prozess benennen…")}
-                  className="w-full bg-black/30 border border-white/10 rounded-xl text-[0.95rem] px-3.5 py-3 outline-none focus:border-orange/50"
+                  className="w-full bg-black/30 border border-white/10 rounded-xl text-lead px-3.5 py-3 outline-none focus:border-orange/50"
                 />
                 <button
-                  className="mt-4 w-full rounded-full text-[#1a0f05] text-[0.8rem] font-mono font-semibold tracking-wider py-3 shadow-[0_6px_24px_rgba(248,153,29,.35)]"
+                  className="mt-4 w-full rounded-full text-onorange text-small font-mono font-semibold tracking-wider py-3 shadow-[0_6px_24px_rgba(248,153,29,.35)]"
                   style={{ background: "linear-gradient(135deg, #f8991d, #e0771a)" }}
                 >
                   {t("CREATE WORKFLOW", "ABLAUF ERSTELLEN")}
@@ -1069,14 +1081,14 @@ export function FlowApp({
           )}
 
           {lens && focus && (
-            <div className="absolute top-3 left-1/2 -translate-x-1/2 z-40 glass glass-bright rounded-full pl-4 pr-2 py-1.5 flex items-center gap-3 text-[0.78rem]">
+            <div className="absolute top-3 left-1/2 -translate-x-1/2 z-40 glass glass-bright rounded-full pl-4 pr-2 py-1.5 flex items-center gap-3 text-small">
               <span className="relative flex-none">
                 <button
                   onClick={() => setDotOpen((o) => !o)}
                   title={t("Change color", "Farbe ändern")}
                   aria-label={t("Change color", "Farbe ändern")}
                   className="block w-3.5 h-3.5 rounded-full border border-white/40 hover:scale-110 transition-transform"
-                  style={{ background: focus.ring ?? "#f8991d" }}
+                  style={{ background: focus.ring ?? THEME.orange }}
                 />
                 {dotOpen && (
                   <div className="absolute left-0 top-6 z-50 glass glass-bright glass-dense rounded-2xl p-2 flex gap-1">
@@ -1098,7 +1110,7 @@ export function FlowApp({
                   </div>
                 )}
               </span>
-              <span className="font-mono text-[0.6rem] tracking-[0.12em] uppercase text-muted/70">
+              <span className="font-mono text-micro tracking-[0.12em] uppercase text-muted/70">
                 {lens.kind === "phase"
                   ? t("Phase", "Phase")
                   : lens.kind === "roadmap"
@@ -1116,7 +1128,7 @@ export function FlowApp({
               {lens.kind === "phase" && (
                 <button
                   onClick={() => setSelecting((x) => !x)}
-                  className={`rounded-full px-3 py-1 font-mono text-[0.62rem] tracking-[0.08em] uppercase border ${
+                  className={`rounded-full px-3 py-1 font-mono text-micro tracking-[0.08em] uppercase border ${
                     selecting ? "bg-orange text-black border-orange" : "border-white/20 text-text hover:border-orange/60"
                   }`}
                 >
@@ -1136,7 +1148,7 @@ export function FlowApp({
             </div>
           )}
           {lens?.kind === "phase" && selecting && (
-            <div className="absolute top-16 left-1/2 -translate-x-1/2 z-30 text-[0.74rem] text-muted pointer-events-none">
+            <div className="absolute top-16 left-1/2 -translate-x-1/2 z-30 text-caption text-muted pointer-events-none">
               {t("Click steps to add or remove them from this phase.", "Klicken Sie auf Schritte, um sie dieser Phase hinzuzufügen oder zu entfernen.")}
             </div>
           )}
@@ -1145,7 +1157,7 @@ export function FlowApp({
             <div
               role="status"
               aria-live="polite"
-              className={`absolute bottom-5 left-1/2 -translate-x-1/2 z-50 inline-flex items-center gap-2.5 text-[0.72rem] font-light tracking-wide glass rounded-full px-3.5 py-1.5 ${toast.kind === "error" ? "text-red-200/90 !border-red-400/30" : "text-text/75 !border-white/10"}`}
+              className={`absolute bottom-5 left-1/2 -translate-x-1/2 z-50 inline-flex items-center gap-2.5 text-caption font-light tracking-wide glass rounded-full px-3.5 py-1.5 ${toast.kind === "error" ? "text-red-200/90 !border-red-400/30" : "text-text/75 !border-white/10"}`}
             >
               {toast.msg}
               <button onClick={() => setToast(null)} className="opacity-60 hover:opacity-100">✕</button>
@@ -1157,7 +1169,7 @@ export function FlowApp({
       {guideOffer && !guideOpen && (
         <div className="fixed bottom-5 right-5 z-40 w-[min(22rem,calc(100vw-2.5rem))] rounded-2xl border border-white/15 p-4 shadow-2xl" style={{ background: "var(--tint-solid)" }}>
           <div className="text-sm font-medium mb-1">{t("New to Loom?", "Neu bei Loom?")}</div>
-          <p className="text-[0.88rem] text-muted font-normal mb-3">
+          <p className="text-body text-muted font-normal mb-3">
             {t("Want a quick tour of how it works? It takes about a minute.", "Möchten Sie eine kurze Einführung, wie Loom funktioniert? Das dauert etwa eine Minute.")}
           </p>
           <div className="flex gap-2">
@@ -1181,7 +1193,7 @@ export function FlowApp({
               {t("NOT NOW", "SPÄTER")}
             </button>
           </div>
-          <p className="text-[0.78rem] text-muted font-normal mt-2">{t("You can always find it under Help.", "Sie finden es jederzeit unter Hilfe.")}</p>
+          <p className="text-small text-muted font-normal mt-2">{t("You can always find it under Help.", "Sie finden es jederzeit unter Hilfe.")}</p>
         </div>
       )}
       {commentNode && (

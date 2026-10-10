@@ -9,10 +9,16 @@ export const PRIVACY: LDoc = {
   title: ["Privacy notice", "Datenschutzhinweis"],
   updated: "October 2026",
   intro: [
-    "Loom is a tool from Struinova Innovation for mapping how work gets done. This page says, in plain words, what we collect, why, and what you can ask us to do.",
-    "Loom ist ein Werkzeug von Struinova Innovation, um abzubilden, wie Arbeit abläuft. Diese Seite sagt in einfachen Worten, was wir erfassen, warum, und was Sie von uns verlangen können.",
+    "Loom is a tool from Woodsage Partners, Inc., d/b/a Struinova Innovation for mapping how work gets done. This page says, in plain words, what we collect, why, and what you can ask us to do.",
+    "Loom ist ein Werkzeug von Woodsage Partners, Inc., d/b/a Struinova Innovation, um abzubilden, wie Arbeit abläuft. Diese Seite sagt in einfachen Worten, was wir erfassen, warum, und was Sie von uns verlangen können.",
   ],
   sections: [
+    {
+      h: ["Who we are", "Wer wir sind"],
+      p: [
+        [`Loom is provided by Woodsage Partners, Inc., d/b/a Struinova Innovation, Indianapolis, Indiana, USA. In this notice, “Struinova”, “we” and “us” mean Woodsage Partners, Inc. Contact: ${CONTACT}.`, `Loom wird von Woodsage Partners, Inc., d/b/a Struinova Innovation, Indianapolis, Indiana, USA, bereitgestellt. In diesem Hinweis bedeuten „Struinova“, „wir“ und „uns“ Woodsage Partners, Inc. Kontakt: ${CONTACT}.`],
+      ],
+    },
     {
       h: ["What we collect", "Was wir erfassen"],
       p: [["", ""]],
@@ -59,10 +65,16 @@ export const TERMS: LDoc = {
   title: ["Terms of use", "Nutzungsbedingungen"],
   updated: "October 2026",
   intro: [
-    "These are the simple ground rules for using Loom, provided by Struinova Innovation. By signing in you agree to them.",
-    "Dies sind die einfachen Grundregeln für die Nutzung von Loom, bereitgestellt von Struinova Innovation. Mit der Anmeldung stimmen Sie ihnen zu.",
+    "These are the simple ground rules for using Loom, provided by Woodsage Partners, Inc., d/b/a Struinova Innovation. By signing in you agree to them.",
+    "Dies sind die einfachen Grundregeln für die Nutzung von Loom, bereitgestellt von Woodsage Partners, Inc., d/b/a Struinova Innovation. Mit der Anmeldung stimmen Sie ihnen zu.",
   ],
   sections: [
+    {
+      h: ["Who provides Loom", "Wer Loom bereitstellt"],
+      p: [
+        [`Loom is provided by Woodsage Partners, Inc., d/b/a Struinova Innovation, Indianapolis, Indiana, USA (“Struinova”). Questions about these terms: ${CONTACT}.`, `Loom wird von Woodsage Partners, Inc., d/b/a Struinova Innovation, Indianapolis, Indiana, USA („Struinova“), bereitgestellt. Fragen zu diesen Bedingungen: ${CONTACT}.`],
+      ],
+    },
     {
       h: ["Your content is yours", "Ihre Inhalte gehören Ihnen"],
       p: [
@@ -104,17 +116,17 @@ export const TERMS: LDoc = {
 };
 
 export const PROCESSOR: LDoc = {
-  title: ["Processor note", "Auftragsverarbeitungs-Notiz"],
+  title: ["Struinova processor note", "Struinova Auftragsverarbeitungs-Notiz"],
   updated: "October 2026",
   intro: [
-    "This note says what data Loom handles, who handles it on Struinova's behalf, where it is stored, and how to ask questions or request deletion.",
-    "Diese Notiz sagt, welche Daten Loom verarbeitet, wer sie im Auftrag von Struinova verarbeitet, wo sie gespeichert werden und wie Sie Fragen stellen oder Löschung verlangen können.",
+    "This note from Woodsage Partners, Inc., d/b/a Struinova Innovation (Indianapolis, USA) says what data Loom handles, who handles it on Struinova's behalf, where it is stored, and how to ask questions or request deletion.",
+    "Diese Notiz von Woodsage Partners, Inc., d/b/a Struinova Innovation (Indianapolis, USA) sagt, welche Daten Loom verarbeitet, wer sie im Auftrag von Struinova verarbeitet, wo sie gespeichert werden und wie Sie Fragen stellen oder Löschung verlangen können.",
   ],
   sections: [
     {
       h: ["Roles", "Rollen"],
       p: [
-        ["For the process maps and text that customers enter, Struinova acts as a processor on the customer's behalf. For account and sign-up details (name, email and so on), Struinova acts as a controller.", "Für die Prozesslandkarten und Texte, die Kunden eingeben, handelt Struinova als Auftragsverarbeiter im Namen des Kunden. Für Konto- und Anmeldedaten (Name, E-Mail usw.) handelt Struinova als Verantwortlicher."],
+        ["For the process maps and text that customers enter, Woodsage Partners, Inc., d/b/a Struinova Innovation (Indianapolis, USA) acts as a processor on the customer's behalf. For account and sign-up details (name, email and so on), Struinova acts as a controller.", "Für die Prozesslandkarten und Texte, die Kunden eingeben, handelt Struinova Innovation (Woodsage Partners, Inc., Indianapolis, USA, handelnd unter dem Namen Struinova) als Auftragsverarbeiter im Namen des Kunden. Für Konto- und Anmeldedaten (Name, E-Mail usw.) handelt Struinova als Verantwortlicher."],
       ],
     },
     {

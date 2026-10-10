@@ -28,7 +28,7 @@ export function MoreMenu(_props: { onHelp?: () => void }) {
     };
   }, [open]);
 
-  const item = "w-full text-left px-3 py-2 text-[0.8rem] rounded-lg text-text/85 hover:text-orange hover:bg-white/10 transition-colors block";
+  const item = "w-full text-left px-3 py-2 text-small rounded-lg text-text/85 hover:text-orange hover:bg-white/10 transition-colors block";
   return (
     <div ref={ref} className="relative">
       <button
@@ -40,13 +40,13 @@ export function MoreMenu(_props: { onHelp?: () => void }) {
         }}
         aria-haspopup="menu"
         aria-expanded={open}
-        className="text-[0.74rem] tracking-[0.1em] uppercase text-muted hover:text-orange transition-colors whitespace-nowrap"
+        className="text-caption tracking-[0.1em] uppercase text-muted hover:text-orange transition-colors whitespace-nowrap"
       >
         {t("About", "Über")} ▾
       </button>
       {open && pos && createPortal(
         <div ref={pop} role="menu" className="fixed w-60 z-[70] glass glass-bright glass-pop rounded-xl p-1.5" style={{ right: pos.right, top: pos.top, background: "var(--tint-solid)" }}>
-          <div className="px-3 pt-1.5 pb-1 text-[0.66rem] font-mono tracking-[0.14em] uppercase text-muted/70">{t("Notices:", "Hinweise:")}</div>
+          <div className="px-3 pt-1.5 pb-1 text-label font-mono tracking-[0.14em] uppercase text-muted/70">{t("Notices:", "Hinweise:")}</div>
           <button role="menuitem" className={`${item} !pl-6`} onClick={() => { setOpen(false); setDoc("privacy"); }}>
             {t("Privacy notice", "Datenschutzhinweis")}
           </button>

@@ -49,7 +49,7 @@ export function LegalModal({ doc, slug, onClose }: { doc: LDoc; slug: string; on
           <button
             onClick={download}
             title={t("Download as text file", "Als Textdatei herunterladen")}
-            className="rounded-full border border-white/20 px-3 h-7 text-[0.7rem] font-mono tracking-wider text-muted hover:text-orange hover:border-orange/50"
+            className="rounded-full border border-white/20 px-3 h-7 text-label font-mono tracking-wider text-muted hover:text-orange hover:border-orange/50"
           >
             ⤓ {t("DOWNLOAD", "HERUNTERLADEN")}
           </button>

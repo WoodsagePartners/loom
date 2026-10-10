@@ -46,19 +46,19 @@ function DeleteDialog({ ws, onClose, onDeleted }: { ws: Workspace; onClose: () =
   return (
     <div className="fixed inset-0 z-[80] flex items-center justify-center bg-black/40 backdrop-blur-[3px] p-4" onMouseDown={(e) => e.target === e.currentTarget && !busy && onClose()}>
       <div role="alertdialog" aria-modal="true" className="w-full max-w-md glass glass-bright glass-dense glass-pop rounded-2xl p-6 text-sm">
-        <div className="font-mono text-[0.66rem] tracking-[0.14em] uppercase text-danger mb-2">{t("Caution — permanent", "Achtung – endgültig")}</div>
-        <div className="text-[0.78rem] text-muted mb-1">{t("Delete this workspace and clear all associated caches", "Diesen Arbeitsbereich löschen und alle zugehörigen Caches leeren")}</div>
+        <div className="font-mono text-label tracking-[0.14em] uppercase text-danger mb-2">{t("Caution — permanent", "Achtung – endgültig")}</div>
+        <div className="text-small text-muted mb-1">{t("Delete this workspace and clear all associated caches", "Diesen Arbeitsbereich löschen und alle zugehörigen Caches leeren")}</div>
         <h2 className="text-base font-medium mb-2">{t(`Delete “${ws.name}”?`, `„${ws.name}“ löschen?`)}</h2>
-        <p className="text-[0.88rem] leading-relaxed text-text/90">
+        <p className="text-body leading-relaxed text-text/90">
           {t(
             "This deletes the workspace and everything in it: all processes, lanes, roles, steps, lines, plans, members, invitations and every cached translation.",
             "Dies löscht den Arbeitsbereich und alles darin: alle Prozesse, Bahnen, Rollen, Schritte, Linien, Pläne, Mitglieder, Einladungen und alle zwischengespeicherten Übersetzungen."
           )}
         </p>
-        <p className="mt-2 text-[0.88rem] leading-relaxed text-danger font-medium">
+        <p className="mt-2 text-body leading-relaxed text-danger font-medium">
           {t("This cannot be undone and nothing can be retrieved afterwards — not by you, not by us.", "Dies kann nicht rückgängig gemacht werden. Nichts kann danach wiederhergestellt werden – weder von Ihnen noch von uns.")}
         </p>
-        <label className="block mt-4 text-[0.78rem] text-muted">
+        <label className="block mt-4 text-small text-muted">
           {t(`Type ${KEYWORD} to confirm`, `Zur Bestätigung ${KEYWORD} eingeben`)}
           <input
             autoFocus
@@ -70,11 +70,11 @@ function DeleteDialog({ ws, onClose, onDeleted }: { ws: Workspace; onClose: () =
         </label>
         {err && <p className="mt-2 text-xs text-danger">{err}</p>}
         <div className="mt-5 flex items-center justify-end gap-3">
-          <button disabled={busy} onClick={onClose} className="rounded-full border border-white/20 px-4 py-1.5 text-[0.74rem] font-mono tracking-wider hover:border-white/40">{t("CANCEL", "ABBRECHEN")}</button>
+          <button disabled={busy} onClick={onClose} className="rounded-full border border-white/20 px-4 py-1.5 text-caption font-mono tracking-wider hover:border-white/40">{t("CANCEL", "ABBRECHEN")}</button>
           <button
             disabled={busy || word.trim() !== KEYWORD}
             onClick={go}
-            className="rounded-full border btn-danger px-4 py-1.5 text-[0.74rem] font-mono tracking-wider transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+            className="rounded-full border btn-danger px-4 py-1.5 text-caption font-mono tracking-wider transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
           >
             {busy ? t("DELETING…", "LÖSCHE…") : t("DELETE FOREVER", "ENDGÜLTIG LÖSCHEN")}
           </button>
@@ -84,7 +84,7 @@ function DeleteDialog({ ws, onClose, onDeleted }: { ws: Workspace; onClose: () =
   );
 }
 
-export function WorkspaceCards({ workspaces, profile: initialProfile, organizations = [], isAdmin = false, showRedeem = false }: { workspaces: Workspace[]; profile: Profile; organizations?: OrgView[]; isAdmin?: boolean; showRedeem?: boolean }) {
+export function WorkspaceCards({ workspaces, profile: initialProfile, organizations = [], isAdmin = false, showRedeem = false, deactivations = [], expired = [] }: { workspaces: Workspace[]; profile: Profile; organizations?: OrgView[]; isAdmin?: boolean; showRedeem?: boolean; deactivations?: { org: string; contacts: { email: string; name: string | null }[] }[]; expired?: { id: string; name: string; org: string; term_end: string; contacts: { email: string; name: string | null }[] }[] }) {
   const t = useT();
   const [profile, setProfile] = useState(initialProfile);
   const [accountOpen, setAccountOpen] = useState(false);
@@ -101,7 +101,8 @@ export function WorkspaceCards({ workspaces, profile: initialProfile, organizati
         ...organizations.flatMap((o) => [
           ...o.workspaces.flatMap((w) => [w.name, w.description ?? "", w.goal ?? "", ...w.processes]),
           ...o.pursuits.flatMap((p) => [p.headline ?? "", p.workspace, p.process]),
-          ...o.roles.flatMap((r) => [r.name, r.role ?? "", r.workspace]),
+          ...o.roles.workspace.flatMap((r) => [r.name, r.role ?? "", r.workspace]),
+          ...o.roles.enterprise.flatMap((r) => [r.name, r.role ?? ""]),
         ]),
       ].filter(Boolean),
     [workspaces, organizations]
@@ -115,7 +116,7 @@ export function WorkspaceCards({ workspaces, profile: initialProfile, organizati
   const shown = list.filter((w) => !orgWsIds.has(w.id));
   const roleLabel = { owner: t("Owner", "Eigentümer"), admin: t("Admin", "Admin"), member: t("Member", "Mitglied") };
 
-  async function open(id: string, join = false) {
+  async function open(id: string, join = false, to = "/dashboard") {
     setOpening(id);
     if (join) {
       const { error } = await createClient().rpc("org_join_workspace", { p_workspace: id });
@@ -125,7 +126,7 @@ export function WorkspaceCards({ workspaces, profile: initialProfile, organizati
       }
     }
     await fetch("/api/workspace/switch", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ orgId: id }) });
-    router.push("/dashboard");
+    router.push(to);
   }
 
   const freeBlock = (
@@ -138,8 +139,8 @@ export function WorkspaceCards({ workspaces, profile: initialProfile, organizati
           {shown.map((w) => (
             <div key={w.id} className="glass rounded-2xl p-5 flex flex-col gap-4">
               <div>
-                <div className="text-[0.95rem] font-medium truncate"><Tx text={w.name} /></div>
-                <div className="text-[0.7rem] font-mono tracking-wider text-muted/70 mt-0.5 flex items-center gap-2">
+                <div className="text-lead font-medium truncate"><Tx text={w.name} /></div>
+                <div className="text-label font-mono tracking-wider text-muted/70 mt-0.5 flex items-center gap-2">
                   <span>{roleLabel[w.role].toUpperCase()}</span>
                   {w.locked && (
                     <span className="inline-flex items-center gap-1 text-orange" title={t("Locked: view only until an owner or admin unlocks it", "Gesperrt: nur Ansicht, bis ein Eigentümer oder Admin entsperrt")}>
@@ -148,9 +149,9 @@ export function WorkspaceCards({ workspaces, profile: initialProfile, organizati
                     </span>
                   )}
                 </div>
-                {w.description && <p className="mt-2 text-[0.85rem] text-muted font-normal leading-snug line-clamp-3 whitespace-pre-line"><Tx text={w.description} /></p>}
+                {w.description && <p className="mt-2 text-body text-muted font-normal leading-snug line-clamp-3 whitespace-pre-line"><Tx text={w.description} /></p>}
                 {w.lastEdited && (
-                  <div className="mt-2 text-[0.74rem] text-muted/70 font-normal" suppressHydrationWarning>
+                  <div className="mt-2 text-caption text-muted/70 font-normal" suppressHydrationWarning>
                     {t("Last edited", "Zuletzt bearbeitet")} {new Date(w.lastEdited).toLocaleDateString(undefined, { dateStyle: "medium" })}
                   </div>
                 )}
@@ -159,7 +160,7 @@ export function WorkspaceCards({ workspaces, profile: initialProfile, organizati
                 <button
                   disabled={opening !== null}
                   onClick={() => open(w.id)}
-                  className="rounded-full text-white text-[0.72rem] font-mono tracking-wider px-4 py-2 disabled:opacity-60"
+                  className="rounded-full text-white text-caption font-mono tracking-wider px-4 py-2 disabled:opacity-60"
                   style={{ background: "linear-gradient(135deg, rgba(248,153,29,.9), rgba(194,87,27,.85))" }}
                 >
                   {opening === w.id ? t("OPENING…", "ÖFFNE…") : t("OPEN", "ÖFFNEN")}
@@ -168,7 +169,7 @@ export function WorkspaceCards({ workspaces, profile: initialProfile, organizati
                   <button
                     onClick={() => setTarget(w)}
                     title={t("Delete this workspace and clear all associated caches", "Diesen Arbeitsbereich löschen und alle zugehörigen Caches leeren")}
-                    className="rounded-full border btn-danger px-4 py-2 text-[0.72rem] font-mono tracking-wider transition-colors whitespace-nowrap"
+                    className="rounded-full border btn-danger px-4 py-2 text-caption font-mono tracking-wider transition-colors whitespace-nowrap"
                   >
                     {t("DELETE", "LÖSCHEN")}
                   </button>
@@ -177,8 +178,8 @@ export function WorkspaceCards({ workspaces, profile: initialProfile, organizati
             </div>
           ))}
         </div>
-        <button onClick={() => router.push("/onboarding")} className="mt-5 text-[0.78rem] text-muted hover:text-text">{t("+ New workspace", "+ Neuer Arbeitsbereich")}</button>
-        {!showRedeem && organizations.length === 0 && <button onClick={() => router.push("/loomfloor?redeem=1")} className="mt-5 ml-5 text-[0.78rem] text-muted hover:text-text">{t("Have a license code?", "Lizenzcode einlösen?")}</button>}
+        <button onClick={() => router.push("/onboarding")} className="mt-5 text-small text-muted hover:text-text">{t("+ New workspace", "+ Neuer Arbeitsbereich")}</button>
+        {!showRedeem && organizations.length === 0 && <button onClick={() => router.push("/loomfloor?redeem=1")} className="mt-5 ml-5 text-small text-muted hover:text-text">{t("Have a license code?", "Lizenzcode einlösen?")}</button>}
     </>
   );
 
@@ -192,27 +193,59 @@ export function WorkspaceCards({ workspaces, profile: initialProfile, organizati
           <span>THE <span className="text-orange">LOOM</span></span>
         </span>
         <span className="text-muted/40">|</span>
-        <span className="font-mono text-[0.78rem] tracking-[0.16em] text-muted">{t("LOOM FLOOR", "LOOM FLOOR")}</span>
+        <span className="font-mono text-small tracking-[0.16em] text-muted">{t("LOOM FLOOR", "LOOM FLOOR")}</span>
         <CtaBanner />
         <div className="ml-auto flex items-center gap-3">
-          {isAdmin && <a href="/admin" className="font-mono text-[0.68rem] tracking-[0.16em] text-muted hover:text-orange">{t("ADMIN", "ADMIN")}</a>}
+          {isAdmin && <a href="/admin" className="font-mono text-label tracking-[0.16em] text-muted hover:text-orange">{t("ADMIN", "ADMIN")}</a>}
           <AccountMenu profile={profile} onAccount={() => setAccountOpen(true)} onTeam={() => {}} onGuide={() => setGuideOpen(true)} onSignOut={signOut} />
         </div>
       </div>
     <main className={`flex-1 flex items-start justify-center p-6 ${organizations.length > 0 ? "pt-4" : "pt-12"}`}>
       <div className="w-full max-w-3xl">
+        {deactivations.map((d, i) => (
+          <div key={i} className="glass rounded-2xl p-5 mb-6 border !border-orange/40">
+            <div className="font-mono text-label tracking-[0.14em] uppercase text-orange mb-1">{t("Access deactivated", "Zugang deaktiviert")}</div>
+            <p className="text-lead">{t(`Your access to ${d.org} has been deactivated.`, `Ihr Zugang zu ${d.org} wurde deaktiviert.`)}</p>
+            <p className="text-body text-muted mt-1">
+              {t("This may be a mistake. Please contact", "Das könnte ein Irrtum sein. Bitte wenden Sie sich an")}{" "}
+              {d.contacts.map((c, k) => (
+                <span key={k}>
+                  {k > 0 && ", "}
+                  <a className="text-orange hover:underline" href={`mailto:${c.email}`}>{c.name ? `${c.name} (${c.email})` : c.email}</a>
+                </span>
+              ))}
+              .
+            </p>
+          </div>
+        ))}
+        {expired.map((w) => (
+          <div key={w.id} className="glass rounded-2xl p-5 mb-6 border !border-orange/40">
+            <div className="font-mono text-label tracking-[0.14em] uppercase text-orange mb-1">{t("License term ended", "Lizenzlaufzeit abgelaufen")}</div>
+            <p className="text-lead">{t(`${w.name} is paused: the license of ${w.org} ended on ${new Date(w.term_end).toLocaleDateString()}.`, `${w.name} ist pausiert: die Lizenz von ${w.org} endete am ${new Date(w.term_end).toLocaleDateString()}.`)}</p>
+            <p className="text-body text-muted mt-1">
+              {t("Nothing has been deleted. Please contact", "Es wurde nichts gelöscht. Bitte wenden Sie sich an")}{" "}
+              {w.contacts.map((c, k) => (
+                <span key={k}>
+                  {k > 0 && ", "}
+                  <a className="text-orange hover:underline" href={`mailto:${c.email}`}>{c.name ? `${c.name} (${c.email})` : c.email}</a>
+                </span>
+              ))}
+              .
+            </p>
+          </div>
+        ))}
         {organizations.length > 0 && (
           <LoomFloor
             orgs={organizations}
             greeting={t(`Welcome, ${firstName}`, `Willkommen, ${firstName}`)}
             memberIds={new Set(workspaces.map((w) => w.id))}
-            onOpen={(id, join) => open(id, join)}
+            onOpen={(id, join, to) => open(id, join, to)}
           >
             {shown.length > 0 && freeBlock}
           </LoomFloor>
         )}
         {showRedeem && organizations.length === 0 && <RedeemBox />}
-        {organizations.length === 0 && freeBlock}
+        {organizations.length === 0 && !(list.length === 0 && (deactivations.length > 0 || expired.length > 0)) && freeBlock}
 
       </div>
       {target && (
@@ -228,11 +261,13 @@ export function WorkspaceCards({ workspaces, profile: initialProfile, organizati
         />
       )}
     </main>
-    <footer className="flex-none flex flex-wrap items-center justify-center gap-x-5 gap-y-1 px-6 py-4 text-[0.72rem] text-muted/70">
+    {organizations.length === 0 && (
+    <footer className="flex-none flex flex-wrap items-center justify-center gap-x-5 gap-y-1 px-6 py-4 text-caption text-muted/70">
       <button type="button" onClick={() => setLegal("privacy")} className="hover:text-orange hover:underline">{t("Privacy notice", "Datenschutzhinweis")}</button>
       <button type="button" onClick={() => setLegal("terms")} className="hover:text-orange hover:underline">{t("Terms of use", "Nutzungsbedingungen")}</button>
       <button type="button" onClick={() => setLegal("processor")} className="hover:text-orange hover:underline">{t("Processor note", "Auftragsverarbeitung")}</button>
     </footer>
+    )}
     {legal && <LegalModal doc={legal === "privacy" ? PRIVACY : legal === "terms" ? TERMS : PROCESSOR} slug={legal} onClose={() => setLegal(null)} />}
     {guideOpen && <Guide onClose={() => setGuideOpen(false)} />}
     {accountOpen && <AccountModal profile={profile} onClose={() => setAccountOpen(false)} onSaved={setProfile} />}

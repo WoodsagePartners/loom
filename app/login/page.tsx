@@ -119,12 +119,12 @@ export default function LoginPage() {
         ) : (
           <form onSubmit={submit} className="space-y-3">
             {resetting && (
-              <p className="text-[0.88rem] text-muted font-normal">
+              <p className="text-body text-muted font-normal">
                 {t("Enter your email and we'll send you a link to choose a new password.", "Geben Sie Ihre E-Mail ein – wir senden Ihnen einen Link, um ein neues Passwort zu wählen.")}
               </p>
             )}
             {invited && signingUp && (
-              <div className="rounded-xl border border-orange/30 bg-orange/10 px-3 py-2.5 text-[0.88rem] font-normal">
+              <div className="rounded-xl border border-orange/30 bg-orange/10 px-3 py-2.5 text-body font-normal">
                 <div className="text-text mb-0.5">{inviteOrg
                     ? t(`You've been invited to ${inviteOrg}.`, `Sie wurden zu „${inviteOrg}“ eingeladen.`)
                     : t("You've been invited to a workspace.", "Sie wurden in einen Arbeitsbereich eingeladen.")}</div>
@@ -137,7 +137,7 @@ export default function LoginPage() {
               </div>
             )}
             {signingUp && !invited && (
-              <p className="text-[0.88rem] text-muted font-normal">
+              <p className="text-body text-muted font-normal">
                 {t(
                   "Invited by a teammate? Create your account with the same email address the invite was sent to.",
                   "Von einem Teammitglied eingeladen? Erstellen Sie Ihr Konto mit derselben E-Mail-Adresse, an die die Einladung ging."
@@ -166,7 +166,7 @@ export default function LoginPage() {
             />
             )}
             {!resetting && (
-              <label className="flex items-center gap-2 text-[0.88rem] text-muted font-normal cursor-pointer select-none">
+              <label className="flex items-center gap-2 text-body text-muted font-normal cursor-pointer select-none">
                 <input type="checkbox" checked={remember} onChange={(e) => setRemember(e.target.checked)} className="accent-orange" />
                 {t("Keep me signed in", "Angemeldet bleiben")}
               </label>
@@ -194,7 +194,7 @@ export default function LoginPage() {
                   setError("");
                 }}
                 disabled={busy}
-                className="w-full text-center text-[0.88rem] text-muted font-normal hover:text-text"
+                className="w-full text-center text-body text-muted font-normal hover:text-text"
               >
                 {resetting ? t("Back to sign in", "Zurück zur Anmeldung") : t("Forgot your password?", "Passwort vergessen?")}
               </button>
@@ -206,7 +206,7 @@ export default function LoginPage() {
                 setSigningUp((s) => !s);
                 setError("");
               }}
-              className="w-full text-center text-[0.88rem] text-muted font-normal"
+              className="w-full text-center text-body text-muted font-normal"
             >
               {signingUp
                 ? t("Already have an account? Sign in", "Schon ein Konto? Anmelden")

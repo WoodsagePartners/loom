@@ -20,18 +20,23 @@ export default async function LoomFloorPage({ searchParams }: { searchParams: Pr
     const [ov, pp, ak, pu, ro] = await Promise.all([
       sb.rpc("org_overview", { p_org: oid }),
       sb.rpc("org_people", { p_org: oid }),
-      sb.from("processor_acks").select("version, accepted_at").eq("organization_id", oid).order("accepted_at", { ascending: false }).limit(5),
+      sb.rpc("org_acks", { p_org: oid }),
       sb.rpc("org_pursuits", { p_org: oid }),
       sb.rpc("org_roles", { p_org: oid }),
     ]);
-    if (ov.data) organizations.push({ ...(ov.data as any), people: (pp.data as any) ?? [], acks: (ak.data as any) ?? [], pursuits: (pu.data as any) ?? [], roles: (ro.data as any) ?? [] });
+    if (ov.data) organizations.push({ ...(ov.data as any), people: (pp.data as any) ?? [], acks: (ak.data as any) ?? [], pursuits: (pu.data as any) ?? [], roles: (ro.data as any) ?? { enterprise: [], workspace: [] } });
   }
+  const { data: deact } = await sb.rpc("my_deactivations");
+  const deactivations = ((deact as any) ?? []) as { org: string; contacts: { email: string; name: string | null }[] }[];
+  const { data: exp } = await sb.rpc("my_expired_workspaces");
+  const expiredWs = ((exp as any) ?? []) as { id: string; name: string; org: string; term_end: string; contacts: { email: string; name: string | null }[] }[];
+  const expiredIds = new Set(expiredWs.map((w) => w.id));
   const { data: pa } = await sb.from("platform_admins").select("user_id").eq("user_id", user.id).maybeSingle();
 
-  if ((!memberships || memberships.length === 0) && organizations.length === 0 && sp.redeem !== "1") redirect("/onboarding");
+  if ((!memberships || memberships.length === 0) && organizations.length === 0 && deactivations.length === 0 && expiredWs.length === 0 && sp.redeem !== "1") redirect("/onboarding");
   const all = memberships ?? [];
   const workspaces: Workspace[] = all
-    .filter((m: any) => !m.orgs?.archived)
+    .filter((m: any) => !m.orgs?.archived && !expiredIds.has(m.org_id))
     .map((m: any) => ({ id: m.org_id as string, name: (m.orgs?.name as string | undefined) ?? "Workspace", role: m.role as WorkspaceRole, locked: !!m.orgs?.locked }))
     .sort((a, b) => a.name.localeCompare(b.name));
   // description / last-edited come from columns that may not exist yet on an older database: ask for
@@ -51,5 +56,5 @@ export default async function LoomFloorPage({ searchParams }: { searchParams: Pr
     w.description = (o?.description as string | null | undefined) ?? null;
     w.lastEdited = (o?.last_edited_at as string | null | undefined) ?? (o?.created_at as string | null | undefined) ?? null;
   }
-  return <WorkspaceCards workspaces={workspaces} profile={profileFromUser(user)} organizations={organizations} isAdmin={!!pa} showRedeem={sp.redeem === "1"} />;
+  return <WorkspaceCards workspaces={workspaces} profile={profileFromUser(user)} organizations={organizations} isAdmin={!!pa} showRedeem={sp.redeem === "1"} deactivations={deactivations} expired={expiredWs} />;
 }
