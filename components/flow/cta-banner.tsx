@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { useT } from "@/lib/i18n";
 
 // A quiet, occasional nudge at the top centre of the canvas: the story of what Loom is for,
@@ -22,7 +23,7 @@ const LINES: [string, string][] = [
   ["Begin with the Why. The How will thank you later.", "Beginnen Sie mit dem Warum. Das Wie dankt es Ihnen später."],
 ];
 
-const SHOW_MS = 7000;
+const SHOW_MS = 12000;
 const GAP_MS = 5 * 60 * 1000; // at most once every ~5 minutes
 const FIRST_MS = 20000;
 
@@ -41,6 +42,7 @@ export function CtaBanner() {
   }, []);
   const [visible, setVisible] = useState(false);
   const [hidden, setHidden] = useState(false);
+  const [contact, setContact] = useState(false);
 
   useEffect(() => {
     try {
@@ -64,25 +66,29 @@ export function CtaBanner() {
     return () => clearTimeout(timer);
   }, [hidden]);
 
-  if (hidden) return null;
+  if (hidden && !contact) return null;
 
   const L = LINES[order[i % order.length]];
   const line = t(L[0], L[1]);
 
   return (
+    <>
+    {contact && typeof document !== "undefined" && createPortal(<ContactDialog onClose={() => setContact(false)} />, document.body)}
+    {!hidden && (
     <div
       className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[60] hidden md:flex items-center gap-3 max-w-[56vw] rounded-full px-4 py-1.5 text-[0.76rem] font-light text-text/85 shadow-lg backdrop-blur-md transition-opacity duration-[1800ms] ease-in-out"
       style={{ background: "color-mix(in srgb, var(--tint-solid) 88%, transparent)", border: "1px solid rgb(var(--c-white) / .12)", opacity: visible ? 1 : 0, pointerEvents: "none" }}
       aria-hidden={!visible}
     >
       <span className="truncate">{line}</span>
-      <a
-        href="mailto:ron@struinova.com?subject=Loom%20%E2%80%93%20let%27s%20talk"
+      <button
+        type="button"
+        onClick={() => setContact(true)}
         className="text-[0.64rem] text-muted/70 hover:text-orange hover:underline whitespace-nowrap"
         style={{ pointerEvents: visible ? "auto" : "none" }}
       >
         {t("Talk to us", "Sprechen wir")}
-      </a>
+      </button>
       <button
         onClick={() => {
           setHidden(true);
@@ -96,6 +102,76 @@ export function CtaBanner() {
       >
         ✕
       </button>
+    </div>
+    )}
+    </>
+  );
+}
+
+function ContactDialog({ onClose }: { onClose: () => void }) {
+  const t = useT();
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [msg, setMsg] = useState("");
+  const [trap, setTrap] = useState("");
+  const [state, setState] = useState<"idle" | "busy" | "done">("idle");
+  const [err, setErr] = useState("");
+  useEffect(() => {
+    const key = (e: KeyboardEvent) => e.key === "Escape" && onClose();
+    document.addEventListener("keydown", key);
+    return () => document.removeEventListener("keydown", key);
+  }, [onClose]);
+  async function send() {
+    setState("busy");
+    setErr("");
+    const r = await fetch("/api/contact", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name, email, message: msg, website: trap, lang: t("en", "de") }),
+    });
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok) {
+      setErr(j.error ?? t("Could not send. You can also write to ron@struinova.com.", "Senden fehlgeschlagen. Sie können auch an ron@struinova.com schreiben."));
+      setState("idle");
+      return;
+    }
+    setState("done");
+  }
+  const input = "mt-1 w-full bg-black/30 border border-white/10 rounded-xl text-text text-sm px-3 py-2.5 outline-none focus:border-orange/60";
+  return (
+    <div className="fixed inset-0 z-[90] flex items-center justify-center bg-black/40 backdrop-blur-[3px] p-4" onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
+      <div role="dialog" aria-modal="true" className="w-full max-w-md glass glass-bright glass-dense glass-pop rounded-2xl p-6 text-sm">
+        <div className="font-mono text-[0.66rem] tracking-[0.14em] uppercase text-orange mb-2">{t("Talk to us", "Sprechen wir")}</div>
+        {state === "done" ? (
+          <>
+            <h2 className="text-base font-medium mb-2">{t("Thank you — message received.", "Danke – Nachricht erhalten.")}</h2>
+            <p className="text-[0.88rem] text-muted">{t("We'll get back to you soon.", "Wir melden uns bald bei Ihnen.")}</p>
+            <div className="mt-5 flex justify-end">
+              <button onClick={onClose} className="rounded-full border border-white/20 px-4 py-1.5 text-[0.74rem] font-mono tracking-wider hover:border-white/40">{t("CLOSE", "SCHLIESSEN")}</button>
+            </div>
+          </>
+        ) : (
+          <>
+            <h2 className="text-base font-medium mb-1">{t("Stuck on the How? Tell us what you're working on.", "Beim Wie festgefahren? Erzählen Sie uns, woran Sie arbeiten.")}</h2>
+            <label className="block mt-4 text-[0.78rem] text-muted">{t("Your name", "Ihr Name")}<input value={name} onChange={(e) => setName(e.target.value)} className={input} /></label>
+            <label className="block mt-3 text-[0.78rem] text-muted">{t("Your email", "Ihre E-Mail")}<input type="email" value={email} onChange={(e) => setEmail(e.target.value)} className={input} /></label>
+            <label className="block mt-3 text-[0.78rem] text-muted">{t("Message", "Nachricht")}<textarea rows={4} value={msg} onChange={(e) => setMsg(e.target.value)} className={input} /></label>
+            <input tabIndex={-1} autoComplete="off" value={trap} onChange={(e) => setTrap(e.target.value)} style={{ position: "absolute", left: "-9999px", opacity: 0 }} aria-hidden="true" />
+            {err && <p className="mt-2 text-xs text-danger">{err}</p>}
+            <div className="mt-5 flex items-center justify-end gap-3">
+              <button disabled={state === "busy"} onClick={onClose} className="rounded-full border border-white/20 px-4 py-1.5 text-[0.74rem] font-mono tracking-wider hover:border-white/40">{t("CANCEL", "ABBRECHEN")}</button>
+              <button
+                disabled={state === "busy" || !email.includes("@") || msg.trim().length < 3}
+                onClick={send}
+                className="rounded-full text-white text-[0.74rem] font-mono tracking-wider px-4 py-1.5 disabled:opacity-40"
+                style={{ background: "linear-gradient(135deg, rgba(248,153,29,.9), rgba(194,87,27,.85))" }}
+              >
+                {state === "busy" ? t("SENDING…", "SENDE…") : t("SEND", "SENDEN")}
+              </button>
+            </div>
+          </>
+        )}
+      </div>
     </div>
   );
 }

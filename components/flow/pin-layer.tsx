@@ -100,8 +100,8 @@ export function computeSignals(nodes: FlowNode[], edges: FlowEdge[]): Signal[] {
 type Item = { type: "pin"; pin: FlowPin } | { type: "sig"; sig: Signal };
 type Add = (a: { node_id?: string | null; edge_id?: string | null; kind: PinKind; body?: string; parent_id?: string | null; origin?: string | null; status?: FlowPin["status"]; pursued_at?: string | null; lineage?: Lineage | null }) => Promise<FlowPin | null>;
 
-const D = 24; // pin diameter
-const STEP = 32; // pin pitch along the chain
+const D = 30; // pin diameter
+const STEP = 38; // pin pitch along the chain
 const MAX_SHOWN = 5;
 
 export function PinLayer({
@@ -324,7 +324,7 @@ function PinDot({ item, unsupported = false, x, y, active, onClick }: { item: It
     glyph = "▲";
     title = `${t("Signal", "Signal")}: ${t(item.sig.en, item.sig.de)}`;
     // faint and dashed: Loom's suggestion, not yours yet
-    style = { border: `1.5px dashed ${color}`, color, background: "rgba(12,16,26,.55)", opacity: active ? 1 : 0.7 };
+    style = { border: `1.5px dashed ${color}`, color, background: "rgba(12,16,26,.92)", opacity: 1 };
   } else {
     const p = item.pin;
     color = PIN_KINDS[p.kind].color;
@@ -339,7 +339,7 @@ function PinDot({ item, unsupported = false, x, y, active, onClick }: { item: It
       className="nodrag nopan"
       onClick={(e) => { e.stopPropagation(); onClick(); }}
       title={title}
-      style={{ animation: "pinPop .45s ease both", position: "absolute", left: x - D / 2, top: y - D / 2, width: D, height: D, borderRadius: D, pointerEvents: "auto", zIndex: 41, boxShadow: [item.type === "pin" && item.pin.pursued_at ? `0 0 0 2px #0c101a, 0 0 0 3.5px ${PURSUIT_COLOR}` : "", active ? `0 0 0 6px ${color}44` : ""].filter(Boolean).join(", ") || undefined, fontSize: item.type === "sig" ? 9 : 12, fontWeight: 600, lineHeight: 1, display: "flex", alignItems: "center", justifyContent: "center", ...style }}
+      style={{ animation: "pinPop .45s ease both", position: "absolute", left: x - D / 2, top: y - D / 2, width: D, height: D, borderRadius: D, pointerEvents: "auto", zIndex: 41, boxShadow: [item.type === "pin" && item.pin.pursued_at ? `0 0 0 2px #0c101a, 0 0 0 3.5px ${PURSUIT_COLOR}` : "", active ? `0 0 0 6px ${color}44` : `0 0 12px 1px ${color}99`].filter(Boolean).join(", ") || undefined, fontSize: item.type === "sig" ? 11 : 15, fontWeight: 700, lineHeight: 1, display: "flex", alignItems: "center", justifyContent: "center", ...style }}
     >
       {glyph}
     </button>
@@ -558,7 +558,7 @@ export function LayerLegend({ pins, signals }: { pins: FlowPin[]; signals: Signa
   const row = (dot: ReactNode, label: string, count: number, tip: { title: string; body: string; how?: string }) => (
     <div className="flex items-center gap-2">
       {dot}
-      <span className="flex-1">{label}</span>
+      <span className="flex-1 whitespace-nowrap">{label}</span>
       <HelpTip {...tip} />
       <span className="font-mono text-muted w-4 text-right">{count}</span>
     </div>

@@ -159,11 +159,11 @@ function useDragCard(getZoom?: () => number) {
   return { o, setO, bind };
 }
 
-function CardFooter({ onDelete, onDone }: { onDelete: () => void; onDone: () => void }) {
+function CardFooter({ onDelete, onDone }: { onDelete?: () => void; onDone: () => void }) {
   const t = useT();
   return (
     <div className="mt-3 flex items-center justify-between">
-      <button type="button" onClick={onDelete} className="btn-danger inline-flex h-6 items-center rounded-full border px-3 text-[0.68rem] font-mono leading-none tracking-wider transition-colors">{t("DELETE", "LÖSCHEN")}</button>
+      {onDelete ? <button type="button" onClick={onDelete} className="btn-danger inline-flex h-6 items-center rounded-full border px-3 text-[0.68rem] font-mono leading-none tracking-wider transition-colors">{t("DELETE", "LÖSCHEN")}</button> : <span />}
       <button type="button" onClick={onDone} className="inline-flex h-6 items-center rounded-full border border-orange/60 bg-orange/10 px-3 text-[0.68rem] font-mono leading-none tracking-wider text-orange hover:bg-orange/20 transition-colors">{t("DONE", "FERTIG")}</button>
     </div>
   );
@@ -354,7 +354,7 @@ const FlowNodeView = memo(function FlowNodeView({ data, selected, dragging, posi
 
       <div
         className="absolute inset-0 flex items-center justify-center gap-2 px-5"
-        style={{ paddingLeft: isStart || isEnd ? 14 : 22, paddingRight: isStart || isEnd ? 14 : 22 }}
+        style={{ paddingLeft: isStart || isEnd ? 14 : shapePad(actor?.kind), paddingRight: isStart || isEnd ? 14 : shapePad(actor?.kind) }}
       >
         {isStart && <span className="text-orange text-sm flex-none">▶</span>}
         {isEnd && <span className="flex-none"><GroundSymbol size={22} /></span>}
@@ -408,13 +408,15 @@ const FlowNodeView = memo(function FlowNodeView({ data, selected, dragging, posi
         </div>
       </NodeToolbar>
 
-      <NodeToolbar position={flipUp ? Position.Top : Position.Bottom} offset={14} isVisible={selected && !quiet && !lockN && !dragging}>
+      <NodeToolbar position={flipUp ? Position.Top : Position.Bottom} offset={14} isVisible={selected && !quiet && !dragging}>
         <div
           className="nodrag nopan glass glass-bright glass-dense glass-pop w-72 max-h-[70vh] overflow-y-auto rounded-xl p-3 text-[0.8rem]"
           style={{ position: "relative", left: card.o.x, top: card.o.y }}
           onDoubleClick={(e) => e.stopPropagation()}
         >
           <DragGrip bind={card.bind} />
+          {lockN && <div className="mb-2 rounded-md border border-orange/40 bg-orange/10 px-2 py-1 text-[0.7rem] text-orange">{t("Locked — view only", "Gesperrt – nur Ansicht")}</div>}
+          <fieldset disabled={lockN} className="contents">
           <div className="font-mono text-[0.62rem] tracking-[0.14em] text-muted/80 mb-1">{t("STEP NAME", "SCHRITTNAME")}</div>
           <input
             key={node.id + node.label}
@@ -503,8 +505,9 @@ const FlowNodeView = memo(function FlowNodeView({ data, selected, dragging, posi
             }}
             className={INPUT_CLS + " resize-none"}
           />
+          </fieldset>
           {err && <div className="mt-2 text-[0.75rem] text-red-300">{err}</div>}
-          <CardFooter onDelete={() => data.onDelete(node.id)} onDone={data.onClose} />
+          <CardFooter onDelete={lockN ? undefined : () => data.onDelete(node.id)} onDone={data.onClose} />
         </div>
       </NodeToolbar>
     </div>
@@ -548,7 +551,7 @@ const SM_LABEL = "font-mono text-[0.62rem] tracking-[0.14em] uppercase text-text
 const SM_FIELD = "nodrag nopan nowheel w-full bg-black/40 border border-white/15 rounded-md text-[0.8rem] text-text px-2 py-1.5 outline-none focus:border-orange/60 placeholder:text-text/40";
 
 /** Editor for the "smarts" on a line: what moves, how, wait, friction, note. */
-function SmartsEditor({ id, data }: { id: string; data: EdgeData }) {
+function SmartsEditor({ id, data, readOnly }: { id: string; data: EdgeData; readOnly?: boolean }) {
   const t = useT();
   const rf = useReactFlow();
   const card = useDragCard(() => rf.getZoom());
@@ -568,6 +571,8 @@ function SmartsEditor({ id, data }: { id: string; data: EdgeData }) {
   return (
     <div className="absolute left-1/2 -translate-x-1/2 top-4 w-72 glass glass-bright glass-dense glass-pop rounded-xl p-3 text-left text-[0.8rem] space-y-3 whitespace-normal" style={{ marginLeft: card.o.x, marginTop: card.o.y }} onMouseDown={(e) => e.stopPropagation()}>
       <DragGrip bind={card.bind} />
+      {readOnly && <div className="rounded-md border border-orange/40 bg-orange/10 px-2 py-1 text-[0.7rem] text-orange">{t("Locked — view only", "Gesperrt – nur Ansicht")}</div>}
+      <fieldset disabled={readOnly} className="contents">
       <div>
         <div className={SM_LABEL}>{t("What moves", "Was wird übergeben")}</div>
         <input value={payload} onChange={(e) => setPayload(e.target.value)} onBlur={() => payload.trim() !== (s.payload ?? "") && data.onSmarts(id, { payload: payload.trim() || null })} placeholder={t("e.g. signed order PDF", "z. B. unterschriebener Auftrag (PDF)")} className={SM_FIELD} />
@@ -627,7 +632,8 @@ function SmartsEditor({ id, data }: { id: string; data: EdgeData }) {
         <div className={SM_LABEL}>{t("Note", "Notiz")}</div>
         <textarea rows={3} value={note} onChange={(e) => setNote(e.target.value)} onBlur={() => note.trim() !== (s.note ?? "") && data.onSmarts(id, { note: note.trim() || null })} placeholder={t("What happens here, and what goes wrong?", "Was passiert hier – und was geht schief?")} className={SM_FIELD + " resize-none"} />
       </div>
-      <CardFooter onDelete={() => data.onDelete(id)} onDone={() => data.onSelect(null)} />
+      </fieldset>
+      <CardFooter onDelete={readOnly ? undefined : () => data.onDelete(id)} onDone={() => data.onSelect(null)} />
     </div>
   );
 }
@@ -652,6 +658,8 @@ function markScanned(key: string) {
   }
 }
 
+// breathing room between the label and the slanted/rounded edges of each shape
+const shapePad = (kind?: string | null) => (kind === "external" ? 44 : kind === "ai" ? 36 : kind === "person" ? 32 : 28);
 const PeerCtx = createContext(false);
 const LockCtx = createContext(false); // locked process/workspace: hides editors, keeps hover cards
 
@@ -725,7 +733,7 @@ const FlowEdgeView = memo(function FlowEdgeView(props: EdgeProps<RFEdge>) {
   const { id, sourceX, sourceY, targetX, targetY, sourcePosition, targetPosition, selected: selectedRaw, data, markerEnd } = props;
   const peerE = useContext(PeerCtx);
   const lockE = useContext(LockCtx);
-  const selected = selectedRaw && !peerE && !lockE;
+  const selected = selectedRaw && !peerE;
   const [path, labelX, labelY] = getSmoothStepPath({
     sourceX,
     sourceY,
@@ -778,7 +786,7 @@ const FlowEdgeView = memo(function FlowEdgeView(props: EdgeProps<RFEdge>) {
         >
           <div className="absolute left-1/2 top-1/2 w-0 h-0" style={{ transform: `scale(${1 / zoom})`, transformOrigin: "0 0" }}>
           {hover && !quietEdge && !peerE && !selected && !editing && (hasSmarts || !!data?.label) && data && <SmartsCard data={data} label={data.label} />}
-          {selected && (
+          {selected && !lockE && (
             <div className="absolute left-1/2 -translate-x-1/2 -top-[5.4rem] glass glass-bright glass-dense glass-pop flex flex-col items-center gap-1.5 rounded-2xl p-1.5 whitespace-nowrap">
              <div className="flex gap-1">
               {EDGE_KINDS.map((k) => (
@@ -818,7 +826,7 @@ const FlowEdgeView = memo(function FlowEdgeView(props: EdgeProps<RFEdge>) {
              </div>
             </div>
           )}
-          {selected && data && <SmartsEditor id={id} data={data} />}
+          {selected && data && <SmartsEditor id={id} data={data} readOnly={lockE} />}
           </div>
           {editing ? (
             <input
@@ -836,14 +844,14 @@ const FlowEdgeView = memo(function FlowEdgeView(props: EdgeProps<RFEdge>) {
           ) : data?.label ? (
             <button
               onClick={() => data?.onSelect(id)}
-              onDoubleClick={() => setEditing(true)}
+              onDoubleClick={() => !lockE && setEditing(true)}
               className="glass rounded-full px-2.5 py-0.5 text-[0.78rem] text-text inline-flex items-center gap-1.5"
             >
               {frColor && <span className="w-1.5 h-1.5 rounded-full flex-none" style={{ background: frColor }} />}
               <Tx text={data.label} d={400} />
               {hasSmarts && !frColor && <span className="w-1 h-1 rounded-full bg-orange/70 flex-none" />}
             </button>
-          ) : selected ? (
+          ) : selected && !lockE ? (
             <button
               onClick={() => setEditing(true)}
               className="glass rounded-full !border-orange/50 px-2.5 py-0.5 text-[0.75rem] text-orange"
@@ -911,7 +919,7 @@ function Inner(props: CanvasProps) {
   const theme = useTheme();
   const { lanes, nodes, edges, actors } = props;
   const focusProp = props.focus;
-  const { screenToFlowPosition, flowToScreenPosition, zoomTo, zoomIn, zoomOut, fitView, fitBounds, getViewport, setCenter } = useReactFlow();
+  const { screenToFlowPosition, flowToScreenPosition, zoomTo, zoomIn, zoomOut, fitView, fitBounds, getViewport, setCenter, setViewport } = useReactFlow();
   const boxRef = useRef<HTMLDivElement>(null);
   const addNextRef = useRef<(id: string) => void>(() => {});
   const closeRef = useRef<() => void>(() => {});
@@ -924,6 +932,7 @@ function Inner(props: CanvasProps) {
   const [tallyOn, setTallyOn] = useState(false); // Selection Totals tool
   const [gapsOn, setGapsOn] = useState(false); // Time Gaps tool
   const [selMode, setSelMode] = useState(false); // false = hand (drag pans), true = select (drag draws a box)
+  const [editWhile, setEditWhile] = useState(true); // Insights stays open AND the graph stays editable
   const [peerOn, setPeerOn] = useState(false); // Peer mode: look behind the process (-Z), editing paused
   const peerRef = useRef(false);
   const [pinOpen, setPinOpen] = useState<string | null>(null); // which pin / signal card is open in Insights
@@ -1175,7 +1184,8 @@ function Inner(props: CanvasProps) {
 
   const [rfNodes, setRfNodes] = useState<RFNode[]>(derived);
   const locked = !!props.locked;
-  const frozen = peerOn || locked;
+  const peerFrozen = peerOn && !editWhile;
+  const frozen = peerFrozen || locked;
   peerRef.current = frozen;
   selIdsRef.current = rfNodes.filter((n) => n.selected && n.id !== "__bounds").map((n) => n.id);
   const peerTargets = useMemo(() => {
@@ -1320,6 +1330,49 @@ function Inner(props: CanvasProps) {
     const height = Math.max(lanes.length, 1) * LANE_H;
     fitBounds({ x: 0, y: 0, width, height }, { padding: 0.03, duration: 300 });
   }, [nodes, lanes, fitBounds]);
+  // Resume: remember the step/line you had open and where you were looking, per process (this browser).
+  const posKey = `loom_pos_${scanKey}`;
+  const [resumeNote, setResumeNote] = useState<string | null>(null);
+  const resumedRef = useRef(false);
+  const posTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const savePos = useCallback((patch: Record<string, unknown>) => {
+    if (!resumedRef.current) return;
+    try {
+      const cur = JSON.parse(localStorage.getItem(posKey) || "{}");
+      localStorage.setItem(posKey, JSON.stringify({ ...cur, ...patch }));
+    } catch {}
+  }, [posKey]);
+  useEffect(() => {
+    if (resumedRef.current || !nodes.length || !rfNodes.length) return;
+    resumedRef.current = true;
+    let saved: { vp?: { x: number; y: number; zoom: number }; node?: string | null; edge?: string | null } | null = null;
+    try { saved = JSON.parse(localStorage.getItem(posKey) || "null"); } catch {}
+    if (!saved) return;
+    const node = saved.node ? nodes.find((n) => n.id === saved!.node) : undefined;
+    const edge = saved.edge ? edges.find((e) => e.id === saved!.edge) : undefined;
+    if (!saved.vp && !node && !edge) return;
+    setTimeout(() => {
+      if (saved!.vp && Number.isFinite(saved!.vp.zoom)) setViewport(saved!.vp, { duration: 0 });
+      if (node) setRfNodes((nds) => nds.map((x) => (x.id === node.id ? { ...x, selected: true } : x)));
+      else if (edge) setSelEdge(edge.id);
+    }, 60);
+    setResumeNote(node?.label || edge?.label || props.processName || "");
+    setTimeout(() => setResumeNote(null), 5400);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [nodes.length, rfNodes.length]);
+  const selectedNodeId = rfNodes.find((n) => n.selected && n.id !== "__bounds")?.id ?? null;
+  useEffect(() => { savePos({ node: selectedNodeId, edge: selectedNodeId ? null : selEdge }); }, [selectedNodeId, selEdge, savePos]);
+  const onMoveEndSave = useCallback(() => {
+    if (posTimer.current) clearTimeout(posTimer.current);
+    posTimer.current = setTimeout(() => savePos({ vp: getViewport() }), 400);
+  }, [savePos, getViewport]);
+  const startFresh = () => {
+    setResumeNote(null);
+    try { localStorage.removeItem(posKey); } catch {}
+    setSelEdge(null);
+    setRfNodes((nds) => (nds.some((x) => x.selected) ? nds.map((x) => (x.selected ? { ...x, selected: false } : x)) : nds));
+    fitAll();
+  };
   const eyeMap = (w: number, maxH: number) => (
     <BirdsEye
       boxes={nodes.map((n) => ({ id: n.id, x: n.x, y: (laneIdx.get(n.lane_id ?? "") ?? 0) * LANE_H + n.y_offset, w: NODE_W, h: NODE_H }))}
@@ -1554,8 +1607,16 @@ function Inner(props: CanvasProps) {
     if (!ls.length || !box) return;
     const c = screenToFlowPosition({ x: box.left + box.width / 2, y: box.top + box.height / 2 });
     const idx = Math.max(0, Math.min(ls.length - 1, Math.floor(c.y / LANE_H)));
-    const yOffset = Math.round((LANE_H - NODE_H) / 2);
-    openPromptAt(freeX(ls[idx].id, Math.round(c.x - NODE_W / 2)), ls[idx].id, yOffset);
+    const laneId = ls[idx].id;
+    // just right of and below the viewport centre; nudge diagonally if another step is already there
+    let x = Math.max(MIN_X, Math.round(c.x + 24));
+    let yOffset = Math.round(Math.max(0, Math.min(LANE_H - NODE_H, c.y - idx * LANE_H + 24)));
+    const here = propsRef.current.nodes.filter((n) => n.lane_id === laneId);
+    for (let i = 0; i < 8 && here.some((n) => Math.abs(n.x - x) < NODE_W + 16 && Math.abs(n.y_offset - yOffset) < NODE_H + 16); i++) {
+      x += 32;
+      yOffset = Math.min(LANE_H - NODE_H, yOffset + 24);
+    }
+    openPromptAt(x, laneId, yOffset);
     // keep the prompt right under the button that opened it
     setPending((p) => (p ? { ...p, px: LANE_LABEL_W + 40, py: 52 } : p));
   };
@@ -1577,9 +1638,9 @@ function Inner(props: CanvasProps) {
   const showCoach = nodes.filter((n) => n.type !== "start").length === 0;
 
   return (
-    <PeerCtx.Provider value={peerOn}>
+    <PeerCtx.Provider value={peerFrozen}>
     <LockCtx.Provider value={locked}>
-    <div ref={boxRef} className={`relative w-full h-full ${peerOn ? "loom-peer" : ""} ${pickTool ? "loom-pick" : ""}`} onDoubleClick={frozen ? undefined : onPaneDoubleClick}>
+    <div ref={boxRef} className={`relative w-full h-full ${peerFrozen ? "loom-peer" : ""} ${pinOpen ? "loom-cardopen" : ""} ${pickTool ? "loom-pick" : ""}`} onDoubleClick={frozen ? undefined : onPaneDoubleClick}>
       {props.canProbe && (
         <div className="absolute top-3 right-3 z-30 flex items-start gap-2">
           {drawer && (
@@ -1711,6 +1772,10 @@ function Inner(props: CanvasProps) {
                   </button>
                   {peerOn && (
                     <>
+                      <label className="flex items-center gap-2 px-1 text-[0.8rem] text-text/85 cursor-pointer select-none">
+                        <input type="checkbox" checked={editWhile} onChange={(e) => setEditWhile(e.target.checked)} className="accent-[#f8991d]" />
+                        {t("Keep editing on", "Bearbeiten bleibt aktiv")}
+                      </label>
                       <LayerLegend pins={props.pins} signals={signals} />
                       <button
                         onClick={() => setScanReq((n) => n + 1)}
@@ -1763,6 +1828,12 @@ function Inner(props: CanvasProps) {
           </div>
         </div>
       )}
+      {resumeNote !== null && (
+        <div className="absolute top-3 left-1/2 -translate-x-1/2 z-40 glass glass-bright rounded-full px-4 py-1.5 text-[0.82rem] flex items-center gap-3" style={{ background: "var(--tint-solid)" }}>
+          <span className="text-text/85">{t("Back where you left off", "Weiter, wo Sie aufgehört haben")}{resumeNote ? ` · ${resumeNote}` : ""}</span>
+          <button onClick={startFresh} className="text-orange hover:underline">{t("Start fresh", "Neu beginnen")}</button>
+        </div>
+      )}
       {peerOn && eyeBig && (
         <div className="absolute left-4 bottom-4 z-40 glass glass-bright rounded-xl p-2.5" style={{ background: "var(--tint-solid)" }}>
           <div className="flex items-center mb-1.5">
@@ -1794,7 +1865,7 @@ function Inner(props: CanvasProps) {
           </div>
         </>
       )}
-      <style>{`.loom-peer .react-flow__node { opacity: .5; transition: opacity .4s ease; } .loom-peer .react-flow__node.selected, .loom-peer .react-flow__node:hover { opacity: 1; } .loom-peer .react-flow__edgelabel-renderer { opacity: .3; } .loom-peer .react-flow__edge { opacity: .4; transition: opacity .4s ease; } .loom-peer .react-flow__edge.selected, .loom-peer .react-flow__edge:hover { opacity: 1; } .react-flow__pane, .react-flow__pane.draggable, .react-flow__pane.dragging, .react-flow__pane.selection { cursor: default !important; } .loom-pick .react-flow__pane, .loom-pick .react-flow__pane.draggable, .loom-pick .react-flow__node, .loom-pick .react-flow__node.draggable, .loom-pick .react-flow__node * { cursor: default !important; }`}</style>
+      <style>{`.loom-peer .react-flow__node { opacity: .5; transition: opacity .4s ease; } .loom-peer .react-flow__node.selected, .loom-peer .react-flow__node:hover { opacity: 1; } .loom-peer .react-flow__edgelabel-renderer { opacity: .3; } .loom-peer .react-flow__edge { opacity: .4; transition: opacity .4s ease; } .loom-peer .react-flow__edge.selected, .loom-peer .react-flow__edge:hover { opacity: 1; } .react-flow__pane, .react-flow__pane.draggable, .react-flow__pane.dragging, .react-flow__pane.selection { cursor: default !important; } .loom-cardopen .react-flow__edgelabel-renderer { opacity: .08; pointer-events: none; transition: opacity .2s ease; } .loom-pick .react-flow__pane, .loom-pick .react-flow__pane.draggable, .loom-pick .react-flow__node, .loom-pick .react-flow__node.draggable, .loom-pick .react-flow__node * { cursor: default !important; }`}</style>
       <ReactFlow<RFNode, RFEdge>
         nodes={rfNodes}
         edges={rfEdges}
@@ -1826,12 +1897,13 @@ function Inner(props: CanvasProps) {
         connectionMode={ConnectionMode.Loose}
         zoomOnDoubleClick={false}
         deleteKeyCode={frozen ? null : ["Backspace", "Delete"]}
-        selectionOnDrag={selMode && !peerOn}
+        selectionOnDrag={selMode && !peerFrozen}
         selectionKeyCode="Shift"
         panOnDrag={selMode ? [1, 2] : true}
         selectionMode={SelectionMode.Partial}
         multiSelectionKeyCode={["Meta", "Control"]}
         minZoom={0.06}
+        onMoveEnd={onMoveEndSave}
         maxZoom={1.6}
         defaultViewport={{ x: 30, y: 70, zoom: 0.9 }}
         proOptions={{ hideAttribution: true }}
@@ -1845,7 +1917,7 @@ function Inner(props: CanvasProps) {
           <Background key="dots" variant={BackgroundVariant.Dots} gap={28} size={1.2} color={theme === "light" ? "rgba(15,23,42,0.16)" : "rgba(255,255,255,0.07)"} />
         )}
         {lanes.length > 0 && (
-          <Panel position="top-left" style={{ margin: 0, left: LANE_LABEL_W + 40, top: 12, opacity: peerOn ? 0.3 : 1, pointerEvents: peerOn ? "none" : "auto", transition: "opacity .4s" }}>
+          <Panel position="top-left" style={{ margin: 0, left: LANE_LABEL_W + 40, top: 12, opacity: peerFrozen ? 0.3 : 1, pointerEvents: peerFrozen ? "none" : "auto", transition: "opacity .4s" }}>
             <div className="flex items-center gap-2">
             <InfoTip title={t("Hand and Select","Hand und Auswahl")} body={t("Hand: drag the canvas to move around. Select: drag a box to pick several steps.","Hand: Fläche ziehen, um sich zu bewegen. Auswahl: Rechteck ziehen, um mehrere Schritte zu wählen.")} how={t("Keys: H for hand, V for select. Or hold Shift and drag in hand mode.","Tasten: H für Hand, V für Auswahl. Oder im Hand-Modus Umschalt halten und ziehen.")}>
               <div className="glass rounded-full flex items-center p-0.5 gap-0.5">

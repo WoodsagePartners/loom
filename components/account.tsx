@@ -414,7 +414,6 @@ export function AccountModal({ profile, onClose, onSaved }: { profile: Profile; 
         <div className="border-t border-white/10 pt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-[0.7rem] text-muted/80">
           <button type="button" onClick={() => setLegal("privacy")} className="hover:text-orange hover:underline">{t("Privacy notice", "Datenschutzhinweis")}</button>
           <button type="button" onClick={() => setLegal("terms")} className="hover:text-orange hover:underline">{t("Terms of use", "Nutzungsbedingungen")}</button>
-          <button type="button" onClick={() => setLegal("processor")} className="hover:text-orange hover:underline">{t("Processor note", "Auftragsverarbeitung")}</button>
         </div>
       </div>
       {legal && <LegalModal doc={legal === "privacy" ? PRIVACY : legal === "terms" ? TERMS : PROCESSOR} slug={legal} onClose={() => setLegal(null)} />}

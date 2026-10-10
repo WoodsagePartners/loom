@@ -26,6 +26,8 @@ type Props = {
   activeWorkflowId: string | null;
   lanes: Lane[];
   actors: Actor[];
+  usedActorIds: string[]; // roles referenced by at least one step
+  canManageRoles: boolean; // owners/admins edit & delete roles; everyone can add one and recolor
   memberHint: string;
   members: { id: string; email: string; name: string; role: string }[];
   onHelp: (term: string) => void;
@@ -152,11 +154,11 @@ function SectionHeader({
   );
 }
 
-function EditFooter({ onDelete, deleteLabel, onDone }: { onDelete: () => void; deleteLabel: string; onDone: () => void }) {
+function EditFooter({ onDelete, deleteLabel, onDone }: { onDelete?: () => void; deleteLabel: string; onDone: () => void }) {
   const t = useT();
   return (
     <div className="mt-2 flex items-center justify-between">
-      <button onClick={onDelete} title={deleteLabel} className="btn-danger inline-flex h-6 items-center rounded-full border px-3 text-[0.68rem] font-mono leading-none tracking-wider transition-colors">{t("DELETE", "LÖSCHEN")}</button>
+      {onDelete ? <button onClick={onDelete} title={deleteLabel} className="btn-danger inline-flex h-6 items-center rounded-full border px-3 text-[0.68rem] font-mono leading-none tracking-wider transition-colors">{t("DELETE", "LÖSCHEN")}</button> : <span />}
       <button onClick={onDone} className="inline-flex h-6 items-center rounded-full border border-orange/60 bg-orange/10 px-3 text-[0.68rem] font-mono leading-none tracking-wider text-orange hover:bg-orange/20 transition-colors">{t("DONE", "FERTIG")}</button>
     </div>
   );
@@ -195,6 +197,10 @@ export function LeftNav(p: Props) {
   const [pinned, setPinned] = useState(true);
   const [hover, setHover] = useState(false);
   const [suppress, setSuppress] = useState(false); // after clicking Collapse, ignore hover until the pointer leaves
+  const [showAllRoles, setShowAllRoles] = useState(false);
+  const initialActorIds = useRef<Set<string> | null>(null);
+  if (initialActorIds.current === null && p.actors.length) initialActorIds.current = new Set(p.actors.map((a) => a.id));
+  const roleShown = (a: { id: string }) => p.usedActorIds.includes(a.id) || !(initialActorIds.current?.has(a.id) ?? true); // new roles stay visible
   const [open, setOpen] = useState<Record<SectionKey, boolean>>({ workflows: true, lanes: true, actors: true, roadmaps: true, team: true });
   const [adding, setAddingRaw] = useState<string | null>(null);
   const [editing, setEditingRaw] = useState<string | null>(null);
@@ -364,11 +370,11 @@ export function LeftNav(p: Props) {
                           className={FIELD + " mt-2 resize-none"}
                         />
                         <Swatches value={w.color} onPick={(c) => p.onPatchWorkflow(w.id, { color: c })} />
-                        <div className="flex items-center gap-4">
-                          <button onClick={() => p.onDuplicateWorkflow(w.id)} className="text-[0.72rem] text-muted hover:text-orange">
-                            {t("Duplicate process", "Prozess duplizieren")}
+                        <div className="flex flex-col items-start gap-2">
+                          <button onClick={() => p.onDuplicateWorkflow(w.id)} title={t("Duplicate this process", "Diesen Prozess duplizieren")} className="rounded-full border border-white/25 text-text/85 hover:border-orange/60 hover:text-orange font-mono text-[0.68rem] tracking-wider px-3 py-1">
+                            {t("CLONE", "KLONEN")}
                           </button>
-                          <EditFooter onDelete={() => p.onDeleteWorkflow(w.id)} deleteLabel={t("Delete process", "Prozess löschen")} onDone={() => setEditing(null)} />
+                          <div className="w-full"><EditFooter onDelete={() => p.onDeleteWorkflow(w.id)} deleteLabel={t("Delete process", "Prozess löschen")} onDone={() => setEditing(null)} /></div>
                         </div>
                       </div>
                     )}
@@ -430,7 +436,7 @@ export function LeftNav(p: Props) {
             <SectionHeader
               title={title("actors")}
               onHelp={() => p.onHelp("Role")}
-              count={p.actors.length}
+              count={showAllRoles ? p.actors.length : p.actors.filter(roleShown).length}
               open={open.actors}
               onToggle={() => toggle("actors")}
               onAdd={procL ? undefined : () => { setOpen((o) => ({ ...o, actors: true })); setNewActor((n) => (n ? null : { name: "", kind: "team", role: "" })); }}
@@ -483,10 +489,15 @@ export function LeftNav(p: Props) {
                     </div>
                   </form>
                 )}
+                {p.actors.length > 0 && p.actors.some((a) => !roleShown(a)) && (
+                  <button onClick={() => setShowAllRoles((v) => !v)} className="pl-8 pr-3 py-0.5 text-[0.72rem] text-muted hover:text-orange text-left">
+                    {showAllRoles ? t("Hide unused roles", "Ungenutzte Rollen ausblenden") : t(`Show all (${p.actors.length})`, `Alle anzeigen (${p.actors.length})`)}
+                  </button>
+                )}
                 {p.actors.length === 0 && !newActor && (
                   <div className="pl-8 pr-3 py-1 text-[0.76rem] text-muted/70">{t("Add the roles in your process: people, teams, systems.", "Fügen Sie die Rollen Ihres Prozesses hinzu: Personen, Teams, Systeme.")}</div>
                 )}
-                {p.actors.map((a, ai) => (
+                {(showAllRoles ? p.actors : p.actors.filter(roleShown)).map((a, ai) => (
                   <div key={a.id}>
                     <div className={`group flex items-center gap-2 pl-8 pr-3 py-px leading-tight hover:bg-white/5 cursor-pointer ${isLens("actor", a.id) ? "bg-white/10" : ""}`} onClick={() => p.onLens(isLens("actor", a.id) ? null : { kind: "actor", id: a.id })}>
                       <ShapeIcon kind={a.kind} color={a.color ?? NEUTRAL} size={16} />
@@ -497,16 +508,17 @@ export function LeftNav(p: Props) {
                     </div>
                     {editing === a.id && (
                       <div className="pl-8 pr-3 pb-3 bg-white/[0.03]" onKeyDown={(e) => e.key === "Escape" && setEditing(null)}>
-                        <input defaultValue={a.name} onBlur={(e) => e.target.value.trim() && e.target.value.trim() !== a.name && p.onPatchActor(a.id, { name: e.target.value.trim() })} className={FIELD + " mt-2"} />
-                        <div className="grid grid-cols-5 gap-1.5 mt-2">
+                        {p.canManageRoles && <input defaultValue={a.name} onBlur={(e) => e.target.value.trim() && e.target.value.trim() !== a.name && p.onPatchActor(a.id, { name: e.target.value.trim() })} className={FIELD + " mt-2"} />}
+                        {!p.canManageRoles && <div className="mt-2 text-[0.72rem] text-muted/80">{t("Roles are shared across your organization. You can change this role's color.", "Rollen gelten für Ihre gesamte Organisation. Sie können die Farbe dieser Rolle ändern.")}</div>}
+                        {p.canManageRoles && <div className="grid grid-cols-5 gap-1.5 mt-2">
                           {ACTOR_KINDS.map((k) => (
                             <button key={k.key} type="button" title={t(k.en, k.de)} onClick={() => p.onPatchActor(a.id, { kind: k.key })} className={`rounded-md border py-1.5 flex justify-center ${a.kind === k.key ? "border-orange/70 bg-orange/10" : "border-white/10"}`}>
                               <ShapeIcon kind={k.key} color={a.kind === k.key ? "#f8991d" : "#93a5b6"} size={24} />
                             </button>
                           ))}
-                        </div>
+                        </div>}
                         <Swatches value={a.color} onPick={(c) => p.onPatchActor(a.id, { color: c })} />
-                        <EditFooter onDelete={() => p.onDeleteActor(a.id)} deleteLabel={t("Delete role", "Rolle löschen")} onDone={() => setEditing(null)} />
+                        <EditFooter onDelete={p.canManageRoles ? () => p.onDeleteActor(a.id) : undefined} deleteLabel={t("Delete role", "Rolle löschen")} onDone={() => setEditing(null)} />
                       </div>
                     )}
                   </div>

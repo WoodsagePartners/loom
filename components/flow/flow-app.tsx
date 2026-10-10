@@ -956,6 +956,8 @@ export function FlowApp({
           activeWorkflowId={activeId}
           lanes={wfLanes}
           actors={actors}
+          canManageRoles={role === "owner" || role === "admin"}
+          usedActorIds={Array.from(new Set(nodes.map((n) => n.actor_id).filter(Boolean) as string[]))}
           members={members}
           onHelp={(term) => { setGuideStart(term); setGuideOpen(true); }}
           memberHint={t(`${memberCount} member(s) in this workspace.`, `${memberCount} Mitglied(er) in diesem Workspace.`)}
